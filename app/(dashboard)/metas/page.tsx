@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { useClientContext } from "@/lib/hooks/useClientContext"
 import { MonthSelector } from "@/components/metas/MonthSelector"
-import { WeeklyEvolution } from "@/components/metas/WeeklyEvolution"
+import { MetaChart } from "@/components/metas/MetaChart"
+import { WeeklyTable } from "@/components/metas/WeeklyTable"
 import { SummaryCards } from "@/components/metas/SummaryCards"
 import { ShogunCardSkeleton } from "@/components/ui/ShogunCard"
 import { calculateWeeks, type WeekData, type MonthData } from "@/lib/metas/utils"
@@ -137,17 +138,23 @@ export default function MetasPage() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-          <ShogunCardSkeleton className="h-[500px]" />
-          <ShogunCardSkeleton className="h-[340px]" />
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+            <ShogunCardSkeleton className="h-[280px]" />
+            <ShogunCardSkeleton className="h-[280px]" />
+          </div>
+          <ShogunCardSkeleton className="h-[120px]" />
         </div>
       ) : error ? (
         <div className="text-center py-12">
           <p className="text-shogun-danger text-sm">{error}</p>
         </div>
       ) : monthData ? (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
-          <WeeklyEvolution data={monthData} />
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-start">
+            <MetaChart data={monthData} />
+            <WeeklyTable weeks={monthData.weeks} />
+          </div>
           <SummaryCards data={monthData} />
         </div>
       ) : (
