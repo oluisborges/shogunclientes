@@ -18,43 +18,43 @@ export function WeeklyTable({ weeks }: WeeklyTableProps) {
         <table className="w-full">
           <thead>
             <tr className="border-b border-shogun-border">
-              <th className="text-left py-2 px-3 text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">
+              <th className="text-center py-2 px-3 text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">
                 Semana
               </th>
-              <th className="text-left py-2 px-3 text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">
+              <th className="text-center py-2 px-3 text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">
                 Período
               </th>
-              <th className="text-right py-2 px-3 text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">
+              <th className="text-center py-2 px-3 text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">
                 Meta
               </th>
-              <th className="text-right py-2 px-3 text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">
+              <th className="text-center py-2 px-3 text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">
                 Faturamento
               </th>
-              <th className="text-right py-2 px-3 text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">
+              <th className="text-center py-2 px-3 text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">
                 Tráfego
               </th>
             </tr>
           </thead>
           <tbody>
             {weeks.map((week) => (
-              <tr 
+              <tr
                 key={week.weekNumber}
                 className="border-b border-shogun-border/50 hover:bg-shogun-bg-base/50 transition-colors"
               >
-                <td className="py-3 px-3 text-sm font-[var(--font-display)] text-shogun-text-primary">
+                <td className="py-3 px-3 text-sm text-center font-[var(--font-display)] text-shogun-text-primary">
                   Sem {week.weekNumber}
                 </td>
-                <td className="py-3 px-3 text-sm text-shogun-text-secondary">
+                <td className="py-3 px-3 text-sm text-center text-shogun-text-secondary">
                   {week.period}
                 </td>
-                <td className="py-3 px-3 text-sm text-right font-[var(--font-display)] text-shogun-text-primary">
+                <td className="py-3 px-3 text-sm text-center font-[var(--font-display)] text-shogun-text-primary">
                   {week.isFuture ? (
                     <span className="text-shogun-text-muted">—</span>
                   ) : (
                     formatCurrency(week.meta)
                   )}
                 </td>
-                <td className="py-3 px-3 text-sm text-right font-[var(--font-display)] text-shogun-text-primary">
+                <td className="py-3 px-3 text-sm text-center font-[var(--font-display)] text-shogun-text-primary">
                   {week.isFuture ? (
                     <span className="text-shogun-text-muted">—</span>
                   ) : (
@@ -63,7 +63,7 @@ export function WeeklyTable({ weeks }: WeeklyTableProps) {
                     </span>
                   )}
                 </td>
-                <td className="py-3 px-3 text-sm text-right font-[var(--font-display)] text-shogun-text-primary">
+                <td className="py-3 px-3 text-sm text-center font-[var(--font-display)] text-shogun-text-primary">
                   {week.isFuture ? (
                     <span className="text-shogun-text-muted">—</span>
                   ) : (
