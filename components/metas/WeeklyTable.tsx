@@ -8,82 +8,83 @@ interface WeeklyTableProps {
 }
 
 export function WeeklyTable({ weeks }: WeeklyTableProps) {
+  const now = new Date()
+  const editedAt =
+    now.toLocaleDateString("pt-BR") +
+    " às " +
+    now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+
   return (
-    <div className="bg-shogun-bg-elevated border border-shogun-border rounded-lg p-6">
-      <h3 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">
-        Detalhe Semanal
-      </h3>
-      
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-shogun-border">
-              <th className="text-left py-2 px-3 text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">
-                Semana
-              </th>
-              <th className="text-left py-2 px-3 text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">
-                Período
-              </th>
-              <th className="text-right py-2 px-3 text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">
-                Meta
-              </th>
-              <th className="text-right py-2 px-3 text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">
-                Faturamento
-              </th>
-              <th className="text-right py-2 px-3 text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">
-                Tráfego
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {weeks.map((week) => (
-              <tr 
-                key={week.weekNumber}
-                className="border-b border-shogun-border/50 hover:bg-shogun-bg-base/50 transition-colors"
-              >
-                <td className="py-3 px-3 text-sm font-[var(--font-display)] text-shogun-text-primary">
-                  Sem {week.weekNumber}
-                </td>
-                <td className="py-3 px-3 text-sm text-shogun-text-secondary">
-                  {week.period}
-                </td>
-                <td className="py-3 px-3 text-sm text-right font-[var(--font-display)] text-shogun-text-primary">
-                  {week.isFuture ? (
-                    <span className="text-shogun-text-muted">—</span>
-                  ) : (
-                    formatCurrency(week.meta)
-                  )}
-                </td>
-                <td className="py-3 px-3 text-sm text-right font-[var(--font-display)] text-shogun-text-primary">
-                  {week.isFuture ? (
-                    <span className="text-shogun-text-muted">—</span>
-                  ) : (
-                    <span className={week.faturamento >= week.meta ? "text-green-500" : "text-shogun-text-primary"}>
-                      {formatCurrency(week.faturamento)}
-                    </span>
-                  )}
-                </td>
-                <td className="py-3 px-3 text-sm text-right font-[var(--font-display)] text-shogun-text-primary">
-                  {week.isFuture ? (
-                    <span className="text-shogun-text-muted">—</span>
-                  ) : (
-                    <span className="text-orange-500">
-                      {formatCurrency(week.trafego)}
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      
-      {/* Nota sobre semanas futuras */}
-      <div className="mt-4 pt-4 border-t border-shogun-border">
-        <p className="text-xs text-shogun-text-muted">
-          Semanas futuras ou em andamento exibem "—" até que sejam concluídas.
+    <div className="bg-shogun-bg-elevated border border-shogun-border rounded-xl p-5 flex flex-col gap-4">
+
+      {/* Header */}
+      <div>
+        <p className="text-sm font-[var(--font-display)] font-semibold text-shogun-text-primary">
+          Entradas Semanais
+        </p>
+        <p className="text-[11px] text-shogun-text-muted font-[var(--font-display)] mt-0.5">
+          Editado {editedAt}
         </p>
       </div>
+
+      {/* Tabela */}
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="border-b border-shogun-border">
+            <th className="pb-2 text-left text-[10px] font-[var(--font-display)] text-shogun-text-muted uppercase tracking-wider w-6" />
+            <th className="pb-2 text-right text-[10px] font-[var(--font-display)] text-shogun-text-muted uppercase tracking-wider">
+              Meta
+            </th>
+            <th className="pb-2 text-right text-[10px] font-[var(--font-display)] text-shogun-text-muted uppercase tracking-wider">
+              Fat.
+            </th>
+            <th className="pb-2 text-right text-[10px] font-[var(--font-display)] text-shogun-text-muted uppercase tracking-wider">
+              Tráf.
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {weeks.map((week) => (
+            <tr key={week.weekNumber} className="border-b border-shogun-border/30">
+              {/* Semana label */}
+              <td className="py-2.5 text-[11px] font-[var(--font-display)] font-bold text-shogun-text-muted">
+                S{week.weekNumber}
+              </td>
+
+              {/* Meta */}
+              <td className="py-2.5 text-right text-[11px] font-[var(--font-data)] text-shogun-text-secondary">
+                {week.isFuture && week.meta === 0 ? (
+                  <span className="text-shogun-text-muted">—</span>
+                ) : (
+                  formatCurrency(week.meta)
+                )}
+              </td>
+
+              {/* Faturamento */}
+              <td className="py-2.5 text-right text-[11px] font-[var(--font-data)]">
+                {week.isFuture ? (
+                  <span className="text-shogun-text-muted">—</span>
+                ) : (
+                  <span style={{ color: week.faturamento >= week.meta && week.meta > 0 ? "#95D600" : "#E8F0EB" }}>
+                    {formatCurrency(week.faturamento)}
+                  </span>
+                )}
+              </td>
+
+              {/* Tráfego */}
+              <td className="py-2.5 text-right text-[11px] font-[var(--font-data)]">
+                {week.isFuture ? (
+                  <span className="text-shogun-text-muted">—</span>
+                ) : week.trafego > 0 ? (
+                  <span style={{ color: "#f97316" }}>{formatCurrency(week.trafego)}</span>
+                ) : (
+                  <span className="text-shogun-text-muted">—</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
