@@ -68,7 +68,10 @@ export default function MetasPage() {
 
         const totalMeta = weekData.reduce((sum, w) => sum + w.meta, 0)
         const totalFaturamento = weekData.reduce((sum, w) => sum + w.faturamento, 0)
-        const totalTrafego = weekData.reduce((sum, w) => sum + w.trafego, 0)
+        // Só soma semanas já exibidas na tabela (não futuras)
+        const totalTrafego = weekData
+          .filter((w) => !w.isFuture)
+          .reduce((sum, w) => sum + w.trafego, 0)
 
         setMonthData({
           year,
