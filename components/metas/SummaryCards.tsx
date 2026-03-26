@@ -19,26 +19,23 @@ export function SummaryCards({ data, clientName }: SummaryCardsProps) {
     {
       label: "Meta Total",
       value: formatCurrency(data.totalMeta),
-      sub: null,
+      sub: null as string | null,
       icon: Target,
       accent: "#8b5cf6",
-      valueColor: "text-purple-400",
     },
     {
       label: "Faturado",
       value: formatCurrency(data.totalFaturamento),
-      sub: `${formatPercent(data.percentAtingido)} da meta concluída`,
+      sub: `${formatPercent(data.percentAtingido)} da meta`,
       icon: DollarSign,
       accent: "#95D600",
-      valueColor: "text-shogun-accent",
     },
     {
       label: "Restante",
-      value: formatCurrency(restante),
-      sub: atingido ? "Meta atingida!" : null,
+      value: atingido ? "Meta atingida!" : formatCurrency(restante),
+      sub: atingido ? null : `${formatPercent(data.percentAtingido)} concluído`,
       icon: Award,
-      accent: "#f97316",
-      valueColor: "text-orange-400",
+      accent: atingido ? "#95D600" : "#f97316",
     },
     {
       label: "Tráfego Meta Ads",
@@ -48,29 +45,39 @@ export function SummaryCards({ data, clientName }: SummaryCardsProps) {
         : `${formatPercent(trafegoPercentual)} do faturamento`,
       icon: TrendingUp,
       accent: "#f97316",
-      valueColor: "text-orange-400",
     },
   ]
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {cards.map(({ label, value, sub, icon: Icon, accent, valueColor }) => (
+      {cards.map(({ label, value, sub, icon: Icon, accent }) => (
         <div
           key={label}
-          className="bg-shogun-bg-elevated border border-shogun-border rounded-xl p-5 relative overflow-hidden"
+          className="bg-shogun-bg-elevated border border-shogun-border rounded-xl p-4 flex flex-col gap-2 overflow-hidden"
           style={{ borderTop: `2px solid ${accent}` }}
         >
-          <div className="flex items-start justify-between mb-3">
-            <p className="text-xs font-[var(--font-display)] text-shogun-text-muted uppercase tracking-wider">
+          {/* Label + icon */}
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] font-[var(--font-display)] text-shogun-text-muted uppercase tracking-wider leading-tight">
               {label}
             </p>
-            <Icon size={16} style={{ color: accent }} className="opacity-60 shrink-0" />
+            <Icon size={14} style={{ color: accent }} className="opacity-70 shrink-0" />
           </div>
-          <p className={`text-2xl font-[var(--font-data)] font-bold ${valueColor}`}>
+
+          {/* Value */}
+          <p
+            className="text-lg font-[var(--font-data)] font-bold leading-tight truncate"
+            style={{ color: accent }}
+          >
             {value}
           </p>
+
+          {/* Sub */}
           {sub && (
-            <p className="text-xs font-[var(--font-display)] mt-1.5" style={{ color: accent }}>
+            <p
+              className="text-[11px] font-[var(--font-display)] leading-tight truncate"
+              style={{ color: accent, opacity: 0.75 }}
+            >
               {sub}
             </p>
           )}
