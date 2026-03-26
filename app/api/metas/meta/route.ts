@@ -3,9 +3,14 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { metaFetch } from "@/lib/meta/client"
 import { calculateWeeks } from "@/lib/metas/utils"
 
+interface ActionValue {
+  action_type: string
+  value: string
+}
+
 interface DailyInsight {
   date_start: string
-  spend: string
+  action_values?: ActionValue[]
 }
 
 interface InsightsResponse {
@@ -65,7 +70,7 @@ export async function GET(request: Request) {
       endpoint: `/${accountId}/insights`,
       accessToken: client.meta_access_token,
       params: {
-        fields: "spend,date_start",
+        fields: "action_values,date_start",
         time_range: JSON.stringify({ since: monthStart, until: monthEnd }),
         time_increment: "1",
         level: "account",
@@ -73,21 +78,24 @@ export async function GET(request: Request) {
       },
     })
 
-    // Indexa gasto por data (YYYY-MM-DD → spend)
-    const spendByDate = new Map<string, number>()
+    // Indexa faturamento por data (YYYY-MM-DD → omni_purchase value)
+    const revenueByDate = new Map<string, number>()
     for (const row of insights.data ?? []) {
-      spendByDate.set(row.date_start, parseFloat(row.spend) || 0)
+      const purchaseValue = row.action_values?.find(
+        (a) => a.action_type === "omni_purchase" || a.action_type === "purchase"
+      )
+      revenueByDate.set(row.date_start, parseFloat(purchaseValue?.value ?? "0") || 0)
     }
 
     // Agrega por semana
     const result = weeks.map((week) => {
-      let totalSpend = 0
+      let totalRevenue = 0
       const cursor = new Date(week.start)
       while (cursor <= week.end) {
-        totalSpend += spendByDate.get(toISO(cursor)) ?? 0
+        totalRevenue += revenueByDate.get(toISO(cursor)) ?? 0
         cursor.setDate(cursor.getDate() + 1)
       }
-      return { trafego: Math.round(totalSpend * 100) / 100 }
+      return { trafego: Math.round(totalRevenue * 100) / 100 }
     })
 
     // Garante sempre 5 semanas
