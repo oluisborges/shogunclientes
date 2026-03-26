@@ -62,13 +62,12 @@ export function ClientSelector() {
           </option>
         )}
         {clients.map((client) => (
-          <option 
-            key={client.id} 
+          <option
+            key={client.id}
             value={client.id}
             className="bg-shogun-bg-elevated text-shogun-text-primary"
           >
             {client.business_name}
-            {client.meta_account_id && ` - ID: ${client.meta_account_id}`}
           </option>
         ))}
       </select>

@@ -12,6 +12,7 @@ export interface Client {
   id: string
   profile_id: string
   business_name: string
+  cnpj: string | null
   meta_account_id: string | null
   meta_access_token: string | null
   meta_token_expires: string | null
