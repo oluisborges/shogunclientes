@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -29,19 +29,21 @@ const NAV_ITEMS = [
   { label: "Configurações", href: "/configuracoes", icon: Settings },
 ]
 
-const ADMIN_ITEMS = [
-  { label: "Usuários", href: "/usuarios", icon: Users },
-]
-
-interface SidebarProps {
-  isAdmin?: boolean
-}
-
-export function Sidebar({ isAdmin = false }: SidebarProps) {
+export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const pathname = usePathname()
 
-  const allItems = isAdmin ? [...NAV_ITEMS, ...ADMIN_ITEMS] : NAV_ITEMS
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data) => setIsAdmin(data.role === "admin"))
+      .catch(() => {})
+  }, [])
+
+  const navItems = isAdmin
+    ? [...NAV_ITEMS, { label: "Usuários", href: "/usuarios", icon: Users }]
+    : NAV_ITEMS
 
   return (
     <aside
@@ -70,7 +72,7 @@ export function Sidebar({ isAdmin = false }: SidebarProps) {
       </div>
 
       <nav className="flex-1 py-4 space-y-1 px-2">
-        {allItems.map((item) => {
+        {navItems.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(item.href + "/")
           const Icon = item.icon
