@@ -24,6 +24,15 @@ export function parseCampaign(campaign: MetaCampaign): ParsedCampaignMetrics {
   const revenue = insights
     ? getActionValue(insights.action_values, "purchase")
     : 0
+  const landingPageViews = insights
+    ? getActionValue(insights.actions, "landing_page_view")
+    : 0
+  const reach = insights ? parseInt(insights.reach || '0') : 0
+  const menuConversionRate = landingPageViews > 0 
+    ? (conversions / landingPageViews) * 100 
+    : 0
+
+  const avgPurchaseValue = conversions > 0 ? revenue / conversions : 0
 
   return {
     id: campaign.id,
@@ -39,6 +48,10 @@ export function parseCampaign(campaign: MetaCampaign): ParsedCampaignMetrics {
     revenue,
     cpa: conversions > 0 ? spend / conversions : 0,
     roas: spend > 0 ? revenue / spend : 0,
+    landingPageViews,
+    reach,
+    menuConversionRate,
+    avgPurchaseValue,
   }
 }
 
@@ -48,12 +61,25 @@ export function parseAdSet(adset: MetaAdSet): ParsedAdSetMetrics {
   const conversions = insights
     ? getActionValue(insights.actions, "purchase")
     : 0
+  const revenue = insights
+    ? getActionValue(insights.action_values, "purchase")
+    : 0
+  const landingPageViews = insights
+    ? getActionValue(insights.actions, "landing_page_view")
+    : 0
+  const reach = insights ? parseInt(insights.reach || '0') : 0
+  const menuConversionRate = landingPageViews > 0 
+    ? (conversions / landingPageViews) * 100 
+    : 0
+
+  const avgPurchaseValue = conversions > 0 ? revenue / conversions : 0
 
   return {
     id: adset.id,
     name: adset.name,
     status: adset.status,
     campaignId: adset.campaign_id,
+    campaignName: "",
     dailyBudget: parseFloat(adset.daily_budget || "0"),
     spend,
     impressions: insights ? parseInt(insights.impressions) : 0,
@@ -61,7 +87,13 @@ export function parseAdSet(adset: MetaAdSet): ParsedAdSetMetrics {
     ctr: insights ? parseFloat(insights.ctr) : 0,
     cpc: insights ? parseFloat(insights.cpc) : 0,
     conversions,
+    revenue,
     cpa: conversions > 0 ? spend / conversions : 0,
+    roas: spend > 0 ? revenue / spend : 0,
+    landingPageViews,
+    reach,
+    menuConversionRate,
+    avgPurchaseValue,
   }
 }
 
@@ -71,22 +103,44 @@ export function parseAd(ad: MetaAd): ParsedAdMetrics {
   const conversions = insights
     ? getActionValue(insights.actions, "purchase")
     : 0
+  const revenue = insights
+    ? getActionValue(insights.action_values, "purchase")
+    : 0
+  const landingPageViews = insights
+    ? getActionValue(insights.actions, "landing_page_view")
+    : 0
+  const reach = insights ? parseInt(insights.reach || '0') : 0
+  const menuConversionRate = landingPageViews > 0 
+    ? (conversions / landingPageViews) * 100 
+    : 0
+
+  const avgPurchaseValue = conversions > 0 ? revenue / conversions : 0
 
   return {
     id: ad.id,
     name: ad.name,
     status: ad.status,
     adsetId: ad.adset_id,
+    adsetName: "",
     thumbnailUrl: ad.creative?.thumbnail_url ?? null,
+    imageUrl: ad.creative?.image_url ?? null,
     creativeTitle: ad.creative?.title ?? null,
     creativeBody: ad.creative?.body ?? null,
+    videoId: ad.creative?.video_id ?? null,
+    objectType: ad.creative?.object_type ?? null,
     spend,
     impressions: insights ? parseInt(insights.impressions) : 0,
     clicks: insights ? parseInt(insights.clicks) : 0,
     ctr: insights ? parseFloat(insights.ctr) : 0,
     cpc: insights ? parseFloat(insights.cpc) : 0,
     conversions,
+    revenue,
     cpa: conversions > 0 ? spend / conversions : 0,
+    roas: spend > 0 ? revenue / spend : 0,
+    landingPageViews,
+    reach,
+    menuConversionRate,
+    avgPurchaseValue,
   }
 }
 

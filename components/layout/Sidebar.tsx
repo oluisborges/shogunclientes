@@ -11,6 +11,7 @@ import {
   CalendarClock,
   Trophy,
   Bot,
+  Settings,
   PanelLeftClose,
   PanelLeft,
 } from "lucide-react"
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { label: "Agendamento", href: "/agendamento", icon: CalendarClock },
   { label: "Conquistas", href: "/conquistas", icon: Trophy },
   { label: "Agentes", href: "/agentes", icon: Bot },
+  { label: "Configurações", href: "/configuracoes", icon: Settings },
 ]
 
 export function Sidebar() {

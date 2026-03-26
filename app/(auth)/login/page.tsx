@@ -14,22 +14,35 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log("Login iniciado...")
     setError(null)
     setLoading(true)
 
-    const supabase = createClient()
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const supabase = createClient()
+      console.log("Supabase client criado")
+      
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    if (authError) {
-      setError("Email ou senha inválidos. Tente novamente.")
+      console.log("Resposta do login:", { data, error: authError })
+
+      if (authError) {
+        console.error("Erro de autenticação:", authError)
+        setError("Email ou senha inválidos. Tente novamente.")
+        setLoading(false)
+        return
+      }
+
+      console.log("Login bem-sucedido, redirecionando...")
+      router.push("/metricas")
+    } catch (err) {
+      console.error("Erro inesperado:", err)
+      setError("Erro ao fazer login. Verifique o console.")
       setLoading(false)
-      return
     }
-
-    router.push("/metricas")
   }
 
   return (

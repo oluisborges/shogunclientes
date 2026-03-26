@@ -12,6 +12,10 @@ export interface ParsedCampaignMetrics {
   revenue: number
   cpa: number
   roas: number
+  landingPageViews: number
+  reach: number
+  menuConversionRate: number
+  avgPurchaseValue: number
 }
 
 export interface ParsedAdSetMetrics {
@@ -19,6 +23,7 @@ export interface ParsedAdSetMetrics {
   name: string
   status: string
   campaignId: string
+  campaignName: string
   dailyBudget: number
   spend: number
   impressions: number
@@ -26,7 +31,13 @@ export interface ParsedAdSetMetrics {
   ctr: number
   cpc: number
   conversions: number
+  revenue: number
   cpa: number
+  roas: number
+  landingPageViews: number
+  reach: number
+  menuConversionRate: number
+  avgPurchaseValue: number
 }
 
 export interface ParsedAdMetrics {
@@ -34,16 +45,26 @@ export interface ParsedAdMetrics {
   name: string
   status: string
   adsetId: string
+  adsetName: string
   thumbnailUrl: string | null
+  imageUrl: string | null
   creativeTitle: string | null
   creativeBody: string | null
+  videoId: string | null
+  objectType: string | null
   spend: number
   impressions: number
   clicks: number
   ctr: number
   cpc: number
   conversions: number
+  revenue: number
   cpa: number
+  roas: number
+  landingPageViews: number
+  reach: number
+  menuConversionRate: number
+  avgPurchaseValue: number
 }
 
 export interface AggregatedMetrics {

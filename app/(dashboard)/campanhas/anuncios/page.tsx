@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { AnunciosTable } from "@/components/campanhas/AnunciosTable"
 
 const TABS = [
   { key: "campanhas", label: "Campanhas", href: "/campanhas" },
@@ -29,9 +30,7 @@ export default function AnunciosPage() {
         ))}
       </div>
 
-      <div className="text-center py-12 text-shogun-text-muted text-sm font-[var(--font-display)]">
-        Conecte uma conta Meta Ads para visualizar os anúncios
-      </div>
+      <AnunciosTable />
     </div>
   )
 }

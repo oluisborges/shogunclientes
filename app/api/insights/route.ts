@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { metaFetch } from "@/lib/meta/client"
 import type { MetaInsights } from "@/types/meta"
 
@@ -20,8 +21,9 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = await createClient()
+  const adminClient = createAdminClient()
 
-  const { data: client, error: clientError } = await supabase
+  const { data: client, error: clientError } = await adminClient
     .from("clients")
     .select("meta_account_id, meta_access_token")
     .eq("id", clientId)

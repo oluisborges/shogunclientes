@@ -15,6 +15,10 @@ export interface MetaInsights {
   ctr: string
   cpc: string
   cpp: string
+  reach?: string
+  landing_page_views?: string
+  purchase_roas?: string
+  avg_purchase_value?: string
   actions?: MetaAction[]
   action_values?: MetaActionValue[]
   date_start: string
@@ -43,6 +47,11 @@ export interface MetaCreative {
   thumbnail_url: string | null
   title: string | null
   body: string | null
+  video_id?: string | null
+  effective_object_story_id?: string | null
+  object_type?: string | null
+  image_url?: string | null
+  image_hash?: string | null
 }
 
 export interface MetaAd {

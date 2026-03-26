@@ -1,39 +1,62 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
-import { cn } from "@/lib/utils"
-import { CampanhasTable } from "@/components/campanhas/CampanhasTable"
-
-const TABS = [
-  { key: "campanhas", label: "Campanhas", href: "/campanhas" },
-  { key: "conjuntos", label: "Conjuntos", href: "/campanhas/conjuntos" },
-  { key: "anuncios", label: "Anúncios", href: "/campanhas/anuncios" },
-]
+import { useState, useEffect } from "react"
+import { DatePicker } from "@/components/ui/DatePicker"
+import { HubDadosCampanhas } from "@/components/campanhas/HubDadosCampanhas"
+import { useHubDados } from "@/lib/hooks/useHubDados"
+import type { DateRange } from "@/types/date"
 
 export default function CampanhasPage() {
-  const [activeTab] = useState("campanhas")
+  const [campaignPeriod, setCampaignPeriod] = useState<DateRange>()
+  
+  const { campaigns, adsets, ads, loading, error } = useHubDados(campaignPeriod)
+
+  // Definir mês atual como padrão
+  useEffect(() => {
+    const now = new Date()
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    setCampaignPeriod({ start: firstDay, end: lastDay })
+  }, [])
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-shogun-danger text-sm font-[var(--font-display)] mb-4">
+          {error}
+        </div>
+        <a 
+          href="/configuracoes" 
+          className="text-shogun-accent text-sm font-[var(--font-display)] hover:underline"
+        >
+          Ir para Configurações →
+        </a>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-1 border-b border-shogun-border">
-        {TABS.map((tab) => (
-          <Link
-            key={tab.key}
-            href={tab.href}
-            className={cn(
-              "px-4 py-2.5 text-sm font-[var(--font-display)] font-medium transition-colors border-b-2 -mb-px",
-              tab.key === activeTab
-                ? "text-shogun-accent border-shogun-accent"
-                : "text-shogun-text-secondary border-transparent hover:text-shogun-text-primary"
-            )}
-          >
-            {tab.label}
-          </Link>
-        ))}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-[var(--font-display)] font-bold text-shogun-text-primary">
+          Hub de Dados
+        </h1>
+
+        <div className="relative z-10">
+          <DatePicker
+            value={campaignPeriod}
+            onChange={setCampaignPeriod}
+            placeholder="Período das campanhas"
+          />
+        </div>
       </div>
 
-      <CampanhasTable />
+      <HubDadosCampanhas
+        campaigns={campaigns}
+        adsets={adsets}
+        ads={ads}
+        loading={loading}
+      />
     </div>
   )
 }

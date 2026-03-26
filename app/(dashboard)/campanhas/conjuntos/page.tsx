@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { DataTableSkeleton } from "@/components/ui/DataTable"
+import { ConjuntosTable } from "@/components/campanhas/ConjuntosTable"
 
 const TABS = [
   { key: "campanhas", label: "Campanhas", href: "/campanhas" },
@@ -30,9 +30,7 @@ export default function ConjuntosPage() {
         ))}
       </div>
 
-      <div className="text-center py-12 text-shogun-text-muted text-sm font-[var(--font-display)]">
-        Conecte uma conta Meta Ads para visualizar os conjuntos de anúncios
-      </div>
+      <ConjuntosTable />
     </div>
   )
 }

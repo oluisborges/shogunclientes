@@ -18,7 +18,12 @@ interface UseCampanhasReturn {
   setActiveTab: (tab: TabType) => void
 }
 
-export function useCampanhas(): UseCampanhasReturn {
+interface DateRange {
+  start: Date
+  end: Date
+}
+
+export function useCampanhas(campaignPeriod?: DateRange): UseCampanhasReturn {
   const { selectedClientId } = useClientContext()
   const [campaigns, setCampaigns] = useState<ParsedCampaignMetrics[]>([])
   const [adsets, setAdsets] = useState<ParsedAdSetMetrics[]>([])
@@ -45,9 +50,16 @@ export function useCampanhas(): UseCampanhasReturn {
               ? "adsets"
               : "ads"
 
-        const res = await fetch(
-          `/api/meta/${endpoint}?client_id=${selectedClientId}`
-        )
+        const params = new URLSearchParams()
+        params.append("client_id", selectedClientId!)
+
+        // Adicionar período se fornecido
+        if (campaignPeriod) {
+          params.append("date_start", campaignPeriod.start.toISOString().split('T')[0])
+          params.append("date_end", campaignPeriod.end.toISOString().split('T')[0])
+        }
+
+        const res = await fetch(`/api/meta/${endpoint}?${params}`)
 
         if (!res.ok) {
           const body = await res.json()
@@ -57,21 +69,36 @@ export function useCampanhas(): UseCampanhasReturn {
         const data = await res.json()
 
         if (activeTab === "campaigns") {
-          setCampaigns((data as MetaApiResponse<MetaCampaign>).data.map(parseCampaign))
+          const parsedCampaigns = (data as MetaApiResponse<MetaCampaign>).data.map(parseCampaign)
+          // Mostrar apenas campanhas com gasto no período
+          setCampaigns(parsedCampaigns.filter(c => c.spend > 0))
         } else if (activeTab === "adsets") {
-          setAdsets((data as MetaApiResponse<MetaAdSet>).data.map(parseAdSet))
+          const parsedAdsets = (data as MetaApiResponse<MetaAdSet>).data.map(parseAdSet)
+          // Mostrar apenas conjuntos com gasto no período
+          setAdsets(parsedAdsets.filter(a => a.spend > 0))
         } else {
-          setAds((data as MetaApiResponse<MetaAd>).data.map(parseAd))
+          const parsedAds = (data as MetaApiResponse<MetaAd>).data.map(parseAd)
+          // Mostrar apenas anúncios com gasto no período
+          setAds(parsedAds.filter(a => a.spend > 0))
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro desconhecido")
+        const message = err instanceof Error ? err.message : "Erro desconhecido"
+        
+        // Verificar se é erro de autenticação
+        if (message.includes("Sessão Meta expirada") || message.includes("requiresReauth")) {
+          setError("Sua sessão Meta expirou. Por favor, reconecte sua conta nas Configurações.")
+        } else {
+          setError(message)
+        }
+        
+        setCampaigns([])
       } finally {
         setLoading(false)
       }
     }
 
     fetchData()
-  }, [selectedClientId, activeTab])
+  }, [selectedClientId, activeTab, campaignPeriod])
 
   return { campaigns, adsets, ads, loading, error, activeTab, setActiveTab }
 }

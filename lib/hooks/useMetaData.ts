@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useClientContext } from "./useClientContext"
+import { useDateRangeContext } from "./useDateRangeContext"
 import type { ParsedCampaignMetrics, AggregatedMetrics } from "@/lib/meta/types"
 import { parseCampaign, aggregateMetrics } from "@/lib/meta/formatters"
 import type { MetaCampaign, MetaApiResponse } from "@/types/meta"
@@ -15,13 +16,14 @@ interface UseMetaDataReturn {
 
 export function useMetaData(): UseMetaDataReturn {
   const { selectedClientId } = useClientContext()
+  const { dateRange } = useDateRangeContext()
   const [campaigns, setCampaigns] = useState<ParsedCampaignMetrics[]>([])
   const [aggregated, setAggregated] = useState<AggregatedMetrics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!selectedClientId) {
+    if (!selectedClientId || !dateRange) {
       setLoading(false)
       return
     }
@@ -31,9 +33,13 @@ export function useMetaData(): UseMetaDataReturn {
       setError(null)
 
       try {
-        const res = await fetch(
-          `/api/meta/campaigns?client_id=${selectedClientId}`
-        )
+        const params = new URLSearchParams({
+          client_id: selectedClientId!,
+          date_start: dateRange!.start.toISOString().split('T')[0],
+          date_end: dateRange!.end.toISOString().split('T')[0],
+        })
+
+        const res = await fetch(`/api/meta/campaigns?${params}`)
 
         if (!res.ok) {
           const body = await res.json()
@@ -42,8 +48,10 @@ export function useMetaData(): UseMetaDataReturn {
 
         const data: MetaApiResponse<MetaCampaign> = await res.json()
         const parsed = data.data.map(parseCampaign)
-        setCampaigns(parsed)
-        setAggregated(aggregateMetrics(parsed))
+        // Filtrar apenas campanhas com gasto no período
+        const withSpend = parsed.filter(c => c.spend > 0)
+        setCampaigns(withSpend)
+        setAggregated(aggregateMetrics(withSpend))
       } catch (err) {
         setError(err instanceof Error ? err.message : "Erro desconhecido")
         setCampaigns([])
@@ -54,7 +62,7 @@ export function useMetaData(): UseMetaDataReturn {
     }
 
     fetchData()
-  }, [selectedClientId])
+  }, [selectedClientId, dateRange])
 
   return { campaigns, aggregated, loading, error }
 }

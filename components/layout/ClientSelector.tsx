@@ -11,18 +11,23 @@ export function ClientSelector() {
 
   useEffect(() => {
     async function loadClients() {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("clients")
-        .select("id, business_name, meta_account_id")
-        .eq("active", true)
-        .order("business_name")
-
-      if (data && data.length > 0) {
-        setClients(data)
-        if (!selectedClientId) {
-          setSelectedClientId(data[0].id)
+      try {
+        const response = await fetch("/api/clients")
+        if (!response.ok) {
+          console.error("Erro ao carregar clientes")
+          return
         }
+
+        const data = await response.json()
+
+        if (data && data.length > 0) {
+          setClients(data)
+          if (!selectedClientId) {
+            setSelectedClientId(data[0].id)
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao buscar clientes:", error)
       }
     }
 
@@ -44,14 +49,26 @@ export function ClientSelector() {
       <select
         value={selectedClientId ?? ""}
         onChange={(e) => setSelectedClientId(e.target.value)}
-        className="absolute inset-0 opacity-0 cursor-pointer w-full"
+        className="absolute inset-0 cursor-pointer w-full opacity-0"
+        style={{ 
+          opacity: 0,
+          color: 'rgb(var(--shogun-text-primary))',
+          backgroundColor: 'rgb(var(--shogun-bg-elevated))'
+        }}
       >
         {clients.length === 0 && (
-          <option value="">Nenhum cliente encontrado</option>
+          <option value="" className="bg-shogun-bg-elevated text-shogun-text-primary">
+            Nenhum cliente encontrado
+          </option>
         )}
         {clients.map((client) => (
-          <option key={client.id} value={client.id}>
+          <option 
+            key={client.id} 
+            value={client.id}
+            className="bg-shogun-bg-elevated text-shogun-text-primary"
+          >
             {client.business_name}
+            {client.meta_account_id && ` - ID: ${client.meta_account_id}`}
           </option>
         ))}
       </select>

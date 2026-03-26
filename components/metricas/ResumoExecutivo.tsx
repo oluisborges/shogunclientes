@@ -19,11 +19,6 @@ export function ResumoExecutivo() {
   const kpis: KpiItem[] = aggregated
     ? [
         {
-          label: "SALDO NO META",
-          value: "—",
-          note: "0 dias no ritmo atual",
-        },
-        {
           label: "VALOR INVESTIDO (PERÍODO)",
           value: formatBRL(aggregated.totalSpend),
           comparison: { value: "-7.3% vs anterior", isPositive: false },
@@ -43,7 +38,6 @@ export function ResumoExecutivo() {
         },
       ]
     : [
-        { label: "SALDO NO META", value: "—", note: "" },
         { label: "VALOR INVESTIDO (PERÍODO)", value: "—", note: "" },
         { label: "VALOR DA CONVERSÃO DA COMPRA", value: "—", note: "" },
         { label: "ROAS DE COMPRAS NO SITE", value: "—", note: "" },
