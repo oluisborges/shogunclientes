@@ -14,14 +14,14 @@ export default function MetasPage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [monthData, setMonthData] = useState<MonthData | null>(null)
   const [loading, setLoading] = useState(false)
-
+  const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const selectedClient = clients.find((c) => c.id === selectedClientId)
 
-  const fetchMonthData = useCallback(async () => {
+  const fetchMonthData = useCallback(async (syncTrafego = false) => {
     if (!selectedClientId) return
-    setLoading(true)
+    syncTrafego ? setSyncing(true) : setLoading(true)
     setError(null)
     try {
       const year = selectedDate.getFullYear()
@@ -67,6 +67,7 @@ export default function MetasPage() {
       setError(err instanceof Error ? err.message : "Erro desconhecido")
     } finally {
       setLoading(false)
+      setSyncing(false)
     }
   }, [selectedClientId, selectedDate])
 
@@ -120,7 +121,11 @@ export default function MetasPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4 items-start">
             <MetaChart data={monthData} />
-            <WeeklyTable weeks={monthData.weeks} />
+            <WeeklyTable
+                weeks={monthData.weeks}
+                onSyncTrafego={() => fetchMonthData(true)}
+                syncing={syncing}
+              />
           </div>
           <SummaryCards data={monthData} clientName={selectedClient?.business_name} />
         </div>
