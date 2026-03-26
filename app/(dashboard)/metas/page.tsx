@@ -121,11 +121,7 @@ export default function MetasPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4 items-start">
             <MetaChart data={monthData} />
-            <WeeklyTable
-                weeks={monthData.weeks}
-                onSyncTrafego={() => fetchMonthData(true)}
-                syncing={syncing}
-              />
+            <WeeklyTable weeks={monthData.weeks} />
           </div>
           <SummaryCards data={monthData} clientName={selectedClient?.business_name} />
         </div>

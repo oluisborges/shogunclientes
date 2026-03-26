@@ -1,13 +1,10 @@
 "use client"
 
-import { RefreshCw, Lock } from "lucide-react"
 import { formatCurrency, formatCurrencyInt } from "@/lib/metas/utils"
 import type { WeekData } from "@/lib/metas/utils"
 
 interface WeeklyTableProps {
   weeks: WeekData[]
-  onSyncTrafego?: () => void
-  syncing?: boolean
 }
 
 function Val({
@@ -24,26 +21,18 @@ function Val({
   const formatted = decimals ? formatCurrency(value) : formatCurrencyInt(value)
   return (
     <td className="py-2 align-middle" style={{ textAlign: "right" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 3 }}>
-        {show && value > 0 ? (
-          <>
-            <span style={{ fontSize: 11, fontFamily: "var(--font-data)", color, whiteSpace: "nowrap" }}>
-              {formatted}
-            </span>
-            <Lock size={8} style={{ color: `${color}90`, flexShrink: 0 }} />
-          </>
-        ) : (
-          <>
-            <span style={{ fontSize: 12, fontFamily: "var(--font-data)", color: "#3A5A4A" }}>—</span>
-            <Lock size={8} style={{ color: "#3A5A4A", flexShrink: 0 }} />
-          </>
-        )}
-      </div>
+      {show && value > 0 ? (
+        <span style={{ fontSize: 11, fontFamily: "var(--font-data)", color, whiteSpace: "nowrap" }}>
+          {formatted}
+        </span>
+      ) : (
+        <span style={{ fontSize: 12, fontFamily: "var(--font-data)", color: "#3A5A4A" }}>—</span>
+      )}
     </td>
   )
 }
 
-export function WeeklyTable({ weeks, onSyncTrafego, syncing }: WeeklyTableProps) {
+export function WeeklyTable({ weeks }: WeeklyTableProps) {
   const now = new Date()
   const editedAt =
     now.toLocaleDateString("pt-BR") +
@@ -72,14 +61,9 @@ export function WeeklyTable({ weeks, onSyncTrafego, syncing }: WeeklyTableProps)
         >
           <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#95D600" }} />
         </div>
-        <div>
-          <p style={{ fontSize: 14, fontFamily: "var(--font-display)", fontWeight: 600, color: "#E8F0EB", lineHeight: 1.2 }}>
-            Entradas Semanais
-          </p>
-          <p style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "#4A6A5A", marginTop: 2 }}>
-            Editado {editedAt}
-          </p>
-        </div>
+        <p style={{ fontSize: 14, fontFamily: "var(--font-display)", fontWeight: 600, color: "#E8F0EB" }}>
+          Entradas Semanais
+        </p>
       </div>
 
       {/* Table */}
@@ -116,7 +100,6 @@ export function WeeklyTable({ weeks, onSyncTrafego, syncing }: WeeklyTableProps)
           <tbody>
             {weeks.map((week) => (
               <tr key={week.weekNumber} style={{ borderTop: "1px solid #131f2a" }}>
-                {/* S label */}
                 <td className="py-2 align-middle">
                   <span
                     style={{
@@ -131,13 +114,8 @@ export function WeeklyTable({ weeks, onSyncTrafego, syncing }: WeeklyTableProps)
                   </span>
                 </td>
 
-                {/* META — always show if > 0, purple */}
                 <Val value={week.meta} color="#8b5cf6" show={week.meta > 0} decimals={false} />
-
-                {/* FAT — hide if future */}
                 <Val value={week.faturamento} color="#95D600" show={!week.isFuture} />
-
-                {/* TRÁF — hide if future or zero */}
                 <Val value={week.trafego} color="#f97316" show={!week.isFuture && week.trafego > 0} />
               </tr>
             ))}
@@ -145,33 +123,10 @@ export function WeeklyTable({ weeks, onSyncTrafego, syncing }: WeeklyTableProps)
         </table>
       </div>
 
-      {/* Sync button */}
-      {onSyncTrafego && (
-        <button
-          onClick={onSyncTrafego}
-          disabled={syncing}
-          style={{
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            padding: "10px 0",
-            borderRadius: 8,
-            fontSize: 13,
-            fontFamily: "var(--font-display)",
-            fontWeight: 600,
-            border: "1px solid rgba(249,115,22,0.45)",
-            background: "rgba(249,115,22,0.10)",
-            color: "#f97316",
-            cursor: syncing ? "not-allowed" : "pointer",
-            opacity: syncing ? 0.5 : 1,
-          }}
-        >
-          <RefreshCw size={13} className={syncing ? "animate-spin" : ""} />
-          {syncing ? "Sincronizando…" : "Sincronizar Tráfego"}
-        </button>
-      )}
+      {/* Footer — editado */}
+      <p style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "#4A6A5A", textAlign: "center" }}>
+        Editado {editedAt}
+      </p>
     </div>
   )
 }
