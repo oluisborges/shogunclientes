@@ -23,6 +23,7 @@ export interface NavItem {
 export interface ClientOption {
   id: string
   business_name: string
+  meta_account_id: string | null
 }
 
 export interface DateRange {

@@ -1,6 +1,5 @@
 "use client"
 
-import { PerformanceOverview } from "@/components/metricas/PerformanceOverview"
 import { ContextoLeitura } from "@/components/metricas/ContextoLeitura"
 import { ResumoExecutivo } from "@/components/metricas/ResumoExecutivo"
 import { InvestimentoChart } from "@/components/metricas/InvestimentoChart"
@@ -10,7 +9,6 @@ import { InsightsPanel } from "@/components/metricas/InsightsPanel"
 export default function MetricasPage() {
   return (
     <div className="space-y-6">
-      <PerformanceOverview />
       <ContextoLeitura />
       <ResumoExecutivo />
 

@@ -46,12 +46,13 @@ export function ContextoLeitura() {
           label="EMPRESA"
           value={selectedClient?.business_name ?? "Selecionar"}
           options={clients.map((c) => ({ id: c.id, label: c.business_name }))}
+          selectedId={selectedClientId}
           onChange={(id) => setSelectedClientId(id)}
         />
         <FilterDropdown
           icon={<Landmark size={14} />}
           label="CONTA BM"
-          value="—"
+          value={selectedClient?.meta_account_id ?? "Sem conta vinculada"}
           options={[]}
           onChange={() => {}}
         />
@@ -92,12 +93,14 @@ function FilterDropdown({
   label,
   value,
   options,
+  selectedId,
   onChange,
 }: {
   icon: React.ReactNode
   label: string
   value: string
   options: Array<{ id: string; label: string }>
+  selectedId?: string | null
   onChange: (id: string) => void
 }) {
   return (
@@ -118,6 +121,7 @@ function FilterDropdown({
       </div>
       {options.length > 0 && (
         <select
+          value={selectedId ?? ""}
           onChange={(e) => onChange(e.target.value)}
           className="absolute inset-0 opacity-0 cursor-pointer w-full"
         >

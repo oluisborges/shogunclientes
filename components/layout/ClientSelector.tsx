@@ -4,7 +4,6 @@ import { useEffect } from "react"
 import { ChevronDown, Building2 } from "lucide-react"
 import { useClientContext } from "@/lib/hooks/useClientContext"
 import { createClient } from "@/lib/supabase/client"
-import { cn } from "@/lib/utils"
 
 export function ClientSelector() {
   const { selectedClientId, setSelectedClientId, clients, setClients } =
@@ -13,9 +12,9 @@ export function ClientSelector() {
   useEffect(() => {
     async function loadClients() {
       const supabase = createClient()
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("clients")
-        .select("id, business_name")
+        .select("id, business_name, meta_account_id")
         .eq("active", true)
         .order("business_name")
 
@@ -28,7 +27,7 @@ export function ClientSelector() {
     }
 
     loadClients()
-  }, [selectedClientId, setSelectedClientId, setClients])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedClient = clients.find((c) => c.id === selectedClientId)
 
@@ -42,21 +41,20 @@ export function ClientSelector() {
         <ChevronDown size={14} className="text-shogun-text-secondary shrink-0" />
       </button>
 
-      {clients.length > 1 && (
-        <select
-          value={selectedClientId ?? ""}
-          onChange={(e) => setSelectedClientId(e.target.value)}
-          className={cn(
-            "absolute inset-0 opacity-0 cursor-pointer w-full"
-          )}
-        >
-          {clients.map((client) => (
-            <option key={client.id} value={client.id}>
-              {client.business_name}
-            </option>
-          ))}
-        </select>
-      )}
+      <select
+        value={selectedClientId ?? ""}
+        onChange={(e) => setSelectedClientId(e.target.value)}
+        className="absolute inset-0 opacity-0 cursor-pointer w-full"
+      >
+        {clients.length === 0 && (
+          <option value="">Nenhum cliente encontrado</option>
+        )}
+        {clients.map((client) => (
+          <option key={client.id} value={client.id}>
+            {client.business_name}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }
