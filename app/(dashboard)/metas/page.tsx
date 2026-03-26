@@ -27,9 +27,14 @@ export default function MetasPage() {
         const month = selectedDate.getMonth() + 1
         const weeks = calculateWeeks(selectedDate)
 
-        const sheetsResponse = await fetch(
-          `/api/metas/sheets?clientId=${selectedClientId}&year=${year}&month=${month}`
-        )
+        const base = `/api/metas`
+        const qs = `clientId=${selectedClientId}&year=${year}&month=${month}`
+
+        // Busca planilha e Meta Ads em paralelo
+        const [sheetsResponse, metaResponse] = await Promise.all([
+          fetch(`${base}/sheets?${qs}`),
+          fetch(`${base}/meta?${qs}`),
+        ])
 
         if (!sheetsResponse.ok) {
           const { error: msg } = await sheetsResponse.json()
@@ -38,6 +43,11 @@ export default function MetasPage() {
 
         const sheetsData: { meta: number; faturamento: number }[] =
           await sheetsResponse.json()
+
+        // Tráfego é opcional — se falhar, usa zeros
+        const metaData: { trafego: number }[] = metaResponse.ok
+          ? await metaResponse.json()
+          : []
 
         const weekData: WeekData[] = weeks.map((week, index) => ({
           weekNumber: index + 1,
@@ -52,12 +62,13 @@ export default function MetasPage() {
           })}`,
           meta: sheetsData?.[index]?.meta ?? 0,
           faturamento: sheetsData?.[index]?.faturamento ?? 0,
-          trafego: 0,
+          trafego: metaData?.[index]?.trafego ?? 0,
           isFuture: week.end > new Date(),
         }))
 
         const totalMeta = weekData.reduce((sum, w) => sum + w.meta, 0)
         const totalFaturamento = weekData.reduce((sum, w) => sum + w.faturamento, 0)
+        const totalTrafego = weekData.reduce((sum, w) => sum + w.trafego, 0)
 
         setMonthData({
           year,
@@ -65,7 +76,7 @@ export default function MetasPage() {
           weeks: weekData,
           totalMeta,
           totalFaturamento,
-          totalTrafego: 0,
+          totalTrafego,
           percentAtingido: totalMeta > 0 ? (totalFaturamento / totalMeta) * 100 : 0,
         })
       } catch (err) {
