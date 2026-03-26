@@ -12,6 +12,7 @@ import {
   Trophy,
   Bot,
   Settings,
+  Users,
   PanelLeftClose,
   PanelLeft,
 } from "lucide-react"
@@ -28,9 +29,19 @@ const NAV_ITEMS = [
   { label: "Configurações", href: "/configuracoes", icon: Settings },
 ]
 
-export function Sidebar() {
+const ADMIN_ITEMS = [
+  { label: "Usuários", href: "/usuarios", icon: Users },
+]
+
+interface SidebarProps {
+  isAdmin?: boolean
+}
+
+export function Sidebar({ isAdmin = false }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
   const pathname = usePathname()
+
+  const allItems = isAdmin ? [...NAV_ITEMS, ...ADMIN_ITEMS] : NAV_ITEMS
 
   return (
     <aside
@@ -59,7 +70,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 py-4 space-y-1 px-2">
-        {NAV_ITEMS.map((item) => {
+        {allItems.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(item.href + "/")
           const Icon = item.icon
@@ -79,9 +90,7 @@ export function Sidebar() {
                 size={20}
                 className={cn(
                   "shrink-0",
-                  isActive
-                    ? "text-shogun-accent"
-                    : "text-shogun-text-secondary"
+                  isActive ? "text-shogun-accent" : "text-shogun-text-secondary"
                 )}
               />
               {!collapsed && <span className="truncate">{item.label}</span>}

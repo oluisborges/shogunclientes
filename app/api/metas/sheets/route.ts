@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { GoogleSheetsService } from "@/lib/services/google-sheets"
+import { getMetasForMonth } from "@/lib/services/google-sheets"
 
 export async function GET(request: Request) {
   try {
@@ -9,8 +9,6 @@ export async function GET(request: Request) {
     const year = searchParams.get("year")
     const month = searchParams.get("month")
 
-    console.log("API Sheets chamada com:", { clientId, year, month })
-
     if (!clientId || !year || !month) {
       return NextResponse.json(
         { error: "Parâmetros clientId, year e month são obrigatórios" },
@@ -18,20 +16,26 @@ export async function GET(request: Request) {
       )
     }
 
-    // Retornar dados mock para teste
-    console.log("Retornando dados mock para Sheets API")
-    return NextResponse.json([
-      { meta: 5000, faturamento: 4800 },
-      { meta: 5000, faturamento: 5200 },
-      { meta: 5000, faturamento: 4500 },
-      { meta: 5000, faturamento: 5800 },
-      { meta: 5000, faturamento: 0 }
-    ])
+    // Buscar nome do cliente para encontrar a planilha no Drive
+    const adminClient = createAdminClient()
+    const { data: client, error: clientError } = await adminClient
+      .from("clients")
+      .select("business_name")
+      .eq("id", clientId)
+      .single()
+
+    if (clientError || !client) {
+      return NextResponse.json(
+        { error: "Cliente não encontrado" },
+        { status: 404 }
+      )
+    }
+
+    const weeks = await getMetasForMonth(client.business_name, parseInt(month))
+    return NextResponse.json(weeks)
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro interno"
     console.error("Erro ao buscar dados do Google Sheets:", error)
-    return NextResponse.json(
-      { error: "Erro interno ao buscar dados da planilha" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
