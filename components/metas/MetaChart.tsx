@@ -29,6 +29,7 @@ export function MetaChart({ data }: MetaChartProps) {
       name: `Sem ${week.weekNumber}`,
       Meta: week.meta,
       Faturamento: week.faturamento,
+      Tráfego: week.trafego,
     }))
 
   return (
@@ -67,7 +68,7 @@ export function MetaChart({ data }: MetaChartProps) {
             ]}
           />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="Meta"
             stroke="#8b5cf6"
             strokeWidth={2}
@@ -76,11 +77,20 @@ export function MetaChart({ data }: MetaChartProps) {
             activeDot={{ r: 6 }}
           />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="Faturamento"
             stroke="#95D600"
             strokeWidth={2}
             dot={{ fill: "#95D600", r: 4 }}
+            activeDot={{ r: 6 }}
+          />
+          <Line
+            type="linear"
+            dataKey="Tráfego"
+            stroke="#f97316"
+            strokeWidth={2}
+            strokeDasharray="6 3"
+            dot={{ fill: "#f97316", r: 4 }}
             activeDot={{ r: 6 }}
           />
         </LineChart>
@@ -94,6 +104,10 @@ export function MetaChart({ data }: MetaChartProps) {
         <div className="flex items-center gap-2">
           <div className="w-6 h-0.5 bg-shogun-accent" />
           <span className="text-xs font-[var(--font-display)] text-shogun-text-secondary">Faturamento</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-0.5" style={{ borderTop: "2px dashed #f97316" }} />
+          <span className="text-xs font-[var(--font-display)] text-shogun-text-secondary">Tráfego Meta</span>
         </div>
       </div>
     </div>
