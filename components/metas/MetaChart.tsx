@@ -9,7 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts"
-import { formatCurrency, formatPercent } from "@/lib/metas/utils"
+import { formatCurrency, formatCurrencyInt } from "@/lib/metas/utils"
 import type { MonthData } from "@/lib/metas/utils"
 
 interface MetaChartProps {
@@ -32,7 +32,7 @@ export function MetaChart({ data }: MetaChartProps) {
   const chartData = data.weeks
     .filter((w) => !w.isFuture)
     .map((w) => ({
-      name: `S${w.weekNumber}`,
+      name: `Sem ${w.weekNumber}`,
       Meta: w.meta,
       Faturamento: w.faturamento,
       Tráfego: w.trafego,
@@ -41,57 +41,54 @@ export function MetaChart({ data }: MetaChartProps) {
   const progress = Math.min(data.percentAtingido, 100)
 
   return (
-    <div className="bg-shogun-bg-elevated border border-shogun-border rounded-xl p-5 flex flex-col gap-4">
+    <div className="bg-shogun-bg-elevated border border-shogun-border rounded-xl p-6 flex flex-col gap-5">
 
       {/* ── Header ── */}
-      <div className="flex items-start gap-3">
-        {/* Left: labels + values */}
+      <div className="flex items-start justify-between gap-4">
+        {/* Left */}
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-[var(--font-display)] text-shogun-text-muted uppercase tracking-widest mb-2">
+          <p className="text-[11px] font-[var(--font-display)] text-shogun-text-muted uppercase tracking-widest mb-3">
             Performance do Mês
           </p>
 
-          {/* Faturado */}
-          <p className="text-[11px] font-[var(--font-display)] text-shogun-text-muted uppercase tracking-wider">
-            Faturado
-          </p>
-          <p className="text-2xl font-[var(--font-data)] font-bold text-shogun-text-primary leading-tight truncate">
-            {formatCurrency(data.totalFaturamento)}
-          </p>
-
-          {/* Meta */}
-          <p className="text-xs font-[var(--font-display)] text-shogun-text-muted mt-0.5">
-            Meta: {formatCurrency(data.totalMeta)}
-          </p>
+          {/* Faturamento + meta inline */}
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <span className="text-4xl font-[var(--font-data)] font-bold text-shogun-text-primary leading-none">
+              {formatCurrencyInt(data.totalFaturamento)}
+            </span>
+            <span className="text-sm font-[var(--font-display)] text-shogun-text-muted">
+              de {formatCurrencyInt(data.totalMeta)}
+            </span>
+          </div>
 
           {/* Tráfego */}
           {data.totalTrafego > 0 && (
-            <p className="text-xs font-[var(--font-display)] mt-0.5" style={{ color: "#f97316" }}>
-              {formatCurrency(data.totalTrafego)} via Meta Ads
+            <p className="text-sm font-[var(--font-display)] mt-1.5" style={{ color: "#f97316" }}>
+              {formatCurrencyInt(data.totalTrafego)} via Meta Ads
             </p>
           )}
         </div>
 
         {/* Right: % badge */}
         <div
-          className="flex-shrink-0 flex flex-col items-center justify-center w-14 h-14 rounded-full"
+          className="flex-shrink-0 flex flex-col items-center justify-center w-[72px] h-[72px] rounded-full"
           style={{
-            border: "2px solid rgba(149,214,0,0.35)",
-            background: "rgba(149,214,0,0.08)",
+            background: "radial-gradient(circle, rgba(149,214,0,0.25) 0%, rgba(149,214,0,0.08) 100%)",
+            border: "2px solid rgba(149,214,0,0.5)",
           }}
         >
-          <span className="text-base font-[var(--font-data)] font-bold text-shogun-accent leading-none">
+          <span className="text-xl font-[var(--font-data)] font-bold text-shogun-accent leading-none">
             {data.percentAtingido.toFixed(0)}%
           </span>
           <span className="text-[9px] font-[var(--font-display)] text-shogun-text-muted uppercase tracking-wide mt-0.5">
-            meta
+            concluído
           </span>
         </div>
       </div>
 
       {/* ── Progress bar ── */}
-      <div className="space-y-1">
-        <div className="h-1.5 bg-shogun-bg-base rounded-full overflow-hidden">
+      <div className="space-y-1.5">
+        <div className="h-2 bg-shogun-bg-base rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-700"
             style={{
@@ -100,21 +97,21 @@ export function MetaChart({ data }: MetaChartProps) {
             }}
           />
         </div>
-        <div className="flex justify-between text-[10px] font-[var(--font-display)] text-shogun-text-muted">
+        <div className="flex justify-between text-[11px] font-[var(--font-display)] text-shogun-text-muted">
           <span>R$ 0</span>
-          <span>{formatCurrency(data.totalMeta)}</span>
+          <span>{formatCurrencyInt(data.totalMeta)}</span>
         </div>
       </div>
 
-      {/* ── Legend ── */}
+      {/* ── Legend pills ── */}
       <div className="flex items-center gap-2 flex-wrap">
         {LEGEND.map(({ label, color, dashed }) => (
           <div
             key={label}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-[var(--font-display)]"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-[var(--font-display)] font-medium"
             style={{
-              border: `1px solid ${color}50`,
-              background: `${color}14`,
+              border: `1px solid ${color}55`,
+              background: `${color}18`,
               color,
             }}
           >
@@ -132,8 +129,8 @@ export function MetaChart({ data }: MetaChartProps) {
       </div>
 
       {/* ── Chart ── */}
-      <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+      <ResponsiveContainer width="100%" height={220}>
+        <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#2A5444" vertical={false} />
           <XAxis
             dataKey="name"
@@ -146,7 +143,7 @@ export function MetaChart({ data }: MetaChartProps) {
             tick={{ fill: "#4A6A5A", fontSize: 10, fontFamily: "var(--font-display)" }}
             axisLine={false}
             tickLine={false}
-            width={38}
+            width={40}
           />
           <Tooltip
             contentStyle={{
@@ -161,15 +158,15 @@ export function MetaChart({ data }: MetaChartProps) {
           />
           <Line
             type="linear" dataKey="Meta" stroke="#8b5cf6" strokeWidth={2}
-            strokeDasharray="6 3" dot={{ fill: "#8b5cf6", r: 3 }} activeDot={{ r: 5 }}
+            strokeDasharray="6 3" dot={{ fill: "#8b5cf6", r: 4 }} activeDot={{ r: 6 }}
           />
           <Line
             type="linear" dataKey="Faturamento" stroke="#95D600" strokeWidth={2}
-            dot={{ fill: "#95D600", r: 3 }} activeDot={{ r: 5 }}
+            dot={{ fill: "#95D600", r: 4 }} activeDot={{ r: 6 }}
           />
           <Line
             type="linear" dataKey="Tráfego" stroke="#f97316" strokeWidth={2}
-            strokeDasharray="6 3" dot={{ fill: "#f97316", r: 3 }} activeDot={{ r: 5 }}
+            strokeDasharray="6 3" dot={{ fill: "#f97316", r: 4 }} activeDot={{ r: 6 }}
           />
         </LineChart>
       </ResponsiveContainer>
