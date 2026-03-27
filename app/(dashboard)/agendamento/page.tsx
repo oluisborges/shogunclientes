@@ -71,8 +71,12 @@ export default function AgendamentoPage() {
     setLoading(true)
     setError(null)
     try {
+      const myBookingUrl = selectedClientId 
+        ? `/api/agendamento/my-booking?clientId=${selectedClientId}`
+        : `/api/agendamento/my-booking`
+      
       const [mbRes, slotsRes] = await Promise.all([
-        fetch(`/api/agendamento/my-booking?clientId=${selectedClientId ?? ""}`),
+        fetch(myBookingUrl),
         fetch(`/api/agendamento/slots?year=${year}&month=${month}`),
       ])
       const mb: MyBookingData = await mbRes.json()
@@ -116,7 +120,11 @@ export default function AgendamentoPage() {
     setCancelling(true)
     setError(null)
     try {
-      const res = await fetch(`/api/agendamento/${myBooking.booking.id}?clientId=${selectedClientId ?? ""}`, { method: "DELETE" })
+      const cancelUrl = selectedClientId 
+        ? `/api/agendamento/${myBooking.booking.id}?clientId=${selectedClientId}`
+        : `/api/agendamento/${myBooking.booking.id}`
+      
+      const res = await fetch(cancelUrl, { method: "DELETE" })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       await loadData()

@@ -152,6 +152,42 @@ export interface CreateEventParams {
  * Retorna o eventId do Google Calendar.
  */
 export async function createCalendarEvent(params: CreateEventParams): Promise<string> {
+  // 1. Tentar OAuth2 (melhor opção - pode convidar attendees)
+  try {
+    const { createCalendarEventOAuth2, isOAuth2Configured } = await import("./google-calendar-oauth2")
+    
+    if (await isOAuth2Configured()) {
+      console.log("Usando OAuth2 para criar evento com attendees")
+      return await createCalendarEventOAuth2({
+        ...params,
+        clientEmail: params.clientEmail || "" // Garante que não seja undefined
+      })
+    } else {
+      console.log("OAuth2 não configurado, tentando método híbrido")
+    }
+  } catch (error) {
+    console.warn("OAuth2 falhou, tentando método híbrido:", error)
+  }
+
+  // 2. Tentar método híbrido (Service Account + patch)
+  try {
+    const { createCalendarEventWithAttendees } = await import("./google-calendar-oauth")
+    return await createCalendarEventWithAttendees({
+      ...params,
+      clientEmail: params.clientEmail || ""
+    })
+  } catch (error) {
+    console.warn("Método híbrido falhou, usando fallback sem attendees:", error)
+    
+    // 3. Fallback básico sem attendees
+    return createCalendarEventBasic(params)
+  }
+}
+
+/**
+ * Método básico sem attendees (fallback)
+ */
+async function createCalendarEventBasic(params: CreateEventParams): Promise<string> {
   if (!CALENDAR_ID) throw new Error("GOOGLE_CALENDAR_ID não configurado.")
 
   const { scheduledAt, clientName, businessName, clientEmail, gestorEmail } = params
@@ -169,12 +205,12 @@ export async function createCalendarEvent(params: CreateEventParams): Promise<st
     hour: "2-digit", minute: "2-digit", timeZone: TZ,
   })
 
-  // Participantes: fixos + cliente + gestor (sem duplicatas)
-  const allAttendees = Array.from(new Set([
+  // Participantes na descrição (fallback)
+  const participantsList = [
     ...FIXED_ATTENDEES,
     ...(clientEmail ? [clientEmail] : []),
     ...(gestorEmail ? [gestorEmail] : []),
-  ])).map((email) => ({ email }))
+  ].filter(Boolean)
 
   const title = `Grupo Shogun - Alinhamento (${clientName} | ${businessName})`
 
@@ -184,6 +220,11 @@ Neste encontro revisamos:
 - Resultados e métricas do período
 - Oportunidades de melhoria
 - Prioridades e próximos passos para o mês seguinte
+
+---
+
+Participantes:
+${participantsList.map(email => `- ${email}`).join('\n')}
 
 ---
 
@@ -199,13 +240,13 @@ Frequência: Mensal`
       description,
       start: { dateTime: scheduledAt.toISOString(), timeZone: TZ },
       end:   { dateTime: endAt.toISOString(),        timeZone: TZ },
-      attendees: allAttendees,
-      conferenceData: {
-        createRequest: {
-          requestId:            uuidv4(),
-          conferenceSolutionKey: { type: "hangoutsMeet" },
-        },
-      },
+      // conferenceData removido temporariamente para evitar erro
+      // conferenceData: {
+      //   createRequest: {
+      //     requestId: uuidv4(),
+      //     conferenceSolutionKey: { type: "hangoutsMeet" },
+      //   },
+      // },
       reminders: {
         useDefault: false,
         overrides: [

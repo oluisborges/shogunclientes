@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
-import { RefreshCw, CheckCircle, AlertCircle, ExternalLink } from "lucide-react"
+import { RefreshCw, CheckCircle, AlertCircle, ExternalLink, Calendar } from "lucide-react"
 
 interface SyncedClient {
   id: string
@@ -37,6 +37,9 @@ export default function ConfiguracoesPage() {
     if (success === "true" && token) {
       setHasToken(true)
       setError(null)
+    } else if (success === "google_calendar_connected") {
+      setError(null)
+      // Mostrar mensagem de sucesso
     } else if (errorParam) {
       setError(getErrorMessage(errorParam))
     }
@@ -49,6 +52,7 @@ export default function ConfiguracoesPage() {
       token_exchange_failed: "Falha ao trocar código por token",
       insufficient_permissions: "Você precisa ser admin ou gestor",
       unauthorized: "Não autorizado",
+      access_denied: "Acesso negado ao Google Calendar",
     }
     return messages[code] || "Erro desconhecido"
   }
@@ -66,6 +70,10 @@ export default function ConfiguracoesPage() {
       `response_type=code`
 
     window.location.href = authUrl
+  }
+
+  const handleGoogleCalendarConnect = () => {
+    window.location.href = "/api/auth/google/calendar"
   }
 
   const handleSync = async () => {
@@ -266,6 +274,57 @@ export default function ConfiguracoesPage() {
               )}
             </div>
           )}
+        </div>
+
+        <div className="bg-shogun-bg-elevated border border-shogun-border rounded-lg p-6">
+          <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">
+            Google Calendar
+          </h2>
+
+          <div className="space-y-4">
+            <p className="text-sm text-shogun-text-secondary">
+              Conecte o Google Calendar para convidar automaticamente todos os participantes nos agendamentos.
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={handleGoogleCalendarConnect}
+                className="flex items-center gap-2 bg-shogun-accent hover:bg-shogun-accent-muted text-shogun-bg-base font-[var(--font-display)] font-semibold px-6 py-3 rounded transition-colors"
+              >
+                <Calendar size={18} />
+                Conectar Google Calendar
+              </button>
+
+              <div className="flex items-center gap-2 p-3 bg-shogun-bg-base border border-shogun-border rounded">
+                <AlertCircle size={16} className="text-shogun-text-muted" />
+                <div className="flex-1">
+                  <p className="text-xs text-shogun-text-secondary">
+                    <strong className="text-shogun-text-primary">Precisa configurar?</strong>{" "}
+                    <a
+                      href="/configuracoes/google-oauth-setup"
+                      className="text-shogun-accent hover:underline"
+                    >
+                      Configure as credenciais OAuth aqui
+                    </a>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 p-3 bg-shogun-bg-base border border-shogun-border rounded">
+              <p className="text-xs text-shogun-text-secondary">
+                <strong className="text-shogun-text-primary">Como funciona:</strong>
+                <br />
+                1. Clique em "Conectar Google Calendar"
+                <br />
+                2. Faça login com sua conta Google
+                <br />
+                3. Autorize o acesso ao Calendar
+                <br />
+                4. Os agendamentos convidarão participantes automaticamente
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="bg-shogun-bg-elevated border border-shogun-border rounded-lg p-6">
