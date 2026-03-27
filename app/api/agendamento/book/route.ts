@@ -21,21 +21,31 @@ export async function POST(request: Request) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 })
 
-    const { slot } = await request.json() as { slot: string } // "2026-04-02T09:00"
+    const { slot, clientId: clientIdParam } = await request.json() as { slot: string; clientId?: string }
     if (!slot) return NextResponse.json({ error: "Slot inválido" }, { status: 400 })
 
     const adminClient = createAdminClient()
 
+    const { data: profile } = await adminClient
+      .from("profiles").select("role").eq("id", user.id).single()
+    const isAdmin = profile?.role === "admin" || profile?.role === "gestor"
+
     // Carrega cliente com gestor e perfil do usuário
-    const { data: client } = await adminClient
+    let clientQuery = adminClient
       .from("clients")
       .select(`
         id, booking_credits, booking_credits_cycle, business_name, niche,
         gestor:gestor_id ( email ),
-        profile:profile_id ( full_name )
+        profile:profile_id ( full_name, email )
       `)
-      .eq("profile_id", user.id)
-      .single()
+
+    if (isAdmin && clientIdParam) {
+      clientQuery = clientQuery.eq("id", clientIdParam) as typeof clientQuery
+    } else {
+      clientQuery = clientQuery.eq("profile_id", user.id) as typeof clientQuery
+    }
+
+    const { data: client } = await clientQuery.single()
 
     if (!client) return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 })
 
@@ -84,11 +94,12 @@ export async function POST(request: Request) {
     }
 
     // Resolve nome do cliente e gestor
-    const profileData = client.profile as { full_name?: string } | null
+    const profileData = client.profile as { full_name?: string; email?: string } | null
     const gestorData  = client.gestor  as { email?: string }     | null
 
     const clientName  = profileData?.full_name ?? client.business_name
     const gestorEmail = gestorData?.email
+    const clientEmail = profileData?.email ?? user.email
 
     // Cria evento no Google Calendar
     const scheduledAt = new Date(`${slot}:00-03:00`) // São Paulo UTC-3
@@ -96,7 +107,7 @@ export async function POST(request: Request) {
       scheduledAt,
       clientName,
       businessName: client.business_name,
-      clientEmail:  user.email,
+      clientEmail,
       gestorEmail,
     })
 

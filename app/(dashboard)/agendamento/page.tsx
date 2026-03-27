@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw } from "lucide-react"
 import type { AvailableDay } from "@/lib/services/google-calendar"
+import { useClientContext } from "@/lib/hooks/useClientContext"
 
 interface Booking {
   id: string
@@ -53,6 +54,7 @@ function getTargetMonth() {
 }
 
 export default function AgendamentoPage() {
+  const { selectedClientId } = useClientContext()
   const [myBooking, setMyBooking] = useState<MyBookingData | null>(null)
   const [slotsData, setSlotsData] = useState<SlotsData | null>(null)
   const [selectedDay, setSelectedDay] = useState<AvailableDay | null>(null)
@@ -70,7 +72,7 @@ export default function AgendamentoPage() {
     setError(null)
     try {
       const [mbRes, slotsRes] = await Promise.all([
-        fetch("/api/agendamento/my-booking"),
+        fetch(`/api/agendamento/my-booking?clientId=${selectedClientId ?? ""}`),
         fetch(`/api/agendamento/slots?year=${year}&month=${month}`),
       ])
       const mb: MyBookingData = await mbRes.json()
@@ -84,7 +86,7 @@ export default function AgendamentoPage() {
     } finally {
       setLoading(false)
     }
-  }, [year, month])
+  }, [year, month, selectedClientId])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -96,7 +98,7 @@ export default function AgendamentoPage() {
       const res = await fetch("/api/agendamento/book", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slot: `${selectedDay.date}T${selectedSlot}` }),
+        body: JSON.stringify({ slot: `${selectedDay.date}T${selectedSlot}`, clientId: selectedClientId }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -114,7 +116,7 @@ export default function AgendamentoPage() {
     setCancelling(true)
     setError(null)
     try {
-      const res = await fetch(`/api/agendamento/${myBooking.booking.id}`, { method: "DELETE" })
+      const res = await fetch(`/api/agendamento/${myBooking.booking.id}?clientId=${selectedClientId ?? ""}`, { method: "DELETE" })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       await loadData()

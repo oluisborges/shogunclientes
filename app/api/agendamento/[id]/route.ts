@@ -16,12 +16,22 @@ export async function DELETE(
 
     const adminClient = createAdminClient()
 
-    // Verifica que o agendamento pertence ao cliente do usuário
-    const { data: clientData } = await adminClient
-      .from("clients")
-      .select("id")
-      .eq("profile_id", user.id)
-      .single()
+    const { data: profile } = await adminClient
+      .from("profiles").select("role").eq("id", user.id).single()
+    const isAdmin = profile?.role === "admin" || profile?.role === "gestor"
+
+    // Admin pode cancelar passando clientId como query param
+    const { searchParams } = new URL(_request.url)
+    const clientIdParam = searchParams.get("clientId")
+
+    let clientQuery = adminClient.from("clients").select("id")
+    if (isAdmin && clientIdParam) {
+      clientQuery = clientQuery.eq("id", clientIdParam) as typeof clientQuery
+    } else {
+      clientQuery = clientQuery.eq("profile_id", user.id) as typeof clientQuery
+    }
+
+    const { data: clientData } = await clientQuery.single()
 
     if (!clientData) return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 })
 
