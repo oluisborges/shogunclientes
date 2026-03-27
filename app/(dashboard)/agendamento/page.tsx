@@ -134,10 +134,11 @@ export default function AgendamentoPage() {
   }
 
   const windowOpen = slotsData?.open ?? false
-  const credits = myBooking?.credits ?? 0
+  const credits = myBooking?.credits ?? 2
   const cycle = myBooking?.cycle ?? ""
   const hasBooking = !!myBooking?.booking
-  const canBook = windowOpen && credits > 0
+  // Mostra o calendário sempre que a janela estiver aberta e não tiver agendamento ativo
+  const showPicker = windowOpen && !hasBooking
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -245,7 +246,7 @@ export default function AgendamentoPage() {
       )}
 
       {/* Seletor de data/hora */}
-      {windowOpen && canBook && !hasBooking && (
+      {showPicker && (
         <div
           className="p-5 rounded-xl space-y-5"
           style={{ background: "#0F1E2A", border: "1px solid #1e3a4a" }}
@@ -322,61 +323,54 @@ export default function AgendamentoPage() {
           {confirming && selectedDay && selectedSlot && (
             <div
               className="p-4 rounded-xl space-y-3"
-              style={{ border: "1px solid rgba(149,214,0,0.25)", background: "rgba(149,214,0,0.06)" }}
+              style={{
+                border: credits > 0 ? "1px solid rgba(149,214,0,0.25)" : "1px solid rgba(255,107,53,0.3)",
+                background: credits > 0 ? "rgba(149,214,0,0.06)" : "rgba(255,107,53,0.06)",
+              }}
             >
-              <p className="text-sm font-[var(--font-display)] text-shogun-text-primary">
-                Confirmar agendamento para{" "}
-                <strong style={{ color: "#95D600" }}>
-                  {selectedDay.label} às {selectedSlot}
-                </strong>
-                ?
-              </p>
-              <p className="text-xs text-shogun-text-muted font-[var(--font-display)]">
-                Isso usará 1 crédito. Você terá {credits - 1} crédito(s) restante(s) para remarcar.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleBook}
-                  disabled={booking}
-                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold font-[var(--font-display)] transition-opacity disabled:opacity-50"
-                  style={{
-                    background: "rgba(149,214,0,0.15)",
-                    border: "1px solid rgba(149,214,0,0.5)",
-                    color: "#95D600",
-                  }}
-                >
-                  {booking ? "Agendando…" : "Confirmar"}
-                </button>
-                <button
-                  onClick={() => { setConfirming(false); setSelectedSlot(null) }}
-                  className="px-4 py-2.5 rounded-lg text-sm font-[var(--font-display)] text-shogun-text-muted"
-                  style={{ border: "1px solid #1e3a4a", background: "#111F1A" }}
-                >
-                  Voltar
-                </button>
-              </div>
+              {credits > 0 ? (
+                <>
+                  <p className="text-sm font-[var(--font-display)] text-shogun-text-primary">
+                    Confirmar agendamento para{" "}
+                    <strong style={{ color: "#95D600" }}>
+                      {selectedDay.label} às {selectedSlot}
+                    </strong>
+                    ?
+                  </p>
+                  <p className="text-xs text-shogun-text-muted font-[var(--font-display)]">
+                    Isso usará 1 crédito. Você terá {credits - 1} crédito(s) restante(s) para remarcar.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleBook}
+                      disabled={booking}
+                      className="flex-1 py-2.5 rounded-lg text-sm font-semibold font-[var(--font-display)] transition-opacity disabled:opacity-50"
+                      style={{ background: "rgba(149,214,0,0.15)", border: "1px solid rgba(149,214,0,0.5)", color: "#95D600" }}
+                    >
+                      {booking ? "Agendando…" : "Confirmar"}
+                    </button>
+                    <button
+                      onClick={() => { setConfirming(false); setSelectedSlot(null) }}
+                      className="px-4 py-2.5 rounded-lg text-sm font-[var(--font-display)] text-shogun-text-muted"
+                      style={{ border: "1px solid #1e3a4a", background: "#111F1A" }}
+                    >
+                      Voltar
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <AlertCircle size={15} style={{ color: "#FF6B35", flexShrink: 0 }} />
+                  <p className="text-sm font-[var(--font-display)]" style={{ color: "#FF6B35" }}>
+                    Sem créditos disponíveis. Entre em contato com o time Shogun.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
 
-      {/* Sem créditos */}
-      {windowOpen && credits <= 0 && !hasBooking && (
-        <div
-          className="p-5 rounded-xl flex items-start gap-3"
-          style={{ background: "#0F1E2A", border: "1px solid rgba(255,107,53,0.3)" }}
-        >
-          <AlertCircle size={18} style={{ color: "#FF6B35", flexShrink: 0, marginTop: 2 }} />
-          <div>
-            <p className="font-semibold font-[var(--font-display)] text-shogun-text-primary">
-              Sem créditos disponíveis
-            </p>
-            <p className="text-sm text-shogun-text-muted font-[var(--font-display)] mt-1">
-              Você utilizou todos os créditos deste ciclo. Entre em contato com o time Shogun se precisar de ajuda.
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
