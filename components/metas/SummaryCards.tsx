@@ -53,21 +53,28 @@ export function SummaryCards({ data, clientName }: SummaryCardsProps) {
       {cards.map(({ label, value, sub, icon: Icon, color }) => (
         <div
           key={label}
-          className="bg-shogun-bg-elevated rounded-xl p-5 flex flex-col gap-3"
-          style={{ border: `1px solid ${color}55` }}
+          className="rounded-xl flex flex-col gap-3"
+          style={{
+            background: "#0F1E2A",
+            border: `1px solid ${color}55`,
+            padding: "20px 22px",
+          }}
         >
           {/* Label + icon */}
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[11px] font-[var(--font-display)] text-shogun-text-muted uppercase tracking-wider">
+            <p
+              className="uppercase tracking-wider"
+              style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "#4A6A5A" }}
+            >
               {label}
             </p>
-            <Icon size={15} style={{ color, opacity: 0.7 }} className="shrink-0" />
+            <Icon size={15} style={{ color, opacity: 0.65, flexShrink: 0 }} />
           </div>
 
           {/* Value */}
           <p
-            className="text-2xl font-[var(--font-data)] font-bold leading-none truncate"
-            style={{ color }}
+            className="font-bold leading-none truncate"
+            style={{ fontSize: 28, fontFamily: "var(--font-data)", color }}
           >
             {value}
           </p>
@@ -75,8 +82,8 @@ export function SummaryCards({ data, clientName }: SummaryCardsProps) {
           {/* Sub */}
           {sub && (
             <p
-              className="text-[11px] font-[var(--font-display)] leading-tight truncate"
-              style={{ color, opacity: 0.7 }}
+              className="leading-tight truncate"
+              style={{ fontSize: 11, fontFamily: "var(--font-display)", color, opacity: 0.65 }}
             >
               {sub}
             </p>

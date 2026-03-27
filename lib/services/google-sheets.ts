@@ -32,6 +32,8 @@ function getAuth() {
     scopes: [
       "https://www.googleapis.com/auth/spreadsheets.readonly",
       "https://www.googleapis.com/auth/drive.readonly",
+      "https://www.googleapis.com/auth/calendar.events",
+      "https://www.googleapis.com/auth/calendar.readonly",
     ],
   })
 }
