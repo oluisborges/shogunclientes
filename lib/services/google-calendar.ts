@@ -16,7 +16,7 @@ const WORKING_SLOTS   = [...MORNING_SLOTS, ...AFTERNOON_SLOTS]
 // Participantes fixos sempre convidados (além do cliente e do gestor)
 const FIXED_ATTENDEES = ["xluisborges@gmail.com", "leo.gon.dacruz@gmail.com"]
 
-/** Auth via Service Account — para Sheets e Drive */
+/** Auth via Service Account — para Sheets, Drive e leitura de Calendar */
 function getAuth() {
   const email = process.env.GOOGLE_CLIENT_EMAIL
   const key   = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n")
@@ -38,7 +38,7 @@ function getOAuthAuth() {
   const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET
   const refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN
   if (!clientId || !clientSecret || !refreshToken) {
-    throw new Error("Credenciais OAuth2 do Google não configuradas (GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN).")
+    throw new Error("Credenciais OAuth2 não configuradas (GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN).")
   }
   const oauth2 = new google.auth.OAuth2(clientId, clientSecret)
   oauth2.setCredentials({ refresh_token: refreshToken })
@@ -95,12 +95,12 @@ export async function getAvailableSlots(targetYear: number, targetMonth: number)
   const timeMax = new Date(targetYear, targetMonth - 1, lastDay.getDate(), 23, 59, 59).toISOString()
 
   const eventsRes = await calendar.events.list({
-    calendarId:    FREEBUSY_CALENDAR_ID,
+    calendarId:   FREEBUSY_CALENDAR_ID,
     timeMin,
     timeMax,
-    singleEvents:  true,
-    orderBy:       "startTime",
-    timeZone:      TZ,
+    singleEvents: true,
+    orderBy:      "startTime",
+    timeZone:     TZ,
   })
 
   const events = eventsRes.data.items ?? []
@@ -154,53 +154,18 @@ export async function getAvailableSlots(targetYear: number, targetMonth: number)
 
 export interface CreateEventParams {
   scheduledAt:  Date
-  clientName:   string   // nome completo do contato
-  businessName: string   // nome da empresa
+  clientName:   string
+  businessName: string
   clientEmail?: string
   gestorEmail?: string
 }
 
 /**
- * Cria evento de reunião no Google Calendar com Meet automático e convites.
+ * Cria evento de reunião no Google Calendar com Meet automático e convidados.
+ * Usa OAuth2 para poder adicionar attendees.
  * Retorna o eventId do Google Calendar.
  */
 export async function createCalendarEvent(params: CreateEventParams): Promise<string> {
-  // 1. Tentar OAuth2 (melhor opção - pode convidar attendees)
-  try {
-    const { createCalendarEventOAuth2, isOAuth2Configured } = await import("./google-calendar-oauth2")
-    
-    if (await isOAuth2Configured()) {
-      console.log("Usando OAuth2 para criar evento com attendees")
-      return await createCalendarEventOAuth2({
-        ...params,
-        clientEmail: params.clientEmail || "" // Garante que não seja undefined
-      })
-    } else {
-      console.log("OAuth2 não configurado, tentando método híbrido")
-    }
-  } catch (error) {
-    console.warn("OAuth2 falhou, tentando método híbrido:", error)
-  }
-
-  // 2. Tentar método híbrido (Service Account + patch)
-  try {
-    const { createCalendarEventWithAttendees } = await import("./google-calendar-oauth")
-    return await createCalendarEventWithAttendees({
-      ...params,
-      clientEmail: params.clientEmail || ""
-    })
-  } catch (error) {
-    console.warn("Método híbrido falhou, usando fallback sem attendees:", error)
-    
-    // 3. Fallback básico sem attendees
-    return createCalendarEventBasic(params)
-  }
-}
-
-/**
- * Método básico sem attendees (fallback)
- */
-async function createCalendarEventBasic(params: CreateEventParams): Promise<string> {
   if (!CALENDAR_ID) throw new Error("GOOGLE_CALENDAR_ID não configurado.")
 
   const { scheduledAt, clientName, businessName, clientEmail, gestorEmail } = params
@@ -210,7 +175,6 @@ async function createCalendarEventBasic(params: CreateEventParams): Promise<stri
 
   const endAt = new Date(scheduledAt.getTime() + 30 * 60 * 1000)
 
-  // Formata data/hora para a descrição
   const dateFmt = scheduledAt.toLocaleDateString("pt-BR", {
     day: "2-digit", month: "2-digit", year: "numeric", timeZone: TZ,
   })
@@ -218,12 +182,11 @@ async function createCalendarEventBasic(params: CreateEventParams): Promise<stri
     hour: "2-digit", minute: "2-digit", timeZone: TZ,
   })
 
-  // Participantes na descrição (fallback)
-  const participantsList = [
+  const allAttendees = Array.from(new Set([
     ...FIXED_ATTENDEES,
     ...(clientEmail ? [clientEmail] : []),
     ...(gestorEmail ? [gestorEmail] : []),
-  ].filter(Boolean)
+  ])).map((email) => ({ email }))
 
   const title = `Grupo Shogun - Alinhamento (${clientName} | ${businessName})`
 
@@ -236,35 +199,31 @@ Neste encontro revisamos:
 
 ---
 
-Participantes:
-${participantsList.map(email => `- ${email}`).join('\n')}
-
----
-
 Data: ${dateFmt} às ${timeFmt}
 Duração: 30 minutos
 Frequência: Mensal`
 
   const res = await calendar.events.insert({
-    calendarId:           CALENDAR_ID,
+    calendarId:            CALENDAR_ID,
     conferenceDataVersion: 1,
+    sendUpdates:           "all",
     requestBody: {
       summary:     title,
       description,
       start: { dateTime: scheduledAt.toISOString(), timeZone: TZ },
       end:   { dateTime: endAt.toISOString(),        timeZone: TZ },
-      // conferenceData removido temporariamente para evitar erro
-      // conferenceData: {
-      //   createRequest: {
-      //     requestId: uuidv4(),
-      //     conferenceSolutionKey: { type: "hangoutsMeet" },
-      //   },
-      // },
+      attendees:   allAttendees,
+      conferenceData: {
+        createRequest: {
+          requestId:             uuidv4(),
+          conferenceSolutionKey: { type: "hangoutsMeet" },
+        },
+      },
       reminders: {
         useDefault: false,
         overrides: [
-          { method: "email",  minutes: 60 },
-          { method: "popup",  minutes: 15 },
+          { method: "email", minutes: 60 },
+          { method: "popup", minutes: 15 },
         ],
       },
     },
