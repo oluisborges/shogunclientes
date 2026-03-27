@@ -16,6 +16,7 @@ const WORKING_SLOTS   = [...MORNING_SLOTS, ...AFTERNOON_SLOTS]
 // Participantes fixos sempre convidados (além do cliente e do gestor)
 const FIXED_ATTENDEES = ["xluisborges@gmail.com", "leo.gon.dacruz@gmail.com"]
 
+/** Auth via Service Account — para Sheets e Drive */
 function getAuth() {
   const email = process.env.GOOGLE_CLIENT_EMAIL
   const key   = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n")
@@ -26,10 +27,22 @@ function getAuth() {
     scopes: [
       "https://www.googleapis.com/auth/spreadsheets.readonly",
       "https://www.googleapis.com/auth/drive.readonly",
-      "https://www.googleapis.com/auth/calendar.events",
       "https://www.googleapis.com/auth/calendar.readonly",
     ],
   })
+}
+
+/** Auth via OAuth2 — para criar/deletar eventos com convidados */
+function getOAuthAuth() {
+  const clientId     = process.env.GOOGLE_OAUTH_CLIENT_ID
+  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET
+  const refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error("Credenciais OAuth2 do Google não configuradas (GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN).")
+  }
+  const oauth2 = new google.auth.OAuth2(clientId, clientSecret)
+  oauth2.setCredentials({ refresh_token: refreshToken })
+  return oauth2
 }
 
 /** Retorna o 2º dia útil (seg-sex) de um mês */
@@ -192,7 +205,7 @@ async function createCalendarEventBasic(params: CreateEventParams): Promise<stri
 
   const { scheduledAt, clientName, businessName, clientEmail, gestorEmail } = params
 
-  const auth     = getAuth()
+  const auth     = getOAuthAuth()
   const calendar = google.calendar({ version: "v3", auth })
 
   const endAt = new Date(scheduledAt.getTime() + 30 * 60 * 1000)
@@ -263,7 +276,7 @@ Frequência: Mensal`
 /** Exclui um evento do Google Calendar */
 export async function deleteCalendarEvent(eventId: string): Promise<void> {
   if (!CALENDAR_ID) throw new Error("GOOGLE_CALENDAR_ID não configurado.")
-  const auth     = getAuth()
+  const auth     = getOAuthAuth()
   const calendar = google.calendar({ version: "v3", auth })
   await calendar.events.delete({ calendarId: CALENDAR_ID, eventId })
 }
