@@ -15,9 +15,9 @@ CREATE POLICY "gestores_admin_only" ON public.gestores
 
 -- Insere gestores iniciais (emails a editar no painel)
 INSERT INTO public.gestores (name, email) VALUES
-  ('Amannda', 'amannda@gruposhogun.com.br'),
-  ('Vitor',   'vitor@gruposhogun.com.br'),
-  ('Aléssia', 'alessia@gruposhogun.com.br')
+  ('Amannda', 'amanndaviick@gmail.com'),
+  ('Vitor',   'otvitor.gt@gmail.com'),
+  ('Aléssia', 'alessiacostademelo@gmail.com')
 ON CONFLICT (email) DO NOTHING;
 
 -- Adiciona nicho e gestor aos clientes

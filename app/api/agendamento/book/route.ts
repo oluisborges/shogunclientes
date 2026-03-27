@@ -110,6 +110,7 @@ export async function POST(request: Request) {
       scheduledAt,
       clientName,
       businessName: client.business_name,
+      niche:        client.niche ?? undefined,
       clientEmail,
       gestorEmail,
     })

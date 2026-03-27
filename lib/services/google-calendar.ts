@@ -13,8 +13,10 @@ const MORNING_SLOTS   = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00"
 const AFTERNOON_SLOTS = ["13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30"]
 const WORKING_SLOTS   = [...MORNING_SLOTS, ...AFTERNOON_SLOTS]
 
-// Participantes fixos sempre convidados (além do cliente e do gestor)
-const FIXED_ATTENDEES = ["xluisborges@gmail.com", "leo.gon.dacruz@gmail.com"]
+// Sempre convidados em todas as reuniões (donos do Grupo Shogun)
+const FIXED_ATTENDEES = ["leandrosamurait@gmail.com", "xluisborges@gmail.com"]
+// Convidado apenas em reuniões do nicho marmitarias (coordenador)
+const MARMITARIAS_ATTENDEE = "leo.gon.dacruz@gmail.com"
 
 /** Auth via Service Account — para Sheets, Drive e leitura de Calendar */
 function getAuth() {
@@ -156,6 +158,7 @@ export interface CreateEventParams {
   scheduledAt:  Date
   clientName:   string
   businessName: string
+  niche?:       string
   clientEmail?: string
   gestorEmail?: string
 }
@@ -168,7 +171,7 @@ export interface CreateEventParams {
 export async function createCalendarEvent(params: CreateEventParams): Promise<string> {
   if (!CALENDAR_ID) throw new Error("GOOGLE_CALENDAR_ID não configurado.")
 
-  const { scheduledAt, clientName, businessName, clientEmail, gestorEmail } = params
+  const { scheduledAt, clientName, businessName, niche, clientEmail, gestorEmail } = params
 
   const auth     = getOAuthAuth()
   const calendar = google.calendar({ version: "v3", auth })
@@ -184,6 +187,7 @@ export async function createCalendarEvent(params: CreateEventParams): Promise<st
 
   const allAttendees = Array.from(new Set([
     ...FIXED_ATTENDEES,
+    ...(niche === "marmitarias" ? [MARMITARIAS_ATTENDEE] : []),
     ...(clientEmail ? [clientEmail] : []),
     ...(gestorEmail ? [gestorEmail] : []),
   ])).map((email) => ({ email }))
