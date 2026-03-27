@@ -19,6 +19,7 @@ export async function GET() {
     .from("clients")
     .select("id, business_name, meta_account_id")
     .eq("active", true)
+    .not("profile_id", "is", null)
     .order("business_name")
 
   if (error) {
