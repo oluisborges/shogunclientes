@@ -84,7 +84,11 @@ export interface AvailableDay {
  * Retorna os slots disponíveis para o mês alvo consultando o Google Calendar.
  * Usa GOOGLE_FREEBUSY_CALENDAR_ID para checar horários ocupados.
  */
-export async function getAvailableSlots(targetYear: number, targetMonth: number): Promise<AvailableDay[]> {
+export async function getAvailableSlots(
+  targetYear: number,
+  targetMonth: number,
+  blockedDates: Set<string> = new Set()
+): Promise<AvailableDay[]> {
   if (!FREEBUSY_CALENDAR_ID) throw new Error("GOOGLE_FREEBUSY_CALENDAR_ID não configurado.")
 
   const auth     = getAuth()
@@ -139,6 +143,11 @@ export async function getAvailableSlots(targetYear: number, targetMonth: number)
       const dateStr = cur.toISOString().split("T")[0]
       const dd = String(cur.getDate()).padStart(2, "0")
       const mm = String(cur.getMonth() + 1).padStart(2, "0")
+
+      if (blockedDates.has(dateStr)) {
+        cur.setDate(cur.getDate() + 1)
+        continue
+      }
 
       const availableSlots = WORKING_SLOTS.filter(
         (slot) => !busySet.has(`${dateStr}T${slot}`)
