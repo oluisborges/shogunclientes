@@ -15,7 +15,7 @@ export async function GET() {
     const { data: client } = await adminClient
       .from("clients")
       .select("id, booking_credits, booking_credits_cycle, business_name")
-      .eq("user_id", user.id)
+      .eq("profile_id", user.id)
       .single()
 
     if (!client) return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 })

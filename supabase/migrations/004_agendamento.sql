@@ -17,11 +17,11 @@ CREATE TABLE IF NOT EXISTS public.bookings (
 -- RLS
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 
--- Clientes veem apenas seus próprios agendamentos
+-- Clientes veem apenas seus próprios agendamentos (clients usa profile_id, não user_id)
 CREATE POLICY "bookings_client_own" ON public.bookings
   FOR ALL USING (
     client_id IN (
-      SELECT id FROM public.clients WHERE user_id = auth.uid()
+      SELECT id FROM public.clients WHERE profile_id = auth.uid()
     )
   );
 

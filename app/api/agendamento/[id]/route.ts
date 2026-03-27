@@ -20,7 +20,7 @@ export async function DELETE(
     const { data: clientData } = await adminClient
       .from("clients")
       .select("id")
-      .eq("user_id", user.id)
+      .eq("profile_id", user.id)
       .single()
 
     if (!clientData) return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 })
