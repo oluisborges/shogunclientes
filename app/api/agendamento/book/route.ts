@@ -34,9 +34,9 @@ export async function POST(request: Request) {
     let clientQuery = adminClient
       .from("clients")
       .select(`
-        id, booking_credits, booking_credits_cycle, business_name, niche,
+        id, booking_credits, booking_credits_cycle, business_name, niche, profile_id,
         gestor:gestor_id ( email ),
-        profile:profile_id ( full_name, email )
+        profile:profile_id ( full_name )
       `)
 
     if (isAdmin && clientIdParam) {
@@ -48,6 +48,10 @@ export async function POST(request: Request) {
     const { data: client } = await clientQuery.single()
 
     if (!client) return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 })
+
+    // Busca email do cliente via auth
+    const { data: authUser } = await adminClient.auth.admin.getUserById(client.profile_id)
+    const clientEmail = authUser?.user?.email ?? user.email
 
     const cycle = getCurrentCycle()
 
@@ -94,12 +98,11 @@ export async function POST(request: Request) {
     }
 
     // Resolve nome do cliente e gestor
-    const profileData = client.profile as { full_name?: string; email?: string } | null
+    const profileData = client.profile as { full_name?: string } | null
     const gestorData  = client.gestor  as { email?: string }     | null
 
     const clientName  = profileData?.full_name ?? client.business_name
     const gestorEmail = gestorData?.email
-    const clientEmail = profileData?.email ?? user.email
 
     // Cria evento no Google Calendar
     const scheduledAt = new Date(`${slot}:00-03:00`) // São Paulo UTC-3
