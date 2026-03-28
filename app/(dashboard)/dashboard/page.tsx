@@ -13,6 +13,7 @@ import { useDateRangeContext } from "@/lib/hooks/useDateRangeContext"
 import { useClientContext } from "@/lib/hooks/useClientContext"
 import { fmtBRLFull, fmtBRLCents, fmtNum, fmtPct, calcDelta } from "@/lib/format"
 import type { MetricasPeriod } from "@/lib/hooks/useMetricas"
+import { ConfigError } from "@/components/ui/ConfigError"
 
 // Chart components loaded only when data is ready (keeps recharts out of initial bundle)
 const ChartSkeleton = () => <div className="animate-pulse bg-shogun-bg-elevated border border-shogun-border rounded-xl h-80" />
@@ -195,14 +196,12 @@ export default function MetricasPage() {
       )}
 
       {selectedClientId && error && (
-        <div className="text-center py-16">
-          <p className="text-shogun-danger font-[var(--font-display)] text-sm">{error}</p>
-        </div>
+        <ConfigError message={error} />
       )}
 
       {selectedClientId && !loading && !error && !data && (
         <div className="text-center py-16">
-          <p className="text-white/50 font-[var(--font-display)]">Configure a conta Meta nas configurações</p>
+          <p className="text-white/50 font-[var(--font-display)]">Nenhum dado disponível para o período selecionado</p>
         </div>
       )}
 

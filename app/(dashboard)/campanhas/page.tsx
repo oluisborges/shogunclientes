@@ -4,6 +4,7 @@ import { useState } from "react"
 import { DatePicker } from "@/components/ui/DatePicker"
 import { HubDadosCampanhas } from "@/components/campanhas/HubDadosCampanhas"
 import { useHubDados } from "@/lib/hooks/useHubDados"
+import { ConfigError } from "@/components/ui/ConfigError"
 import type { DateRange } from "@/types/date"
 
 function defaultPeriod(): DateRange {
@@ -19,21 +20,7 @@ export default function CampanhasPage() {
 
   const { campaigns, adsets, ads, loading, error } = useHubDados(campaignPeriod)
 
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <div className="text-shogun-danger text-sm font-[var(--font-display)] mb-4">
-          {error}
-        </div>
-        <a 
-          href="/configuracoes" 
-          className="text-shogun-accent text-sm font-[var(--font-display)] hover:underline"
-        >
-          Ir para Configurações →
-        </a>
-      </div>
-    )
-  }
+  if (error) return <ConfigError message={error} />
 
   return (
     <div className="space-y-6">

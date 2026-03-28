@@ -1,5 +1,16 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
+import { createAdminClient } from "@/lib/supabase/admin"
+
+// Routes only accessible by admins
+const ADMIN_PATHS = [
+  "/configuracoes",
+  "/shogunia",
+  "/disponibilidade",
+  "/usuarios",
+  "/clientes",
+  "/criar-cliente",
+]
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -53,6 +64,22 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = "/dashboard"
     return NextResponse.redirect(url)
+  }
+
+  // Admin-only pages: redirect non-admins to dashboard
+  if (user && !isPending && ADMIN_PATHS.some((p) => pathname.startsWith(p))) {
+    const admin = createAdminClient()
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+
+    if (profile?.role !== "admin") {
+      const url = request.nextUrl.clone()
+      url.pathname = "/dashboard"
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

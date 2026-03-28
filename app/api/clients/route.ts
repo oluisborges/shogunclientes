@@ -15,12 +15,27 @@ export async function GET() {
 
   const adminClient = createAdminClient()
 
-  const { data: clients, error } = await adminClient
+  // Check role: admins see all clients; clients see only their own
+  const { data: profile } = await adminClient
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  const isAdmin = profile?.role === "admin"
+
+  let query = adminClient
     .from("clients")
     .select("id, business_name, meta_account_id")
     .eq("active", true)
     .not("profile_id", "is", null)
     .order("business_name")
+
+  if (!isAdmin) {
+    query = query.eq("profile_id", user.id)
+  }
+
+  const { data: clients, error } = await query
 
   if (error) {
     return NextResponse.json(

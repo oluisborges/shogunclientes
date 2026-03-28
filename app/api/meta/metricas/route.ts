@@ -143,14 +143,32 @@ export async function GET(request: NextRequest) {
     .eq("id", clientId)
     .single()
 
-  if (clientError || !client?.meta_account_id || !client?.meta_access_token) {
+  if (clientError || !client?.meta_account_id) {
     return NextResponse.json(
-      { error: "Cliente sem conta Meta configurada" },
+      { error: "Conta Meta não configurada. Entre em contato com o suporte pelo grupo do Shogun." },
       { status: 404 }
     )
   }
 
-  const { meta_account_id: accountId, meta_access_token: accessToken } = client
+  // Use per-client token if set, otherwise fall back to global token
+  let accessToken = client.meta_access_token ?? null
+  if (!accessToken) {
+    const { data: setting } = await adminClient
+      .from("app_settings")
+      .select("value")
+      .eq("key", "meta_global_token")
+      .single()
+    accessToken = setting?.value ?? null
+  }
+
+  if (!accessToken) {
+    return NextResponse.json(
+      { error: "Token Meta não configurado. Entre em contato com o suporte pelo grupo do Shogun." },
+      { status: 404 }
+    )
+  }
+
+  const { meta_account_id: accountId } = client
   const insightFields =
     "spend,impressions,reach,clicks,ctr,cpc,cpp,frequency,purchase_roas,actions,action_values"
 
