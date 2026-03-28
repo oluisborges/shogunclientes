@@ -80,7 +80,7 @@ export function WeeklyEvolution({ data }: WeeklyEvolutionProps) {
               fontSize: 12,
             }}
             labelStyle={{ color: "#E8F5EE", marginBottom: 4 }}
-            formatter={(value: number, name: string) => [formatCurrency(value), name]}
+            formatter={(value, name) => [formatCurrency(Number(value ?? 0)), String(name)]}
           />
           <Line type="linear" dataKey="Meta" stroke="#8b5cf6" strokeWidth={2}
             strokeDasharray="6 3" dot={{ fill: "#8b5cf6", r: 3 }} activeDot={{ r: 5 }} />

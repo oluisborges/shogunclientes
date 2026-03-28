@@ -197,6 +197,7 @@ export default function ClientesPage() {
                   placeholder="Token de acesso"
                 />
               </div>
+            </div>
 
             <div>
               <label className="block text-sm font-[var(--font-display)] font-semibold text-shogun-text-secondary mb-2">

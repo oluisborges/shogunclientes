@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { ClientProvider } from "@/lib/hooks/useClientContext"
 import { DateRangeProvider } from "@/lib/hooks/useDateRangeContext"
 import { Sidebar } from "@/components/layout/Sidebar"

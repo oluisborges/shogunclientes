@@ -1,11 +1,25 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { CheckCircle, AlertCircle, Calendar, Save, Eye, EyeOff } from "lucide-react"
 
-export default function ConfiguracoesPage() {
+function SearchParamsHandler({ setError }: { setError: (e: string | null) => void }) {
   const searchParams = useSearchParams()
+  useEffect(() => {
+    const errorParam = searchParams.get("error")
+    if (errorParam) {
+      const messages: Record<string, string> = {
+        access_denied: "Acesso negado ao Google Calendar",
+        unauthorized: "Não autorizado",
+      }
+      setError(messages[errorParam] || "Erro desconhecido")
+    }
+  }, [searchParams, setError])
+  return null
+}
+
+export default function ConfiguracoesPage() {
   const [error, setError] = useState<string | null>(null)
 
   // Global Meta token (app-level)
@@ -44,26 +58,23 @@ export default function ConfiguracoesPage() {
     }
   }
 
-  useEffect(() => {
-    const errorParam = searchParams.get("error")
-    if (errorParam) {
-      const messages: Record<string, string> = {
-        access_denied: "Acesso negado ao Google Calendar",
-        unauthorized: "Não autorizado",
-      }
-      setError(messages[errorParam] || "Erro desconhecido")
-    }
-  }, [searchParams])
-
   const handleGoogleCalendarConnect = () => {
     window.location.href = "/api/auth/google/calendar"
   }
 
   return (
     <div className="p-6 max-w-4xl">
+      <Suspense fallback={null}>
+        <SearchParamsHandler setError={setError} />
+      </Suspense>
+
       <h1 className="text-2xl font-[var(--font-display)] font-bold text-shogun-text-primary mb-6">
         Configurações da Meta
       </h1>
+
+      {error && (
+        <div className="mb-4 px-4 py-3 bg-shogun-danger/10 border border-shogun-danger/30 rounded text-sm text-shogun-danger font-[var(--font-display)]">{error}</div>
+      )}
 
       <div className="space-y-6">
         {/* ── Token Global Meta App ── */}

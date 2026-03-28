@@ -321,7 +321,7 @@ export function MetaChart({ data }: MetaChartProps) {
                 fontSize: 12,
               }}
               labelStyle={{ color: "#E8F0EB", marginBottom: 4, fontWeight: 600 }}
-              formatter={(v: number, name: string) => [formatCurrency(v), name]}
+              formatter={(v, name) => [formatCurrency(Number(v ?? 0)), String(name)]}
             />
             <Line
               type="linear" dataKey="Meta" stroke="#8b5cf6" strokeWidth={2}
