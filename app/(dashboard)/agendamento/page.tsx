@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw } from "lucide-react"
 import type { AvailableDay } from "@/lib/services/google-calendar"
 import { useClientContext } from "@/lib/hooks/useClientContext"
+import { useActivityLog } from "@/lib/hooks/useActivityLog"
 
 interface Booking {
   id: string
@@ -67,6 +68,7 @@ export default function AgendamentoPage() {
   const [confirming, setConfirming] = useState(false)
 
   const { year, month } = getTargetMonth()
+  const logActivity = useActivityLog()
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -107,6 +109,10 @@ export default function AgendamentoPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
+      logActivity("booking", "Reunião Mensal", {
+        slot: `${selectedDay.date}T${selectedSlot}`,
+        label: `${selectedDay.label} às ${selectedSlot}`,
+      })
       await loadData()
       setConfirming(false)
     } catch (e) {
@@ -128,6 +134,10 @@ export default function AgendamentoPage() {
       const res = await fetch(cancelUrl, { method: "DELETE" })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
+      logActivity("cancellation", "Reunião Mensal", {
+        booking_id: myBooking.booking.id,
+        scheduled_at: myBooking.booking.scheduled_at,
+      })
       await loadData()
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao cancelar")

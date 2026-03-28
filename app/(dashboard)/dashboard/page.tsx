@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import dynamic from "next/dynamic"
 import {
   TrendingUp, Target, BarChart2, RotateCcw,
@@ -14,6 +14,7 @@ import { useClientContext } from "@/lib/hooks/useClientContext"
 import { fmtBRLFull, fmtBRLCents, fmtNum, fmtPct, calcDelta } from "@/lib/format"
 import type { MetricasPeriod } from "@/lib/hooks/useMetricas"
 import { ConfigError } from "@/components/ui/ConfigError"
+import { useActivityLog } from "@/lib/hooks/useActivityLog"
 
 // Chart components loaded only when data is ready (keeps recharts out of initial bundle)
 const ChartSkeleton = () => <div className="animate-pulse bg-shogun-bg-elevated border border-shogun-border rounded-xl h-80" />
@@ -109,6 +110,27 @@ export default function MetricasPage() {
   const { data, loading, error } = useMetricas()
   const [tab, setTab] = useState<Tab>("simples")
   const [showCompare, setShowCompare] = useState(false)
+  const logActivity = useActivityLog()
+
+  const handleDateRangeChange = useCallback((range: Parameters<typeof setDateRange>[0]) => {
+    setDateRange(range)
+    if (range) {
+      const fmt = (d: Date) => d.toLocaleDateString("pt-BR")
+      logActivity("period_change", "Dashboard", {
+        period: `${fmt(range.start)} → ${fmt(range.end)}`,
+      })
+    }
+  }, [setDateRange, logActivity])
+
+  const handleCompareRangeChange = useCallback((range: Parameters<typeof setCompareRange>[0]) => {
+    setCompareRange(range)
+    if (range) {
+      const fmt = (d: Date) => d.toLocaleDateString("pt-BR")
+      logActivity("compare_change", "Dashboard", {
+        compare: `${fmt(range.start)} → ${fmt(range.end)}`,
+      })
+    }
+  }, [setCompareRange, logActivity])
 
   const effectiveCompareRange = useMemo(() => {
     if (compareRange) return compareRange
@@ -155,7 +177,7 @@ export default function MetricasPage() {
         <div className="flex items-end gap-3">
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-[var(--font-display)] uppercase tracking-wider text-white/40 px-1">Período</span>
-            <DatePicker value={dateRange ?? undefined} onChange={setDateRange} />
+            <DatePicker value={dateRange ?? undefined} onChange={handleDateRangeChange} />
           </div>
           <button
             onClick={() => setShowCompare((v) => !v)}
@@ -175,7 +197,7 @@ export default function MetricasPage() {
                   </button>
                 )}
               </div>
-              <DatePicker value={effectiveCompareRange} onChange={setCompareRange} />
+              <DatePicker value={effectiveCompareRange} onChange={handleCompareRangeChange} />
             </div>
           )}
         </div>

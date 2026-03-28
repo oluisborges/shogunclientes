@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Send, Bot, Loader2, AlertCircle, Megaphone, BarChart3, UtensilsCrossed, Target, Sparkles } from "lucide-react"
+import { useActivityLog } from "@/lib/hooks/useActivityLog"
 
 interface Agent {
   id: string
@@ -75,6 +76,8 @@ export default function AgentesPage() {
   const [error, setError]             = useState<string | null>(null)
   const messagesEndRef                = useRef<HTMLDivElement>(null)
   const textareaRef                   = useRef<HTMLTextAreaElement>(null)
+  const logActivity                   = useActivityLog()
+  const hasLoggedAgentRef             = useRef<string | null>(null)
 
   const loadAgents = useCallback(async () => {
     setLoading(true)
@@ -99,6 +102,7 @@ export default function AgentesPage() {
     setMessages([])
     setError(null)
     setInput("")
+    hasLoggedAgentRef.current = null
   }
 
   async function handleSend() {
@@ -109,6 +113,12 @@ export default function AgentesPage() {
     setInput("")
     setSending(true)
     setError(null)
+
+    // Log first message to this agent session
+    if (hasLoggedAgentRef.current !== activeAgent.id) {
+      hasLoggedAgentRef.current = activeAgent.id
+      logActivity("agent_chat", "Shogun IA", { agent: activeAgent.name, category: activeAgent.category })
+    }
 
     try {
       const res = await fetch("/api/ai/chat", {

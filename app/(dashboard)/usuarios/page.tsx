@@ -66,7 +66,30 @@ interface ActivityLog {
   action_type: string
   page_label: string | null
   path: string
+  details: Record<string, string> | null
   created_at: string
+}
+
+const ACTION_LABELS: Record<string, string> = {
+  navigation:    "Navegação",
+  period_change: "Período",
+  compare_change:"Comparação",
+  agent_chat:    "ShogunIA",
+  booking:       "Agendamento",
+  cancellation:  "Cancelamento",
+}
+
+function activityDescription(log: ActivityLog): string {
+  const d = log.details
+  switch (log.action_type) {
+    case "navigation":    return log.page_label ?? log.path
+    case "period_change": return d?.period ?? log.path
+    case "compare_change":return d?.compare ?? log.path
+    case "agent_chat":    return d?.agent ? `Agente: ${d.agent}` : "Shogun IA"
+    case "booking":       return d?.label ? `Agendou ${d.label}` : "Reunião agendada"
+    case "cancellation":  return "Cancelou reunião"
+    default:              return log.page_label ?? log.path
+  }
 }
 
 const NICHES = [
@@ -614,21 +637,12 @@ export default function UsuariosPage() {
                           {log.user_name}
                         </td>
                         <td className="px-3 py-2.5">
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded-full text-xs font-[var(--font-display)] font-semibold ${
-                              log.action_type === "navigation"
-                                ? "bg-blue-500/15 text-blue-400"
-                                : "bg-amber-500/15 text-amber-400"
-                            }`}
-                          >
-                            {log.action_type === "navigation" ? "Navegação" : "Clique"}
+                          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-[var(--font-display)] font-semibold bg-shogun-bg-base border border-shogun-border text-shogun-text-secondary">
+                            {ACTION_LABELS[log.action_type] ?? log.action_type}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5 font-[var(--font-display)]">
-                          {log.page_label && (
-                            <span className="text-shogun-text-primary">{log.page_label} </span>
-                          )}
-                          <span className="text-shogun-text-muted text-xs">{log.path}</span>
+                        <td className="px-3 py-2.5 font-[var(--font-display)] text-shogun-text-primary">
+                          {activityDescription(log)}
                         </td>
                         <td className="px-3 py-2.5 text-shogun-text-muted font-[var(--font-display)] whitespace-nowrap text-xs">
                           {new Date(log.created_at).toLocaleString("pt-BR")}

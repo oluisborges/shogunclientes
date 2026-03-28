@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   if (profile?.role === "admin") return NextResponse.json({ ok: true })
 
   const body = await req.json()
-  const { action_type, page_label, path } = body
+  const { action_type, page_label, path, details } = body
   if (!action_type || !path) return NextResponse.json({ error: "Missing fields" }, { status: 400 })
 
   await admin.from("user_activity_logs").insert({
@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
     action_type,
     page_label: page_label ?? null,
     path,
+    details: details ?? null,
   })
 
   return NextResponse.json({ ok: true })
@@ -52,7 +53,7 @@ export async function GET(req: NextRequest) {
   let query = admin
     .from("user_activity_logs")
     .select(`
-      id, action_type, page_label, path, created_at, user_id,
+      id, action_type, page_label, path, details, created_at, user_id,
       profiles:user_id ( full_name, email: id )
     `)
     .order("created_at", { ascending: false })
@@ -72,6 +73,7 @@ export async function GET(req: NextRequest) {
       action_type: row.action_type,
       page_label: row.page_label,
       path: row.path,
+      details: row.details,
       created_at: row.created_at,
       user_name: profile?.full_name ?? "—",
     }
