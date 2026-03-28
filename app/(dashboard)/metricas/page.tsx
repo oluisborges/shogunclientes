@@ -2,9 +2,9 @@
 
 import { useState, useMemo } from "react"
 import {
-  ComposedChart,
   LineChart,
   Line,
+  BarChart,
   Bar,
   XAxis,
   YAxis,
@@ -92,6 +92,19 @@ function CompareRow({
       >
         {arrow} {Math.abs(change).toFixed(1)}%
       </span>
+    </div>
+  )
+}
+
+// ─── Section title ────────────────────────────────────────────────────────────
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 mb-4">
+      <div className="w-0.5 h-5 rounded-full bg-shogun-accent" />
+      <h2 className="text-base font-[var(--font-display)] font-semibold text-shogun-text-primary">
+        {children}
+      </h2>
     </div>
   )
 }
@@ -241,7 +254,7 @@ function DailyChart({ dailyData }: { dailyData: MetricasDaily[] }) {
   )
 }
 
-// ─── Age bar chart with conversion rate ───────────────────────────────────────
+// ─── Age bar chart ────────────────────────────────────────────────────────────
 
 function AgeBarChart({ ageStats }: { ageStats: MetricasAge[] }) {
   if (!ageStats.length) {
@@ -250,51 +263,51 @@ function AgeBarChart({ ageStats }: { ageStats: MetricasAge[] }) {
 
   const chartData = ageStats.map((a) => ({
     ...a,
-    rate: a.lpViews > 0 ? parseFloat(((a.purchases / a.lpViews) * 100).toFixed(1)) : 0,
+    rate: a.lpViews > 0 ? ((a.purchases / a.lpViews) * 100).toFixed(1) : "0",
   }))
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; color: string; name: string; dataKey: string }>; label?: string }) => {
     if (!active || !payload?.length) return null
+    const row = chartData.find((d) => d.age === label)
     return (
-      <div className="bg-shogun-bg-base border border-shogun-border rounded-lg px-3 py-2 font-[var(--font-display)] space-y-1">
-        <p className="text-white/40 text-xs mb-1">{label} anos</p>
+      <div className="bg-shogun-bg-base border border-shogun-border rounded-lg px-3 py-2 font-[var(--font-display)] space-y-1 min-w-[160px]">
+        <p className="text-white/40 text-xs mb-1.5">{label} anos</p>
         {payload.map((p) => (
           <p key={p.dataKey} style={{ color: p.color }} className="font-[var(--font-data)] font-semibold text-xs">
-            {p.name}: {p.dataKey === "rate" ? `${p.value}%` : fmtNum(p.value)}
+            {p.name}: {fmtNum(p.value)}
           </p>
         ))}
+        {row && (
+          <p className="text-xs font-[var(--font-display)] text-white/50 pt-1 border-t border-white/10">
+            Taxa de compra: <span className="text-shogun-accent font-semibold">{row.rate}%</span>
+          </p>
+        )}
       </div>
     )
   }
 
   return (
     <div>
-      <div className="flex items-center gap-5 mb-4 flex-wrap">
-        {[
-          { color: "#95D600", label: "Compras", square: true },
-          { color: "#3b82f6", label: "Visualização de Cardápio", square: true },
-          { color: "#f59e0b", label: "Taxa de compra (%)", square: false },
-        ].map((item) => (
-          <div key={item.label} className="flex items-center gap-2">
-            {item.square
-              ? <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: item.color }} />
-              : <div className="w-4 h-[2px] rounded-full" style={{ backgroundColor: item.color }} />
-            }
-            <span className="text-xs font-[var(--font-display)] text-white/50">{item.label}</span>
-          </div>
-        ))}
+      <div className="flex items-center gap-5 mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-sm bg-[#95D600]" />
+          <span className="text-xs font-[var(--font-display)] text-white/50">Compras</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-sm bg-[#3b82f6]" />
+          <span className="text-xs font-[var(--font-display)] text-white/50">Visualização de Cardápio</span>
+        </div>
+        <span className="text-xs font-[var(--font-display)] text-white/35 ml-1">· taxa de compra no tooltip</span>
       </div>
       <ResponsiveContainer width="100%" height={260}>
-        <ComposedChart data={chartData} margin={{ top: 4, right: 40, left: 0, bottom: 0 }} barCategoryGap="30%">
+        <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barCategoryGap="35%">
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-shogun-border)" vertical={false} />
           <XAxis dataKey="age" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="left" orientation="left" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} tickFormatter={fmtNum} width={36} allowDecimals={false} />
-          <YAxis yAxisId="right" orientation="right" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} width={40} />
+          <YAxis tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} tickFormatter={fmtNum} width={36} allowDecimals={false} />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-          <Bar yAxisId="left" dataKey="purchases" name="Compras" fill="#95D600" radius={[4, 4, 0, 0]} />
-          <Bar yAxisId="left" dataKey="lpViews" name="Visualização de Cardápio" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-          <Line yAxisId="right" type="linear" dataKey="rate" name="Taxa de compra (%)" stroke="#f59e0b" strokeWidth={2} dot={{ fill: "#f59e0b", r: 4, strokeWidth: 0 }} activeDot={{ r: 5, fill: "#f59e0b", strokeWidth: 0 }} />
-        </ComposedChart>
+          <Bar dataKey="purchases" name="Compras" fill="#95D600" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="lpViews" name="Visualização de Cardápio" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+        </BarChart>
       </ResponsiveContainer>
     </div>
   )
@@ -304,40 +317,36 @@ function AgeBarChart({ ageStats }: { ageStats: MetricasAge[] }) {
 
 function PerformanceFunnel({ cur }: { cur: MetricasPeriod }) {
   const steps = [
-    { label: "Alcance", sub: "pessoas atingidas", value: cur.reach, color: "#95D600" },
-    { label: "Cliques", sub: "cliques no anúncio", value: cur.linkClicks, color: "#3b82f6" },
-    { label: "Visualização de Cardápio", sub: "acessaram o cardápio", value: cur.lpViews, color: "#f59e0b" },
-    { label: "Compras", sub: "pedidos realizados", value: cur.purchases, color: "#ec4899" },
+    { label: "Alcance", sub: "pessoas atingidas", value: cur.reach },
+    { label: "Cliques", sub: "cliques no anúncio", value: cur.linkClicks },
+    { label: "Visualização de Cardápio", sub: "acessaram o cardápio", value: cur.lpViews },
+    { label: "Compras", sub: "pedidos realizados", value: cur.purchases },
   ]
 
   return (
-    <div className="flex items-stretch w-full gap-0">
+    <div className="flex items-stretch w-full">
       {steps.map((step, i) => {
         const next = steps[i + 1]
         const rate = next && step.value > 0 ? (next.value / step.value) * 100 : null
         return (
           <div key={step.label} className="flex items-center flex-1 min-w-0">
-            <div className="flex-1 flex flex-col items-center gap-2 p-5 bg-shogun-bg-base border border-shogun-border rounded-2xl">
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: step.color }}
-              />
-              <span className="text-[10px] font-[var(--font-display)] uppercase tracking-wider text-white/40 text-center leading-tight">
+            <div className="flex-1 flex flex-col items-center gap-1.5 p-5 bg-shogun-bg-base border border-shogun-border rounded-2xl text-center">
+              <span className="text-[10px] font-[var(--font-display)] uppercase tracking-widest text-white/40 leading-tight">
                 {step.label}
               </span>
-              <span className="font-[var(--font-data)] text-3xl font-bold" style={{ color: step.color }}>
+              <span className="font-[var(--font-data)] text-3xl font-bold text-shogun-text-primary">
                 {fmtNum(step.value)}
               </span>
-              <span className="text-[10px] font-[var(--font-display)] text-white/30 text-center">
+              <span className="text-[10px] font-[var(--font-display)] text-white/30">
                 {step.sub}
               </span>
             </div>
             {next && (
-              <div className="flex flex-col items-center px-2 shrink-0 gap-1">
+              <div className="flex flex-col items-center px-2.5 shrink-0 gap-0.5">
                 <span className="text-xs font-[var(--font-display)] font-bold text-shogun-accent whitespace-nowrap">
                   {rate !== null ? `${rate.toFixed(1)}%` : "—"}
                 </span>
-                <ArrowRight size={16} className="text-white/25" />
+                <ArrowRight size={15} className="text-white/25" />
               </div>
             )}
           </div>
@@ -569,11 +578,16 @@ export default function MetricasPage() {
         <>
           {/* ══════════════════ SIMPLES ══════════════════ */}
           {tab === "simples" && (
-            <div className="space-y-5">
+            <div className="space-y-6">
               {kpiCards}
               <ShogunCard>
-                <h2 className="text-base font-[var(--font-display)] font-semibold text-shogun-text-primary mb-1">Evolução diária</h2>
-                <p className="text-xs text-white/40 font-[var(--font-display)] mb-4">Pedidos, receita e investimento por dia no período selecionado</p>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-0.5 h-5 rounded-full bg-shogun-accent" />
+                  <h2 className="text-base font-[var(--font-display)] font-semibold text-shogun-text-primary">Evolução diária</h2>
+                </div>
+                <p className="text-xs text-white/40 font-[var(--font-display)] mb-5 pl-2.5">
+                  Pedidos, receita e investimento por dia no período selecionado
+                </p>
                 <DailyChart dailyData={data.dailyData} />
               </ShogunCard>
             </div>
@@ -581,16 +595,16 @@ export default function MetricasPage() {
 
           {/* ══════════════════ AVANÇADO ══════════════════ */}
           {tab === "avancado" && (
-            <div className="space-y-6">
+            <div className="space-y-8">
               {/* Resumo executivo */}
               <section>
-                <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">Resumo executivo</h2>
+                <SectionTitle>Resumo executivo</SectionTitle>
                 {kpiCards}
               </section>
 
               {/* Métricas detalhadas */}
               <section>
-                <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">Métricas detalhadas</h2>
+                <SectionTitle>Métricas detalhadas</SectionTitle>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <MetricCard label="Alcance total" value={fmtNum(cur.reach)} prevValue={fmtNum(prev.reach)} change={calcDelta(cur.reach, prev.reach)} showCompare={showCompare} />
                   <MetricCard label="Impressões totais" value={fmtNum(cur.impressions)} prevValue={fmtNum(prev.impressions)} change={calcDelta(cur.impressions, prev.impressions)} showCompare={showCompare} />
@@ -600,7 +614,7 @@ export default function MetricasPage() {
                   <MetricCard label="Adições ao carrinho" value={fmtNum(cur.addToCart)} prevValue={fmtNum(prev.addToCart)} change={calcDelta(cur.addToCart, prev.addToCart)} showCompare={showCompare} />
                   <MetricCard label="Finalizações de compra iniciadas" value={fmtNum(cur.initiateCheckout)} prevValue={fmtNum(prev.initiateCheckout)} change={calcDelta(cur.initiateCheckout, prev.initiateCheckout)} showCompare={showCompare} />
                   <MetricCard label="Compras" value={fmtNum(cur.purchases)} prevValue={fmtNum(prev.purchases)} change={calcDelta(cur.purchases, prev.purchases)} showCompare={showCompare} />
-                  <MetricCard label="CPM médio (Custo Por Mil visualizações de cardápio)" value={fmtBRLCents(cur.cpp)} prevValue={fmtBRLCents(prev.cpp)} change={calcDelta(cur.cpp, prev.cpp)} positiveGood={false} showCompare={showCompare} />
+                  <MetricCard label="CPM médio (Custo Por Mil visualizações de anúncio)" value={fmtBRLCents(cur.cpp)} prevValue={fmtBRLCents(prev.cpp)} change={calcDelta(cur.cpp, prev.cpp)} positiveGood={false} showCompare={showCompare} />
                   <MetricCard label="CPC médio (Custo Por Clique)" value={fmtBRLCents(cur.cpc)} prevValue={fmtBRLCents(prev.cpc)} change={calcDelta(cur.cpc, prev.cpc)} positiveGood={false} showCompare={showCompare} />
                   <MetricCard label="Custo por compra" value={fmtBRLCents(cur.costPerPurchase)} prevValue={fmtBRLCents(prev.costPerPurchase)} change={calcDelta(cur.costPerPurchase, prev.costPerPurchase)} positiveGood={false} showCompare={showCompare} />
                   <MetricCard label="Frequência" value={cur.frequency.toFixed(2)} prevValue={prev.frequency.toFixed(2)} change={calcDelta(cur.frequency, prev.frequency)} positiveGood={false} showCompare={showCompare} />
@@ -610,19 +624,30 @@ export default function MetricasPage() {
               {/* Público comprador + Faixa etária */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <ShogunCard>
-                  <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">Público comprador</h2>
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-0.5 h-5 rounded-full bg-shogun-accent" />
+                    <h2 className="text-base font-[var(--font-display)] font-semibold text-shogun-text-primary">Público comprador</h2>
+                  </div>
                   <GenderDonut genderStats={data.genderStats} />
                 </ShogunCard>
                 <ShogunCard>
-                  <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-1">Faixa etária</h2>
-                  <p className="text-xs text-white/40 font-[var(--font-display)] mb-4">Compras e visualizações de cardápio por idade, com taxa de compra</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-0.5 h-5 rounded-full bg-shogun-accent" />
+                    <h2 className="text-base font-[var(--font-display)] font-semibold text-shogun-text-primary">Faixa etária</h2>
+                  </div>
+                  <p className="text-xs text-white/40 font-[var(--font-display)] mb-4 pl-2.5">
+                    Compras e visualizações de cardápio por faixa de idade
+                  </p>
                   <AgeBarChart ageStats={data.ageStats} />
                 </ShogunCard>
               </div>
 
               {/* Funil de performance — full width at bottom */}
               <ShogunCard>
-                <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-6">Funil de performance</h2>
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="w-0.5 h-5 rounded-full bg-shogun-accent" />
+                  <h2 className="text-base font-[var(--font-display)] font-semibold text-shogun-text-primary">Funil de performance</h2>
+                </div>
                 <PerformanceFunnel cur={cur} />
               </ShogunCard>
             </div>
