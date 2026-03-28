@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Fragment } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { inputCls, labelCls, selectCls } from "@/lib/form-styles"
@@ -669,8 +669,8 @@ export default function UsuariosPage() {
               </thead>
               <tbody>
                 {users.map((user, i) => (
-                  <>
-                    <tr key={user.id} className={i % 2 === 0 ? "bg-shogun-bg-surface border-b border-shogun-border/50" : "bg-shogun-bg-base border-b border-shogun-border/50"}>
+                  <Fragment key={user.id}>
+                    <tr className={i % 2 === 0 ? "bg-shogun-bg-surface border-b border-shogun-border/50" : "bg-shogun-bg-base border-b border-shogun-border/50"}>
                       <td className="px-4 py-3 text-sm text-shogun-text-primary font-[var(--font-display)]">{user.full_name ?? <span className="text-shogun-text-muted">—</span>}</td>
                       <td className="px-4 py-3 text-sm text-shogun-text-secondary font-[var(--font-display)]">{user.email}</td>
                       <td className="px-4 py-3 text-sm text-shogun-text-primary font-[var(--font-display)]">
@@ -738,7 +738,7 @@ export default function UsuariosPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
