@@ -21,7 +21,10 @@ export async function GET() {
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single()
   const isAdmin = profile?.role === "admin"
 
-  let query = admin.from("ai_agents").select("id, name, category, icon_name, system_prompt, active, display_order").order("display_order")
+  const fields = isAdmin
+    ? "id, name, category, icon_name, system_prompt, active, display_order, api_key"
+    : "id, name, category, icon_name, system_prompt, active, display_order"
+  let query = admin.from("ai_agents").select(fields).order("display_order")
   if (!isAdmin) query = query.eq("active", true)
 
   const { data, error } = await query
@@ -45,6 +48,7 @@ export async function POST(req: NextRequest) {
       system_prompt: body.system_prompt ?? "",
       active:        body.active ?? true,
       display_order: body.display_order ?? 0,
+      api_key:       body.api_key ?? "",
     })
     .select()
     .single()

@@ -274,7 +274,7 @@ export default function ShogunIAConfigPage() {
                       <button
                         onClick={() => {
                           setEditingId(agent.id)
-                          setEditForm({ name: agent.name, category: agent.category, icon_name: agent.icon_name, system_prompt: agent.system_prompt, active: agent.active, api_key: "" })
+                          setEditForm({ name: agent.name, category: agent.category, icon_name: agent.icon_name, system_prompt: agent.system_prompt, active: agent.active, api_key: agent.api_key })
                         }}
                         className="p-1.5 text-shogun-text-muted hover:text-shogun-accent transition-colors"
                       >
