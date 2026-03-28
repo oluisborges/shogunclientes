@@ -35,10 +35,21 @@ interface MetaGenderResponse {
   data: MetaGenderInsight[]
 }
 
+interface MetaAgeInsight {
+  age: string
+  actions?: MetaAction[]
+  action_values?: MetaAction[]
+}
+
+interface MetaAgeResponse {
+  data: MetaAgeInsight[]
+}
+
 interface MetaDailyInsight {
   date_start: string
   spend?: string
   actions?: MetaAction[]
+  action_values?: MetaAction[]
 }
 
 interface MetaDailyResponse {
@@ -179,7 +190,14 @@ export async function GET(request: NextRequest) {
     }
     if (currentTimeRange) dailyParams.time_range = currentTimeRange
 
-    const [currentInsights, prevInsights, campaignsData, accountData, genderData, dailyInsights] =
+    const ageParams: Record<string, string> = {
+      fields: "actions,action_values",
+      breakdowns: "age",
+      level: "account",
+    }
+    if (currentTimeRange) ageParams.time_range = currentTimeRange
+
+    const [currentInsights, prevInsights, campaignsData, accountData, genderData, dailyInsights, ageData] =
       await Promise.all([
         metaFetch<MetaInsightsResponse>({
           endpoint: `/${accountId}/insights`,
@@ -213,6 +231,11 @@ export async function GET(request: NextRequest) {
           accessToken,
           params: dailyParams,
         }).catch(() => ({ data: [] } as MetaDailyResponse)),
+        metaFetch<MetaAgeResponse>({
+          endpoint: `/${accountId}/insights`,
+          accessToken,
+          params: ageParams,
+        }).catch(() => ({ data: [] } as MetaAgeResponse)),
       ])
 
     // Compute balance
@@ -264,6 +287,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Age breakdown
+    const ageStats = (ageData.data || [])
+      .map((a) => ({
+        age: a.age,
+        purchases: extractAction(a.actions, "purchase"),
+        lpViews: extractAction(a.actions, "landing_page_view"),
+      }))
+      .filter((a) => a.purchases > 0 || a.lpViews > 0)
+      .sort((a, b) => parseInt(a.age) - parseInt(b.age))
+
     return NextResponse.json({
       balance,
       current,
@@ -271,6 +304,7 @@ export async function GET(request: NextRequest) {
       campaigns: campaignsData.data || [],
       genderStats,
       dailyData,
+      ageStats,
     })
   } catch (err) {
     console.error("Métricas API error:", err)

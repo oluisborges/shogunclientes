@@ -42,6 +42,12 @@ export interface MetricasDaily {
   purchaseValue: number
 }
 
+export interface MetricasAge {
+  age: string
+  purchases: number
+  lpViews: number
+}
+
 export interface MetricasData {
   balance: number
   current: MetricasPeriod
@@ -49,6 +55,7 @@ export interface MetricasData {
   campaigns: MetricasCampaign[]
   genderStats: MetricasGender[]
   dailyData: MetricasDaily[]
+  ageStats: MetricasAge[]
 }
 
 interface UseMetricasReturn {
