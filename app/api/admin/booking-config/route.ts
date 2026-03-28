@@ -50,11 +50,13 @@ export async function POST(request: Request) {
 
   // Remove qualquer bloqueio existente para o mesmo dia/slot antes de inserir
   if (blocked_time) {
-    await admin.from("booking_blocked_slots")
+    const delRes = await admin.from("booking_blocked_slots")
       .delete().eq("blocked_date", blocked_date).eq("blocked_time", blocked_time)
+    if (delRes.error) return NextResponse.json({ error: `Erro ao remover slot existente: ${delRes.error.message}` }, { status: 500 })
   } else {
-    await admin.from("booking_blocked_slots")
+    const delRes = await admin.from("booking_blocked_slots")
       .delete().eq("blocked_date", blocked_date).is("blocked_time", null)
+    if (delRes.error) return NextResponse.json({ error: `Erro ao remover dia existente: ${delRes.error.message}` }, { status: 500 })
   }
 
   const { data, error } = await admin
@@ -63,7 +65,7 @@ export async function POST(request: Request) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: error.message, detail: error.details, hint: error.hint }, { status: 500 })
   return NextResponse.json(data)
 }
 

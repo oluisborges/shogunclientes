@@ -131,7 +131,11 @@ export default function DisponibilidadePage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ blocked_date: dateStr, reason: reason || null }),
         })
-        if (!res.ok) { const e = await res.json(); setError(e.error ?? "Erro ao bloquear dia"); return }
+        if (!res.ok) {
+          const e = await res.json()
+          setError(`${e.error ?? "Erro ao bloquear dia"}${e.detail ? ` — ${e.detail}` : ""}${e.hint ? ` (${e.hint})` : ""}`)
+          return
+        }
       }
       await loadConfig()
     } catch (e) {
@@ -156,7 +160,11 @@ export default function DisponibilidadePage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ blocked_date: dateStr, blocked_time: time, reason: reason || null }),
         })
-        if (!res.ok) { const e = await res.json(); setError(e.error ?? "Erro ao bloquear horário"); return }
+        if (!res.ok) {
+          const e = await res.json()
+          setError(`${e.error ?? "Erro ao bloquear horário"}${e.detail ? ` — ${e.detail}` : ""}${e.hint ? ` (${e.hint})` : ""}`)
+          return
+        }
       }
       await loadConfig()
     } catch (e) {
