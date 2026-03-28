@@ -6,6 +6,7 @@ interface AgentRow {
   system_prompt: string
   active: boolean
   provider: string
+  model: string | null
   api_key: string | null
 }
 
@@ -14,7 +15,7 @@ interface Message {
   content: string
 }
 
-async function callAnthropic(apiKey: string, systemPrompt: string, messages: Message[]) {
+async function callAnthropic(apiKey: string, model: string, systemPrompt: string, messages: Message[]) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -23,7 +24,7 @@ async function callAnthropic(apiKey: string, systemPrompt: string, messages: Mes
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-5",
+      model,
       max_tokens: 1024,
       system: systemPrompt || "Você é um assistente útil da Shogun. Responda em português brasileiro.",
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
@@ -34,7 +35,7 @@ async function callAnthropic(apiKey: string, systemPrompt: string, messages: Mes
   return data.content?.[0]?.text ?? ""
 }
 
-async function callOpenAI(apiKey: string, systemPrompt: string, messages: Message[]) {
+async function callOpenAI(apiKey: string, model: string, systemPrompt: string, messages: Message[]) {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -42,7 +43,7 @@ async function callOpenAI(apiKey: string, systemPrompt: string, messages: Messag
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
+      model,
       max_tokens: 1024,
       messages: [
         { role: "system", content: systemPrompt || "Você é um assistente útil. Responda em português brasileiro." },
@@ -55,7 +56,7 @@ async function callOpenAI(apiKey: string, systemPrompt: string, messages: Messag
   return data.choices?.[0]?.message?.content ?? ""
 }
 
-async function callGemini(apiKey: string, systemPrompt: string, messages: Message[]) {
+async function callGemini(apiKey: string, model: string, systemPrompt: string, messages: Message[]) {
   const contents = messages.map((m) => ({
     role: m.role === "assistant" ? "model" : "user",
     parts: [{ text: m.content }],
@@ -66,7 +67,7 @@ async function callGemini(apiKey: string, systemPrompt: string, messages: Messag
   }
   if (systemPrompt) body.system_instruction = { parts: [{ text: systemPrompt }] }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
   const res = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -90,13 +91,22 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient()
   const { data: agent, error: agentError } = await admin
     .from("ai_agents")
-    .select("system_prompt, active, provider, api_key")
+    .select("system_prompt, active, provider, model, api_key")
     .eq("id", agent_id)
     .single()
 
   if (agentError || !agent) return NextResponse.json({ error: "Agent not found" }, { status: 404 })
   const a = agent as AgentRow
   if (!a.active) return NextResponse.json({ error: "Agent is disabled" }, { status: 403 })
+
+  // Model: comes from DB (configured by admin in ShogunIA)
+  const model = a.model?.trim() || ""
+  if (!model) {
+    return NextResponse.json(
+      { error: "Modelo não configurado para este agente. Configure em Config. ShogunIA." },
+      { status: 503 }
+    )
+  }
 
   // API key: per-agent > env fallback
   const apiKey = a.api_key?.trim() ||
@@ -114,11 +124,11 @@ export async function POST(req: NextRequest) {
   try {
     let text = ""
     if (a.provider === "openai") {
-      text = await callOpenAI(apiKey, a.system_prompt, messages)
+      text = await callOpenAI(apiKey, model, a.system_prompt, messages)
     } else if (a.provider === "google") {
-      text = await callGemini(apiKey, a.system_prompt, messages)
+      text = await callGemini(apiKey, model, a.system_prompt, messages)
     } else {
-      text = await callAnthropic(apiKey, a.system_prompt, messages)
+      text = await callAnthropic(apiKey, model, a.system_prompt, messages)
     }
     return NextResponse.json({ content: text })
   } catch (e) {
