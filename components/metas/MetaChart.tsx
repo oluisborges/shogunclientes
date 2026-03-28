@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts"
-import { Lock, LockOpen } from "lucide-react"
+import { Lock, LockOpen, Trophy } from "lucide-react"
 import { formatCurrency, formatCurrencyInt } from "@/lib/metas/utils"
 import type { MonthData } from "@/lib/metas/utils"
 
@@ -31,18 +31,15 @@ const LEGEND = [
   { label: "Tráfego", color: "#f97316", dashed: true },
 ]
 
-const CONFETTI_PIECES = [
-  { color: "#95D600", left: "15%", delay: 0 },
-  { color: "#f97316", left: "28%", delay: 0.12 },
-  { color: "#8b5cf6", left: "42%", delay: 0.04 },
-  { color: "#ec4899", left: "55%", delay: 0.2 },
-  { color: "#f59e0b", left: "68%", delay: 0.08 },
-  { color: "#3b82f6", left: "80%", delay: 0.28 },
-  { color: "#95D600", left: "22%", delay: 0.18 },
-  { color: "#f97316", left: "72%", delay: 0.32 },
-  { color: "#ec4899", left: "38%", delay: 0.24 },
-  { color: "#8b5cf6", left: "60%", delay: 0.06 },
-]
+// 36 confetti pieces: varied sizes, colors, positions, delays
+const COLORS = ["#95D600", "#f97316", "#8b5cf6", "#ec4899", "#f59e0b", "#3b82f6", "#10b981", "#ef4444"]
+const CONFETTI_PIECES = Array.from({ length: 36 }, (_, i) => ({
+  color: COLORS[i % COLORS.length],
+  left: `${3 + i * 2.6}%`,
+  delay: (i * 0.055) % 0.9,
+  size: 7 + (i % 5) * 3,
+  rotate: i % 2 === 0 ? 360 : -360,
+}))
 
 function getMotivationalText(pct: number): string | null {
   if (pct >= 100) return null
@@ -69,12 +66,12 @@ export function MetaChart({ data }: MetaChartProps) {
   useEffect(() => {
     if (atingido) {
       setCelebrating(true)
-      const t = setTimeout(() => setCelebrating(false), 3000)
+      const t = setTimeout(() => setCelebrating(false), 3500)
       return () => clearTimeout(t)
     }
   }, [atingido])
 
-  // Show motivational text only for the current month
+  // Motivational text: only for current month
   const now = new Date()
   const isCurrentMonth =
     data.year === now.getFullYear() && data.month === now.getMonth() + 1
@@ -86,55 +83,86 @@ export function MetaChart({ data }: MetaChartProps) {
       ? ((data.totalTrafego / data.totalFaturamento) * 100).toFixed(0)
       : "0"
 
-  const badgeColors = atingido
-    ? { bg: "radial-gradient(circle, rgba(149,214,0,0.3) 0%, rgba(149,214,0,0.06) 100%)", border: "2px solid rgba(149,214,0,0.8)", text: "#95D600", sub: "#5a8a00" }
-    : { bg: "radial-gradient(circle, rgba(245,158,11,0.3) 0%, rgba(245,158,11,0.06) 100%)", border: "2px solid rgba(245,158,11,0.6)", text: "#f59e0b", sub: "#b45309" }
-
   return (
     <div
       className="rounded-xl flex flex-col gap-5 overflow-hidden relative"
       style={{ background: "#1A3A31", border: "1px solid #2A5040", padding: "28px 32px" }}
     >
-      {/* ── Confetti ── */}
-      {celebrating && (
-        <>
-          <style>{`
-            @keyframes confetti-rise {
-              0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
-              80%  { opacity: 0.8; }
-              100% { transform: translateY(-200px) rotate(540deg) scale(0.5); opacity: 0; }
-            }
-          `}</style>
-          {CONFETTI_PIECES.map((c, i) => (
-            <div
-              key={i}
-              style={{
-                position: "absolute",
-                bottom: "35%",
-                left: c.left,
-                width: 9,
-                height: 9,
-                borderRadius: 2,
-                background: c.color,
-                animation: `confetti-rise 2s ease-out ${c.delay}s forwards`,
-                pointerEvents: "none",
-                zIndex: 10,
-              }}
-            />
-          ))}
-        </>
-      )}
+      {/* ── Keyframes ── */}
+      <style>{`
+        @keyframes confetti-burst {
+          0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+          70%  { opacity: 0.9; }
+          100% { transform: translateY(-260px) rotate(var(--rot)) scale(0.4); opacity: 0; }
+        }
+        @keyframes badge-glow-pulse {
+          0%, 100% { box-shadow: 0 0 12px 3px rgba(149,214,0,0.35), 0 0 28px 6px rgba(149,214,0,0.15); }
+          50%       { box-shadow: 0 0 22px 8px rgba(149,214,0,0.6),  0 0 48px 12px rgba(149,214,0,0.25); }
+        }
+        @keyframes badge-scale-in {
+          0%   { transform: scale(0.6); opacity: 0; }
+          70%  { transform: scale(1.1); }
+          100% { transform: scale(1);   opacity: 1; }
+        }
+        @keyframes motivational-glow {
+          0%, 100% { box-shadow: 0 0 6px 1px rgba(149,214,0,0.2); opacity: 0.9; }
+          50%       { box-shadow: 0 0 14px 3px rgba(149,214,0,0.45); opacity: 1; }
+        }
+      `}</style>
+
+      {/* ── Confetti burst ── */}
+      {celebrating && CONFETTI_PIECES.map((c, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            bottom: "30%",
+            left: c.left,
+            width: c.size,
+            height: c.size,
+            borderRadius: c.size > 12 ? "50%" : 2,
+            background: c.color,
+            "--rot": `${c.rotate}deg`,
+            animation: `confetti-burst 2.2s ease-out ${c.delay}s forwards`,
+            pointerEvents: "none",
+            zIndex: 20,
+          } as React.CSSProperties}
+        />
+      ))}
 
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <p
-            className="uppercase tracking-widest mb-4"
-            style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "#808080" }}
-          >
-            Performance do Mês
-          </p>
 
+          {/* "PERFORMANCE DO MÊS" + motivational text inline */}
+          <div className="flex items-center gap-3 flex-wrap mb-4">
+            <p
+              className="uppercase tracking-widest"
+              style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "#808080" }}
+            >
+              Performance do Mês
+            </p>
+            {motivationalText && (
+              <span
+                style={{
+                  fontSize: 11,
+                  fontFamily: "var(--font-display)",
+                  fontWeight: 600,
+                  color: "#95D600",
+                  background: "rgba(149,214,0,0.08)",
+                  border: "1px solid rgba(149,214,0,0.25)",
+                  borderRadius: 999,
+                  padding: "2px 10px",
+                  animation: "motivational-glow 2.5s ease-in-out infinite",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {motivationalText}
+              </span>
+            )}
+          </div>
+
+          {/* Big value */}
           <div className="flex items-baseline gap-4 flex-wrap">
             <span
               className="font-bold leading-none"
@@ -158,39 +186,66 @@ export function MetaChart({ data }: MetaChartProps) {
               </span>
             </p>
           )}
+        </div>
 
-          {motivationalText && (
-            <p
-              className="mt-3"
-              style={{ fontSize: 13, fontFamily: "var(--font-display)", color: "#95D600", fontWeight: 500 }}
+        {/* ── Badge ── */}
+        {atingido ? (
+          <div
+            className="flex-shrink-0 flex flex-col items-center justify-center gap-0.5"
+            style={{
+              width: 96,
+              height: 96,
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(149,214,0,0.35) 0%, rgba(149,214,0,0.08) 100%)",
+              border: "2.5px solid rgba(149,214,0,0.9)",
+              animation: "badge-glow-pulse 1.8s ease-in-out infinite, badge-scale-in 0.5s ease-out both",
+            }}
+          >
+            <Trophy size={18} style={{ color: "#95D600" }} />
+            <span
+              className="font-bold leading-none"
+              style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "#95D600", fontWeight: 800, letterSpacing: "0.04em" }}
             >
-              {motivationalText}
-            </p>
-          )}
-        </div>
-
-        {/* Badge */}
-        <div
-          className="flex-shrink-0 flex flex-col items-center justify-center"
-          style={{ width: 80, height: 80, borderRadius: "50%", background: badgeColors.bg, border: badgeColors.border }}
-        >
-          {atingido
-            ? <LockOpen size={13} style={{ color: badgeColors.text, marginBottom: 2 }} />
-            : <Lock size={12} style={{ color: badgeColors.text, marginBottom: 2 }} />
-          }
-          <span
-            className="font-bold leading-none"
-            style={{ fontSize: 22, fontFamily: "var(--font-data)", color: badgeColors.text }}
+              META
+            </span>
+            <span
+              className="font-bold leading-none"
+              style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "#95D600", fontWeight: 800, letterSpacing: "0.04em" }}
+            >
+              BATIDA!
+            </span>
+            <span
+              style={{ fontSize: 16, fontFamily: "var(--font-data)", fontWeight: 700, color: "#95D600", lineHeight: 1 }}
+            >
+              {data.percentAtingido.toFixed(0)}%
+            </span>
+          </div>
+        ) : (
+          <div
+            className="flex-shrink-0 flex flex-col items-center justify-center"
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(245,158,11,0.3) 0%, rgba(245,158,11,0.06) 100%)",
+              border: "2px solid rgba(245,158,11,0.6)",
+            }}
           >
-            {data.percentAtingido.toFixed(0)}%
-          </span>
-          <span
-            className="uppercase tracking-wide mt-0.5"
-            style={{ fontSize: 8, fontFamily: "var(--font-display)", color: badgeColors.sub }}
-          >
-            concluído
-          </span>
-        </div>
+            <Lock size={12} style={{ color: "#f59e0b", marginBottom: 2 }} />
+            <span
+              className="font-bold leading-none"
+              style={{ fontSize: 22, fontFamily: "var(--font-data)", color: "#f59e0b" }}
+            >
+              {data.percentAtingido.toFixed(0)}%
+            </span>
+            <span
+              className="uppercase tracking-wide mt-0.5"
+              style={{ fontSize: 8, fontFamily: "var(--font-display)", color: "#b45309" }}
+            >
+              concluído
+            </span>
+          </div>
+        )}
       </div>
 
       {/* ── Progress bar ── */}
@@ -200,7 +255,9 @@ export function MetaChart({ data }: MetaChartProps) {
             className="h-full rounded-full transition-all duration-700"
             style={{
               width: `${progress}%`,
-              background: atingido ? "#95D600" : "linear-gradient(90deg, #95D600 0%, #f97316 100%)",
+              background: atingido
+                ? "#95D600"
+                : "linear-gradient(90deg, #f97316 0%, #95D600 100%)",
             }}
           />
         </div>
