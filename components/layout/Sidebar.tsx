@@ -19,6 +19,7 @@ import {
   Gift,
   ChevronDown,
   ChevronRight,
+  BrainCircuit,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -37,6 +38,7 @@ const CLIENT_NAV = [
 // ─── Admin-only submenu under "Configurações" ─────────────────────────────────
 const ADMIN_NAV = [
   { label: "Configuração Geral", href: "/configuracoes",  icon: Settings },
+  { label: "Config. ShogunIA",   href: "/shogunia",       icon: BrainCircuit },
   { label: "Config. Agenda",     href: "/disponibilidade", icon: CalendarRange },
   { label: "Usuários",           href: "/usuarios",        icon: Users },
 ]
