@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils"
 
 // ─── Client nav (ordered as requested) ───────────────────────────────────────
 const CLIENT_NAV = [
-  { label: "Dashboard",      href: "/metricas",     icon: BarChart3 },
+  { label: "Dashboard",      href: "/dashboard",    icon: BarChart3 },
   { label: "Campanhas",      href: "/campanhas",    icon: Megaphone },
   { label: "Metas",          href: "/metas",        icon: Target },
   { label: "Reunião Mensal", href: "/agendamento",  icon: CalendarClock },
