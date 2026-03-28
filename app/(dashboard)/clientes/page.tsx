@@ -8,7 +8,6 @@ interface Client {
   id: string
   business_name: string
   meta_account_id?: string
-  meta_access_token?: string
   google_sheets_url?: string
   google_sheets_range?: string
   created_at: string
@@ -22,7 +21,6 @@ export default function ClientesPage() {
   const [formData, setFormData] = useState({
     business_name: "",
     meta_account_id: "",
-    meta_access_token: "",
     google_sheets_url: "",
     google_sheets_range: "Metas!A:F"
   })
@@ -58,7 +56,6 @@ export default function ClientesPage() {
       const clientData = {
         business_name: formData.business_name,
         meta_account_id: formData.meta_account_id || null,
-        meta_access_token: formData.meta_access_token || null,
         google_sheets_url: formData.google_sheets_url || null,
         google_sheets_range: formData.google_sheets_range || null
       }
@@ -92,7 +89,6 @@ export default function ClientesPage() {
     setFormData({
       business_name: client.business_name,
       meta_account_id: client.meta_account_id || "",
-      meta_access_token: client.meta_access_token || "",
       google_sheets_url: client.google_sheets_url || "",
       google_sheets_range: client.google_sheets_range || "Metas!A:F"
     })
@@ -119,7 +115,6 @@ export default function ClientesPage() {
     setFormData({
       business_name: "",
       meta_account_id: "",
-      meta_access_token: "",
       google_sheets_url: "",
       google_sheets_range: "Metas!A:F"
     })
@@ -185,18 +180,7 @@ export default function ClientesPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-[var(--font-display)] font-semibold text-shogun-text-secondary mb-2">
-                  Token de Acesso Meta
-                </label>
-                <input
-                  type="password"
-                  value={formData.meta_access_token}
-                  onChange={(e) => setFormData({ ...formData, meta_access_token: e.target.value })}
-                  className="w-full bg-shogun-bg-base border border-shogun-border rounded px-3 py-2 text-shogun-text-primary focus:outline-none focus:border-shogun-accent font-mono text-sm"
-                  placeholder="Token de acesso"
-                />
-              </div>
+            </div>
 
             <div>
               <label className="block text-sm font-[var(--font-display)] font-semibold text-shogun-text-secondary mb-2">

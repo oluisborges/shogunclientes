@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
-import { createAdminClient } from "@/lib/supabase/admin"
 import { metaFetch } from "@/lib/meta/client"
 import { calculateWeeks } from "@/lib/metas/utils"
+import { getClientMetaCredentials } from "@/lib/meta/getClientToken"
 
 interface ActionValue {
   action_type: string
@@ -36,23 +36,15 @@ export async function GET(request: Request) {
       )
     }
 
-    const adminClient = createAdminClient()
-    const { data: client, error: clientError } = await adminClient
-      .from("clients")
-      .select("meta_account_id, meta_access_token")
-      .eq("id", clientId)
-      .single()
-
-    if (clientError || !client) {
-      return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 })
-    }
-
-    // Sem conta Meta configurada — retorna zeros
-    if (!client.meta_account_id || !client.meta_access_token) {
+    const creds = await getClientMetaCredentials(clientId)
+    if ("error" in creds) {
+      // Sem conta Meta configurada — retorna zeros
       return NextResponse.json(
         Array.from({ length: 5 }, () => ({ trafego: 0 }))
       )
     }
+
+    const { accountId: rawAccountId, accessToken } = creds
 
     // Calcula as semanas do mês para montar o time_range
     const selectedDate = new Date(parseInt(year), parseInt(month) - 1, 1)
@@ -62,13 +54,13 @@ export async function GET(request: Request) {
     const monthEnd = toISO(weeks[weeks.length - 1].end)
 
     // Busca gasto diário do mês inteiro de uma vez
-    const accountId = client.meta_account_id.startsWith("act_")
-      ? client.meta_account_id
-      : `act_${client.meta_account_id}`
+    const accountId = rawAccountId.startsWith("act_")
+      ? rawAccountId
+      : `act_${rawAccountId}`
 
     const insights = await metaFetch<InsightsResponse>({
       endpoint: `/${accountId}/insights`,
-      accessToken: client.meta_access_token,
+      accessToken,
       params: {
         fields: "action_values,date_start",
         time_range: JSON.stringify({ since: monthStart, until: monthEnd }),

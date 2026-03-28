@@ -99,10 +99,7 @@ export async function POST(request: NextRequest) {
           const { error: updateError } = await supabase
             .from("clients")
             .update({
-              meta_access_token: accessToken,
-              meta_token_expires: new Date(
-                Date.now() + 60 * 24 * 60 * 60 * 1000
-              ).toISOString(),
+              active: account.account_status === 1,
             })
             .eq("id", existingClient.id)
 
@@ -124,10 +121,6 @@ export async function POST(request: NextRequest) {
             .insert({
               business_name: businessName,
               meta_account_id: account.id,
-              meta_access_token: accessToken,
-              meta_token_expires: new Date(
-                Date.now() + 60 * 24 * 60 * 60 * 1000
-              ).toISOString(),
               active: account.account_status === 1,
             })
             .select()

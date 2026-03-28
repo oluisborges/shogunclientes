@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react"
 import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw } from "lucide-react"
 import type { AvailableDay } from "@/lib/services/google-calendar"
+import { useClientContext } from "@/lib/hooks/useClientContext"
+import { useActivityLog } from "@/lib/hooks/useActivityLog"
 
 interface Booking {
   id: string
@@ -46,6 +48,7 @@ function getCycleLabel(cycle: string) {
 
 function getTargetMonth() {
   const now = new Date()
+  // Dia 25+: próximo mês; dia 1-15: mês atual; dia 16-24: mês atual (janela fechada)
   const target = now.getDate() >= 25
     ? new Date(now.getFullYear(), now.getMonth() + 1, 1)
     : new Date(now.getFullYear(), now.getMonth(), 1)
@@ -53,6 +56,7 @@ function getTargetMonth() {
 }
 
 export default function AgendamentoPage() {
+  const { selectedClientId } = useClientContext()
   const [myBooking, setMyBooking] = useState<MyBookingData | null>(null)
   const [slotsData, setSlotsData] = useState<SlotsData | null>(null)
   const [selectedDay, setSelectedDay] = useState<AvailableDay | null>(null)
@@ -64,13 +68,18 @@ export default function AgendamentoPage() {
   const [confirming, setConfirming] = useState(false)
 
   const { year, month } = getTargetMonth()
+  const logActivity = useActivityLog()
 
   const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
+      const myBookingUrl = selectedClientId 
+        ? `/api/agendamento/my-booking?clientId=${selectedClientId}`
+        : `/api/agendamento/my-booking`
+      
       const [mbRes, slotsRes] = await Promise.all([
-        fetch("/api/agendamento/my-booking"),
+        fetch(myBookingUrl),
         fetch(`/api/agendamento/slots?year=${year}&month=${month}`),
       ])
       const mb: MyBookingData = await mbRes.json()
@@ -84,7 +93,7 @@ export default function AgendamentoPage() {
     } finally {
       setLoading(false)
     }
-  }, [year, month])
+  }, [year, month, selectedClientId])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -96,10 +105,14 @@ export default function AgendamentoPage() {
       const res = await fetch("/api/agendamento/book", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slot: `${selectedDay.date}T${selectedSlot}` }),
+        body: JSON.stringify({ slot: `${selectedDay.date}T${selectedSlot}`, clientId: selectedClientId }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
+      logActivity("booking", "Reunião Mensal", {
+        slot: `${selectedDay.date}T${selectedSlot}`,
+        label: `${selectedDay.label} às ${selectedSlot}`,
+      })
       await loadData()
       setConfirming(false)
     } catch (e) {
@@ -114,9 +127,17 @@ export default function AgendamentoPage() {
     setCancelling(true)
     setError(null)
     try {
-      const res = await fetch(`/api/agendamento/${myBooking.booking.id}`, { method: "DELETE" })
+      const cancelUrl = selectedClientId 
+        ? `/api/agendamento/${myBooking.booking.id}?clientId=${selectedClientId}`
+        : `/api/agendamento/${myBooking.booking.id}`
+      
+      const res = await fetch(cancelUrl, { method: "DELETE" })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
+      logActivity("cancellation", "Reunião Mensal", {
+        booking_id: myBooking.booking.id,
+        scheduled_at: myBooking.booking.scheduled_at,
+      })
       await loadData()
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao cancelar")
@@ -134,10 +155,11 @@ export default function AgendamentoPage() {
   }
 
   const windowOpen = slotsData?.open ?? false
-  const credits = myBooking?.credits ?? 0
+  const credits = myBooking?.credits ?? 2
   const cycle = myBooking?.cycle ?? ""
   const hasBooking = !!myBooking?.booking
-  const canBook = windowOpen && credits > 0
+  // Mostra o calendário sempre que a janela estiver aberta e não tiver agendamento ativo
+  const showPicker = windowOpen && !hasBooking
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -146,7 +168,7 @@ export default function AgendamentoPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-[var(--font-display)] text-shogun-text-primary">
-            Agendamento
+            Reunião Mensal
           </h1>
           {cycle && (
             <p className="text-sm text-shogun-text-muted font-[var(--font-display)] mt-0.5">
@@ -158,7 +180,7 @@ export default function AgendamentoPage() {
         {/* Créditos */}
         <div
           className="flex items-center gap-2 px-4 py-2 rounded-xl"
-          style={{ background: "#0F1E2A", border: "1px solid #1e3a4a" }}
+          style={{ background: "#1A3A31", border: "1px solid #2A5040" }}
         >
           <span className="text-xs font-[var(--font-display)] text-shogun-text-muted uppercase tracking-wider">
             Créditos
@@ -188,9 +210,9 @@ export default function AgendamentoPage() {
       {!windowOpen && (
         <div
           className="p-6 rounded-xl flex items-start gap-4"
-          style={{ background: "#0F1E2A", border: "1px solid #1e3a4a" }}
+          style={{ background: "#1A3A31", border: "1px solid #2A5040" }}
         >
-          <Calendar size={20} style={{ color: "#4A6A5A", flexShrink: 0, marginTop: 2 }} />
+          <Calendar size={20} style={{ color: "#808080", flexShrink: 0, marginTop: 2 }} />
           <div>
             <p className="font-semibold font-[var(--font-display)] text-shogun-text-primary">
               Janela de agendamento fechada
@@ -207,7 +229,7 @@ export default function AgendamentoPage() {
       {hasBooking && myBooking?.booking && (
         <div
           className="p-5 rounded-xl"
-          style={{ background: "#0F1E2A", border: "1px solid rgba(149,214,0,0.35)" }}
+          style={{ background: "#1A3A31", border: "1px solid rgba(149,214,0,0.35)" }}
         >
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
@@ -245,10 +267,10 @@ export default function AgendamentoPage() {
       )}
 
       {/* Seletor de data/hora */}
-      {windowOpen && canBook && !hasBooking && (
+      {showPicker && (
         <div
           className="p-5 rounded-xl space-y-5"
-          style={{ background: "#0F1E2A", border: "1px solid #1e3a4a" }}
+          style={{ background: "#1A3A31", border: "1px solid #2A5040" }}
         >
           <p className="text-sm font-semibold font-[var(--font-display)] text-shogun-text-primary">
             Escolha um dia disponível
@@ -264,17 +286,17 @@ export default function AgendamentoPage() {
                 style={{
                   border: selectedDay?.date === day.date
                     ? "1px solid rgba(149,214,0,0.6)"
-                    : "1px solid #1e3a4a",
+                    : "1px solid #2A5040",
                   background: selectedDay?.date === day.date
                     ? "rgba(149,214,0,0.12)"
-                    : "#111F1A",
+                    : "#152E25",
                   color: selectedDay?.date === day.date ? "#95D600" : "#E8F0EB",
                 }}
               >
                 {day.label}
                 <span
                   className="block text-[10px] mt-0.5"
-                  style={{ color: selectedDay?.date === day.date ? "#6B9A00" : "#4A6A5A" }}
+                  style={{ color: selectedDay?.date === day.date ? "#6B9A00" : "#808080" }}
                 >
                   {day.slots.length} horários
                 </span>
@@ -292,7 +314,7 @@ export default function AgendamentoPage() {
           {selectedDay && (
             <div className="space-y-3">
               <p className="text-sm font-semibold font-[var(--font-display)] text-shogun-text-primary flex items-center gap-2">
-                <Clock size={14} style={{ color: "#4A6A5A" }} />
+                <Clock size={14} style={{ color: "#808080" }} />
                 Horários disponíveis — {selectedDay.label}
               </p>
               <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
@@ -304,10 +326,10 @@ export default function AgendamentoPage() {
                     style={{
                       border: selectedSlot === slot
                         ? "1px solid rgba(149,214,0,0.6)"
-                        : "1px solid #1e3a4a",
+                        : "1px solid #2A5040",
                       background: selectedSlot === slot
                         ? "rgba(149,214,0,0.12)"
-                        : "#111F1A",
+                        : "#152E25",
                       color: selectedSlot === slot ? "#95D600" : "#E8F0EB",
                     }}
                   >
@@ -322,61 +344,54 @@ export default function AgendamentoPage() {
           {confirming && selectedDay && selectedSlot && (
             <div
               className="p-4 rounded-xl space-y-3"
-              style={{ border: "1px solid rgba(149,214,0,0.25)", background: "rgba(149,214,0,0.06)" }}
+              style={{
+                border: credits > 0 ? "1px solid rgba(149,214,0,0.25)" : "1px solid rgba(255,107,53,0.3)",
+                background: credits > 0 ? "rgba(149,214,0,0.06)" : "rgba(255,107,53,0.06)",
+              }}
             >
-              <p className="text-sm font-[var(--font-display)] text-shogun-text-primary">
-                Confirmar agendamento para{" "}
-                <strong style={{ color: "#95D600" }}>
-                  {selectedDay.label} às {selectedSlot}
-                </strong>
-                ?
-              </p>
-              <p className="text-xs text-shogun-text-muted font-[var(--font-display)]">
-                Isso usará 1 crédito. Você terá {credits - 1} crédito(s) restante(s) para remarcar.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleBook}
-                  disabled={booking}
-                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold font-[var(--font-display)] transition-opacity disabled:opacity-50"
-                  style={{
-                    background: "rgba(149,214,0,0.15)",
-                    border: "1px solid rgba(149,214,0,0.5)",
-                    color: "#95D600",
-                  }}
-                >
-                  {booking ? "Agendando…" : "Confirmar"}
-                </button>
-                <button
-                  onClick={() => { setConfirming(false); setSelectedSlot(null) }}
-                  className="px-4 py-2.5 rounded-lg text-sm font-[var(--font-display)] text-shogun-text-muted"
-                  style={{ border: "1px solid #1e3a4a", background: "#111F1A" }}
-                >
-                  Voltar
-                </button>
-              </div>
+              {credits > 0 ? (
+                <>
+                  <p className="text-sm font-[var(--font-display)] text-shogun-text-primary">
+                    Confirmar agendamento para{" "}
+                    <strong style={{ color: "#95D600" }}>
+                      {selectedDay.label} às {selectedSlot}
+                    </strong>
+                    ?
+                  </p>
+                  <p className="text-xs text-shogun-text-muted font-[var(--font-display)]">
+                    Isso usará 1 crédito. Você terá {credits - 1} crédito(s) restante(s) para remarcar.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleBook}
+                      disabled={booking}
+                      className="flex-1 py-2.5 rounded-lg text-sm font-semibold font-[var(--font-display)] transition-opacity disabled:opacity-50"
+                      style={{ background: "rgba(149,214,0,0.15)", border: "1px solid rgba(149,214,0,0.5)", color: "#95D600" }}
+                    >
+                      {booking ? "Agendando…" : "Confirmar"}
+                    </button>
+                    <button
+                      onClick={() => { setConfirming(false); setSelectedSlot(null) }}
+                      className="px-4 py-2.5 rounded-lg text-sm font-[var(--font-display)] text-shogun-text-muted"
+                      style={{ border: "1px solid #2A5040", background: "#152E25" }}
+                    >
+                      Voltar
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <AlertCircle size={15} style={{ color: "#FF6B35", flexShrink: 0 }} />
+                  <p className="text-sm font-[var(--font-display)]" style={{ color: "#FF6B35" }}>
+                    Sem créditos disponíveis. Entre em contato com o time Shogun.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
 
-      {/* Sem créditos */}
-      {windowOpen && credits <= 0 && !hasBooking && (
-        <div
-          className="p-5 rounded-xl flex items-start gap-3"
-          style={{ background: "#0F1E2A", border: "1px solid rgba(255,107,53,0.3)" }}
-        >
-          <AlertCircle size={18} style={{ color: "#FF6B35", flexShrink: 0, marginTop: 2 }} />
-          <div>
-            <p className="font-semibold font-[var(--font-display)] text-shogun-text-primary">
-              Sem créditos disponíveis
-            </p>
-            <p className="text-sm text-shogun-text-muted font-[var(--font-display)] mt-1">
-              Você utilizou todos os créditos deste ciclo. Entre em contato com o time Shogun se precisar de ajuda.
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

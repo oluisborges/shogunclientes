@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
-import { createAdminClient } from "@/lib/supabase/admin"
 import { metaFetch } from "@/lib/meta/client"
+import { getClientMetaCredentials } from "@/lib/meta/getClientToken"
 import type { MetaInsights } from "@/types/meta"
 
 interface InsightsResponse {
@@ -20,22 +19,12 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  const supabase = await createClient()
-  const adminClient = createAdminClient()
-
-  const { data: client, error: clientError } = await adminClient
-    .from("clients")
-    .select("meta_account_id, meta_access_token")
-    .eq("id", clientId)
-    .single()
-
-  if (clientError || !client?.meta_account_id || !client?.meta_access_token) {
-    return NextResponse.json(
-      { error: "Cliente sem conta Meta configurada" },
-      { status: 404 }
-    )
+  const creds = await getClientMetaCredentials(clientId)
+  if ("error" in creds) {
+    return NextResponse.json({ error: creds.error }, { status: creds.status })
   }
 
+  const { accountId, accessToken } = creds
   const fields = "spend,impressions,clicks,ctr,cpc,actions,action_values"
   const [currentStart, currentEnd] = periodCurrent.split(",")
   const [previousStart, previousEnd] = periodPrevious.split(",")
@@ -43,8 +32,8 @@ export async function GET(request: NextRequest) {
   try {
     const [currentData, previousData] = await Promise.all([
       metaFetch<InsightsResponse>({
-        endpoint: `/${client.meta_account_id}/insights`,
-        accessToken: client.meta_access_token,
+        endpoint: `/${accountId}/insights`,
+        accessToken,
         params: {
           fields,
           time_range: JSON.stringify({
@@ -54,8 +43,8 @@ export async function GET(request: NextRequest) {
         },
       }),
       metaFetch<InsightsResponse>({
-        endpoint: `/${client.meta_account_id}/insights`,
-        accessToken: client.meta_access_token,
+        endpoint: `/${accountId}/insights`,
+        accessToken,
         params: {
           fields,
           time_range: JSON.stringify({

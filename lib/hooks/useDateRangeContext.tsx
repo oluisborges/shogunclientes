@@ -20,9 +20,9 @@ const DateRangeContext = createContext<DateRangeContextType | undefined>(undefin
 
 export function DateRangeProvider({ children }: { children: ReactNode }) {
   const [dateRange, setDateRange] = useState<DateRange | null>(() => {
+    const now = new Date()
+    const start = new Date(now.getFullYear(), now.getMonth(), 1)
     const end = new Date()
-    const start = new Date()
-    start.setDate(start.getDate() - 29)
     return { start, end }
   })
   const [compareRange, setCompareRange] = useState<DateRange | null>(null)

@@ -26,7 +26,7 @@ function Val({
           {formatted}
         </span>
       ) : (
-        <span style={{ fontSize: 12, fontFamily: "var(--font-data)", color: "#3A5A4A" }}>—</span>
+        <span style={{ fontSize: 12, fontFamily: "var(--font-data)", color: "#606060" }}>—</span>
       )}
     </td>
   )
@@ -42,7 +42,7 @@ export function WeeklyTable({ weeks }: WeeklyTableProps) {
   return (
     <div
       className="rounded-xl flex flex-col gap-4"
-      style={{ background: "#0F1E2A", border: "1px solid #1e3a4a", padding: "20px" }}
+      style={{ background: "#1A3A31", border: "1px solid #2A5040", padding: "20px" }}
     >
       {/* Header */}
       <div className="flex items-center gap-2">
@@ -76,7 +76,7 @@ export function WeeklyTable({ weeks }: WeeklyTableProps) {
             <col />
           </colgroup>
           <thead>
-            <tr style={{ borderBottom: "1px solid #1a3040" }}>
+            <tr style={{ borderBottom: "1px solid #223A32" }}>
               <th />
               {(["Meta", "Fat.", "Tráf."] as const).map((h) => (
                 <th
@@ -86,7 +86,7 @@ export function WeeklyTable({ weeks }: WeeklyTableProps) {
                     textAlign: "right",
                     fontSize: 10,
                     fontFamily: "var(--font-display)",
-                    color: "#4A6A5A",
+                    color: "#808080",
                     textTransform: "uppercase",
                     letterSpacing: "0.08em",
                     fontWeight: 500,
@@ -99,14 +99,14 @@ export function WeeklyTable({ weeks }: WeeklyTableProps) {
           </thead>
           <tbody>
             {weeks.map((week) => (
-              <tr key={week.weekNumber} style={{ borderTop: "1px solid #131f2a" }}>
+              <tr key={week.weekNumber} style={{ borderTop: "1px solid #1A3028" }}>
                 <td className="py-2 align-middle">
                   <span
                     style={{
                       fontSize: 11,
                       fontFamily: "var(--font-display)",
                       fontWeight: 700,
-                      color: "#4A6A5A",
+                      color: "#808080",
                       textTransform: "uppercase",
                     }}
                   >
@@ -124,7 +124,7 @@ export function WeeklyTable({ weeks }: WeeklyTableProps) {
       </div>
 
       {/* Footer — editado */}
-      <p style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "#4A6A5A", textAlign: "center" }}>
+      <p style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "#808080", textAlign: "center" }}>
         Editado {editedAt}
       </p>
     </div>

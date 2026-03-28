@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentCycle } from "@/lib/services/google-calendar"
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -11,12 +11,25 @@ export async function GET() {
 
     const adminClient = createAdminClient()
 
-    // Busca o cliente vinculado ao usuário
-    const { data: client } = await adminClient
+    // Admin/gestor pode passar clientId para agir em nome do cliente selecionado
+    const { searchParams } = new URL(request.url)
+    const clientIdParam = searchParams.get("clientId")
+
+    const { data: profile } = await adminClient
+      .from("profiles").select("role").eq("id", user.id).single()
+    const isAdmin = profile?.role === "admin" || profile?.role === "gestor"
+
+    let clientQuery = adminClient
       .from("clients")
       .select("id, booking_credits, booking_credits_cycle, business_name")
-      .eq("user_id", user.id)
-      .single()
+
+    if (isAdmin && clientIdParam) {
+      clientQuery = clientQuery.eq("id", clientIdParam) as typeof clientQuery
+    } else {
+      clientQuery = clientQuery.eq("profile_id", user.id) as typeof clientQuery
+    }
+
+    const { data: client } = await clientQuery.single()
 
     if (!client) return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 })
 

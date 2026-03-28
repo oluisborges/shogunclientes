@@ -55,7 +55,7 @@ export function SummaryCards({ data, clientName }: SummaryCardsProps) {
           key={label}
           className="rounded-xl flex flex-col gap-3"
           style={{
-            background: "#0F1E2A",
+            background: "#1A3A31",
             border: `1px solid ${color}55`,
             padding: "20px 22px",
           }}
@@ -64,7 +64,7 @@ export function SummaryCards({ data, clientName }: SummaryCardsProps) {
           <div className="flex items-center justify-between gap-2">
             <p
               className="uppercase tracking-wider"
-              style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "#4A6A5A" }}
+              style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "#808080" }}
             >
               {label}
             </p>

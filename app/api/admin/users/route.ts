@@ -35,7 +35,7 @@ export async function GET() {
   // Busca profiles + clients em paralelo
   const [profilesResult, clientsResult] = await Promise.all([
     admin.from("profiles").select("id, role, full_name, created_at").order("created_at"),
-    admin.from("clients").select("id, profile_id, business_name, cnpj, meta_account_id, active"),
+    admin.from("clients").select("id, profile_id, business_name, cnpj, meta_account_id, active, niche, gestor_id"),
   ])
 
   if (profilesResult.error) {
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json()
-  const { email, password, full_name, business_name, cnpj, meta_account_id } = body
+  const { email, password, full_name, business_name, cnpj, meta_account_id, niche, gestor_id } = body
 
   if (!email || !password || !business_name) {
     return NextResponse.json(
@@ -125,6 +125,8 @@ export async function POST(request: Request) {
       cnpj: cnpj || null,
       meta_account_id: meta_account_id || null,
       active: true,
+      niche: niche || null,
+      gestor_id: gestor_id || null,
     })
     .select()
     .single()

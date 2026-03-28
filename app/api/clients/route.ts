@@ -15,11 +15,27 @@ export async function GET() {
 
   const adminClient = createAdminClient()
 
-  const { data: clients, error } = await adminClient
+  // Check role: admins see all clients; clients see only their own
+  const { data: profile } = await adminClient
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  const isAdmin = profile?.role === "admin"
+
+  let query = adminClient
     .from("clients")
     .select("id, business_name, meta_account_id")
     .eq("active", true)
+    .not("profile_id", "is", null)
     .order("business_name")
+
+  if (!isAdmin) {
+    query = query.eq("profile_id", user.id)
+  }
+
+  const { data: clients, error } = await query
 
   if (error) {
     return NextResponse.json(
@@ -44,7 +60,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { business_name, meta_account_id, meta_access_token } = body
+    const { business_name, meta_account_id } = body
 
     if (!business_name) {
       return NextResponse.json(
@@ -60,7 +76,6 @@ export async function POST(request: Request) {
       .insert({
         business_name,
         meta_account_id: meta_account_id || null,
-        meta_access_token: meta_access_token || null,
         active: true,
         created_at: new Date().toISOString(),
       })
