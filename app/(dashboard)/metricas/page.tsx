@@ -2,24 +2,20 @@
 
 import { useMemo } from "react"
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
   PieChart,
   Pie,
+  Cell,
   Legend,
+  Tooltip,
+  ResponsiveContainer,
 } from "recharts"
-import { TrendingUp, Target, BarChart2, RotateCcw } from "lucide-react"
+import { TrendingUp, Target, BarChart2, RotateCcw, ArrowRight, ShoppingCart, Receipt } from "lucide-react"
 import { ShogunCard } from "@/components/ui/ShogunCard"
 import { DatePicker } from "@/components/ui/DatePicker"
 import { useMetricas } from "@/lib/hooks/useMetricas"
 import { useDateRangeContext } from "@/lib/hooks/useDateRangeContext"
 import { useClientContext } from "@/lib/hooks/useClientContext"
-import type { MetricasCampaign } from "@/lib/hooks/useMetricas"
+import type { MetricasCampaign, MetricasGender, MetricasPeriod } from "@/lib/hooks/useMetricas"
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
@@ -155,82 +151,139 @@ function SkeletonGrid({ count, height = "h-32" }: { count: number; height?: stri
   )
 }
 
-// ─── Chart tooltip ────────────────────────────────────────────────────────────
+// ─── Performance Funnel ───────────────────────────────────────────────────────
 
-const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
-  if (active && payload?.length) {
-    return (
-      <div className="bg-shogun-bg-base border border-shogun-border rounded-lg px-3 py-2 text-sm font-[var(--font-display)]">
-        <p className="text-shogun-text-secondary">{label}</p>
-        <p className="text-shogun-accent font-[var(--font-data)] font-bold">{fmtNum(payload[0].value)}</p>
-      </div>
-    )
-  }
-  return null
+function PerformanceFunnel({ cur }: { cur: MetricasPeriod }) {
+  const steps = [
+    { label: "Alcance", value: cur.reach },
+    { label: "Cliques", value: cur.linkClicks },
+    { label: "Vis. Pág. Destino", value: cur.lpViews },
+    { label: "Compras", value: cur.purchases },
+  ]
+
+  return (
+    <div className="flex items-stretch w-full mt-2">
+      {steps.map((step, i) => {
+        const next = steps[i + 1]
+        const rate = next && step.value > 0 ? (next.value / step.value) * 100 : null
+
+        return (
+          <div key={step.label} className="flex items-center flex-1 min-w-0">
+            {/* Step box */}
+            <div className="flex-1 flex flex-col items-center gap-1 bg-shogun-bg-base border border-shogun-border rounded-xl p-3">
+              <span className="text-[10px] font-[var(--font-display)] uppercase tracking-wider text-shogun-text-muted text-center leading-tight">
+                {step.label}
+              </span>
+              <span className="font-[var(--font-data)] text-xl font-bold text-shogun-text-primary">
+                {fmtNum(step.value)}
+              </span>
+            </div>
+
+            {/* Arrow + conversion rate */}
+            {next && (
+              <div className="flex flex-col items-center px-1.5 shrink-0">
+                <span className="text-[10px] font-[var(--font-display)] text-shogun-accent font-semibold mb-0.5 whitespace-nowrap">
+                  {rate !== null ? `${rate.toFixed(1)}%` : "—"}
+                </span>
+                <ArrowRight size={14} className="text-shogun-text-muted" />
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
-// ─── Campaign health donut ────────────────────────────────────────────────────
+// ─── Gender donut (Público comprador) ─────────────────────────────────────────
 
-const STATUS_COLORS: Record<string, string> = {
-  ACTIVE: "#95D600",
-  PAUSED: "#3b82f6",
-  ARCHIVED: "#6b7280",
-  DELETED: "#4b5563",
+const GENDER_LABELS: Record<string, string> = {
+  male: "Homens",
+  female: "Mulheres",
+}
+const GENDER_COLORS: Record<string, string> = {
+  male: "#3b82f6",
+  female: "#ec4899",
 }
 
-function CampaignDonut({ campaigns }: { campaigns: MetricasCampaign[] }) {
-  const counts: Record<string, number> = {}
-  for (const c of campaigns) {
-    counts[c.status] = (counts[c.status] ?? 0) + 1
-  }
-  const data = Object.entries(counts).map(([status, count]) => ({
-    name: status.charAt(0) + status.slice(1).toLowerCase(),
-    value: count,
-    status,
+function GenderDonut({ genderStats }: { genderStats: MetricasGender[] }) {
+  const total = genderStats.reduce((s, g) => s + g.purchases, 0)
+
+  const data = genderStats.map((g) => ({
+    name: GENDER_LABELS[g.gender] ?? g.gender,
+    value: g.purchases,
+    gender: g.gender,
   }))
 
   if (data.length === 0) {
     return (
       <p className="text-shogun-text-muted text-sm font-[var(--font-display)] text-center mt-8">
-        Nenhuma campanha encontrada
+        Sem dados de público disponíveis
       </p>
     )
   }
 
   return (
-    <ResponsiveContainer width="100%" height={240}>
-      <PieChart>
-        <Pie
-          data={data}
-          cx="50%"
-          cy="50%"
-          innerRadius={60}
-          outerRadius={90}
-          dataKey="value"
-          paddingAngle={2}
-        >
-          {data.map((entry) => (
-            <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? "#6b7280"} />
-          ))}
-        </Pie>
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "var(--color-shogun-bg-base)",
-            border: "1px solid var(--color-shogun-border)",
-            borderRadius: "8px",
-            fontFamily: "var(--font-display)",
-            color: "var(--color-shogun-text-primary)",
-          }}
-        />
-        <Legend
-          formatter={(value) => (
-            <span className="text-xs text-shogun-text-secondary font-[var(--font-display)]">
-              {value}
+    <div className="flex flex-col items-center gap-3">
+      {/* H / M summary */}
+      <div className="flex gap-8">
+        {genderStats.map((g) => (
+          <div key={g.gender} className="flex flex-col items-center gap-0.5">
+            <span className="text-[10px] font-[var(--font-display)] uppercase tracking-wider text-shogun-text-muted">
+              {g.gender === "male" ? "Homens" : "Mulheres"}
             </span>
-          )}
-        />
-      </PieChart>
-    </ResponsiveContainer>
+            <span
+              className="font-[var(--font-data)] text-2xl font-bold"
+              style={{ color: GENDER_COLORS[g.gender] ?? "#6b7280" }}
+            >
+              {fmtNum(g.purchases)}
+            </span>
+            <span className="text-xs text-shogun-text-muted font-[var(--font-display)]">
+              {total > 0 ? ((g.purchases / total) * 100).toFixed(0) : 0}%
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Donut chart */}
+      <ResponsiveContainer width="100%" height={180}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={50}
+            outerRadius={75}
+            dataKey="value"
+            paddingAngle={2}
+          >
+            {data.map((entry) => (
+              <Cell key={entry.gender} fill={GENDER_COLORS[entry.gender] ?? "#6b7280"} />
+            ))}
+          </Pie>
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "var(--color-shogun-bg-base)",
+              border: "1px solid var(--color-shogun-border)",
+              borderRadius: "8px",
+              fontFamily: "var(--font-display)",
+              color: "var(--color-shogun-text-primary)",
+            }}
+            formatter={(value: number, name: string) => [
+              `${fmtNum(value)} compras (${total > 0 ? ((value / total) * 100).toFixed(0) : 0}%)`,
+              name,
+            ]}
+          />
+          <Legend
+            formatter={(value) => (
+              <span className="text-xs text-shogun-text-secondary font-[var(--font-display)]">
+                {value}
+              </span>
+            )}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
   )
 }
 
@@ -256,16 +309,6 @@ export default function MetricasPage() {
 
   const cur = data?.current
   const prev = data?.previous
-
-  // Funil data
-  const funnelData = cur
-    ? [
-        { name: "Impressões", value: cur.impressions },
-        { name: "Cliques", value: cur.linkClicks },
-        { name: "LP views", value: cur.lpViews },
-        { name: "Compras", value: cur.purchases },
-      ]
-    : []
 
   return (
     <div className="space-y-6">
@@ -333,8 +376,8 @@ export default function MetricasPage() {
             <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">
               Resumo executivo
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <SkeletonGrid count={3} height="h-36" />
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+              <SkeletonGrid count={5} height="h-36" />
             </div>
           </section>
           <section>
@@ -374,9 +417,9 @@ export default function MetricasPage() {
             <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">
               Resumo executivo
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
               <KpiCard
-                label="Valor investido (período)"
+                label="Valor investido"
                 value={fmtBRLFull(cur.spend)}
                 change={calcDelta(cur.spend, prev.spend)}
                 note="Total gasto no período"
@@ -384,7 +427,7 @@ export default function MetricasPage() {
                 icon={<TrendingUp size={16} />}
               />
               <KpiCard
-                label="Valor da conversão da compra"
+                label="Valor da conversão"
                 value={fmtBRLFull(cur.purchaseValue)}
                 change={calcDelta(cur.purchaseValue, prev.purchaseValue)}
                 note="Receita atribuída (Meta)"
@@ -392,12 +435,31 @@ export default function MetricasPage() {
                 icon={<BarChart2 size={16} />}
               />
               <KpiCard
-                label="ROAS de compras no site"
+                label="ROAS"
                 value={cur.purchaseRoas.toFixed(2)}
                 change={calcDelta(cur.purchaseRoas, prev.purchaseRoas)}
                 note="Retorno sobre investimento"
                 positiveGood={true}
                 icon={<Target size={16} />}
+              />
+              <KpiCard
+                label="Compras"
+                value={fmtNum(cur.purchases)}
+                change={calcDelta(cur.purchases, prev.purchases)}
+                note="Compras atribuídas"
+                positiveGood={true}
+                icon={<ShoppingCart size={16} />}
+              />
+              <KpiCard
+                label="Ticket médio"
+                value={fmtBRLFull(cur.purchases > 0 ? cur.purchaseValue / cur.purchases : 0)}
+                change={calcDelta(
+                  cur.purchases > 0 ? cur.purchaseValue / cur.purchases : 0,
+                  prev.purchases > 0 ? prev.purchaseValue / prev.purchases : 0
+                )}
+                note="Valor médio por compra"
+                positiveGood={true}
+                icon={<Receipt size={16} />}
               />
             </div>
           </section>
@@ -482,52 +544,15 @@ export default function MetricasPage() {
               <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">
                 Funil de performance
               </h2>
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart
-                  data={funnelData}
-                  layout="vertical"
-                  margin={{ top: 0, right: 16, left: 8, bottom: 0 }}
-                >
-                  <XAxis
-                    type="number"
-                    tick={{ fill: "var(--color-shogun-text-secondary)", fontSize: 11, fontFamily: "var(--font-display)" }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={fmtNum}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={80}
-                    tick={{ fill: "var(--color-shogun-text-secondary)", fontSize: 11, fontFamily: "var(--font-display)" }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(149,214,0,0.05)" }} />
-                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                    {funnelData.map((_, index) => (
-                      <Cell
-                        key={index}
-                        fill={index === 0 ? "rgba(149,214,0,0.2)" : "#95D600"}
-                        opacity={1 - index * 0.08}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <PerformanceFunnel cur={cur} />
             </ShogunCard>
 
-            {/* Saúde das campanhas */}
+            {/* Público comprador */}
             <ShogunCard>
               <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">
-                Saúde das campanhas
+                Público comprador
               </h2>
-              <div className="flex items-center justify-center">
-                <CampaignDonut campaigns={data.campaigns} />
-              </div>
-              <p className="text-xs text-shogun-text-muted text-center font-[var(--font-display)] mt-1">
-                {data.campaigns.length} campanha{data.campaigns.length !== 1 ? "s" : ""} no total
-              </p>
+              <GenderDonut genderStats={data.genderStats} />
             </ShogunCard>
           </div>
         </>

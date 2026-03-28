@@ -25,10 +25,14 @@ interface MetaInsightsResponse {
   data: MetaInsightsData[]
 }
 
-interface MetaCampaignItem {
-  id: string
-  name: string
-  status: string
+interface MetaGenderInsight {
+  gender: string
+  actions?: MetaAction[]
+  action_values?: MetaAction[]
+}
+
+interface MetaGenderResponse {
+  data: MetaGenderInsight[]
 }
 
 interface MetaCampaignsResponse {
@@ -146,7 +150,14 @@ export async function GET(request: NextRequest) {
     }
     if (prevTimeRange) prevParams.time_range = prevTimeRange
 
-    const [currentInsights, prevInsights, campaignsData, accountData] =
+    const genderParams: Record<string, string> = {
+      fields: "actions,action_values",
+      breakdowns: "gender",
+      level: "account",
+    }
+    if (currentTimeRange) genderParams.time_range = currentTimeRange
+
+    const [currentInsights, prevInsights, campaignsData, accountData, genderData] =
       await Promise.all([
         metaFetch<MetaInsightsResponse>({
           endpoint: `/${accountId}/insights`,
@@ -170,6 +181,11 @@ export async function GET(request: NextRequest) {
             `fields=balance,amount_spent,spend_cap,currency&` +
             `access_token=${accessToken}`
         ).then((r) => r.json()),
+        metaFetch<MetaGenderResponse>({
+          endpoint: `/${accountId}/insights`,
+          accessToken,
+          params: genderParams,
+        }).catch(() => ({ data: [] } as MetaGenderResponse)),
       ])
 
     // Compute balance
@@ -185,11 +201,19 @@ export async function GET(request: NextRequest) {
     const current = parseInsights(currentInsights.data[0])
     const previous = parseInsights(prevInsights.data[0])
 
+    // Gender breakdown for purchases
+    const genderStats = (genderData.data || []).map((g) => ({
+      gender: g.gender,
+      purchases: extractAction(g.actions, "purchase"),
+      purchaseValue: extractAction(g.action_values, "purchase"),
+    })).filter((g) => g.gender !== "unknown" && g.purchases > 0)
+
     return NextResponse.json({
       balance,
       current,
       previous,
       campaigns: campaignsData.data || [],
+      genderStats,
     })
   } catch (err) {
     console.error("Métricas API error:", err)
