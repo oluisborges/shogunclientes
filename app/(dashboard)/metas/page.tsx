@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useClientContext } from "@/lib/hooks/useClientContext"
 import { MonthSelector } from "@/components/metas/MonthSelector"
 import { MetaChart } from "@/components/metas/MetaChart"
@@ -73,17 +73,19 @@ export default function MetasPage() {
 
   useEffect(() => { fetchMonthData() }, [fetchMonthData])
 
-  const navigateMonth = (direction: "prev" | "next") => {
-    const newDate = new Date(selectedDate)
-    newDate.setMonth(newDate.getMonth() + (direction === "next" ? 1 : -1))
-    if (newDate <= new Date()) setSelectedDate(newDate)
-  }
+  const navigateMonth = useCallback((direction: "prev" | "next") => {
+    setSelectedDate((prev) => {
+      const d = new Date(prev)
+      d.setMonth(d.getMonth() + (direction === "next" ? 1 : -1))
+      return d <= new Date() ? d : prev
+    })
+  }, [])
 
-  const canGoNext = () => {
+  const canGoNext = useMemo(() => {
     const next = new Date(selectedDate)
     next.setMonth(next.getMonth() + 1)
     return next <= new Date()
-  }
+  }, [selectedDate])
 
   if (!selectedClientId) {
     return (
@@ -101,7 +103,7 @@ export default function MetasPage() {
           Metas
         </h1>
 
-        <MonthSelector date={selectedDate} onNavigate={navigateMonth} canGoNext={canGoNext()} />
+        <MonthSelector date={selectedDate} onNavigate={navigateMonth} canGoNext={canGoNext} />
       </div>
 
       {loading ? (

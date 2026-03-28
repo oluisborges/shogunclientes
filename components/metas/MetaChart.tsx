@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   LineChart,
   Line,
@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts"
-import { Lock, LockOpen, Trophy } from "lucide-react"
+import { Lock, Trophy } from "lucide-react"
 import { formatCurrency, formatCurrencyInt } from "@/lib/metas/utils"
 import type { MonthData } from "@/lib/metas/utils"
 
@@ -52,15 +52,26 @@ function getMotivationalText(pct: number): string | null {
 }
 
 export function MetaChart({ data }: MetaChartProps) {
-  const chartData = data.weeks.map((w) => ({
+  const chartData = useMemo(() => data.weeks.map((w) => ({
     name: `Sem ${w.weekNumber}`,
     Meta: w.meta,
     Faturamento: w.isFuture ? undefined : w.faturamento,
     Tráfego: w.isFuture || w.trafego === 0 ? undefined : w.trafego,
-  }))
+  })), [data.weeks])
 
-  const progress = Math.min(data.percentAtingido, 100)
-  const atingido = data.percentAtingido >= 100
+  const { progress, atingido, motivationalText, trafegoPercent } = useMemo(() => {
+    const now = new Date()
+    const isCurrentMonth = data.year === now.getFullYear() && data.month === now.getMonth() + 1
+    const atingido = data.percentAtingido >= 100
+    return {
+      progress: Math.min(data.percentAtingido, 100),
+      atingido,
+      motivationalText: isCurrentMonth && !atingido ? getMotivationalText(data.percentAtingido) : null,
+      trafegoPercent: data.totalFaturamento > 0
+        ? ((data.totalTrafego / data.totalFaturamento) * 100).toFixed(0)
+        : "0",
+    }
+  }, [data.percentAtingido, data.year, data.month, data.totalFaturamento, data.totalTrafego])
 
   const [celebrating, setCelebrating] = useState(false)
   useEffect(() => {
@@ -70,18 +81,6 @@ export function MetaChart({ data }: MetaChartProps) {
       return () => clearTimeout(t)
     }
   }, [atingido])
-
-  // Motivational text: only for current month
-  const now = new Date()
-  const isCurrentMonth =
-    data.year === now.getFullYear() && data.month === now.getMonth() + 1
-  const motivationalText =
-    isCurrentMonth && !atingido ? getMotivationalText(data.percentAtingido) : null
-
-  const trafegoPercent =
-    data.totalFaturamento > 0
-      ? ((data.totalTrafego / data.totalFaturamento) * 100).toFixed(0)
-      : "0"
 
   return (
     <div

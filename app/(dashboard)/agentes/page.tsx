@@ -11,9 +11,12 @@ interface Agent {
 }
 
 interface Message {
+  id: number
   role: "user" | "assistant"
   content: string
 }
+
+let msgId = 0
 
 // Map icon_name strings to lucide components
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -100,7 +103,7 @@ export default function AgentesPage() {
 
   async function handleSend() {
     if (!input.trim() || !activeAgent || sending) return
-    const userMsg: Message = { role: "user", content: input.trim() }
+    const userMsg: Message = { id: ++msgId, role: "user", content: input.trim() }
     const nextMessages = [...messages, userMsg]
     setMessages(nextMessages)
     setInput("")
@@ -115,7 +118,7 @@ export default function AgentesPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? "Erro ao processar")
-      setMessages((prev) => [...prev, { role: "assistant", content: data.content }])
+      setMessages((prev) => [...prev, { id: ++msgId, role: "assistant", content: data.content }])
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro desconhecido")
     } finally {
@@ -254,8 +257,8 @@ export default function AgentesPage() {
             </div>
           )}
 
-          {messages.map((msg, i) => (
-            <MessageBubble key={i} msg={msg} />
+          {messages.map((msg) => (
+            <MessageBubble key={msg.id} msg={msg} />
           ))}
 
           {sending && (
