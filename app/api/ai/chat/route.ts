@@ -75,7 +75,7 @@ async function callGemini(apiKey: string, systemPrompt: string, messages: Messag
   }
   if (systemPrompt) body.system_instruction = { parts: [{ text: systemPrompt }] }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
   const res = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
