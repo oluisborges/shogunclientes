@@ -12,41 +12,35 @@ interface Agent {
   system_prompt: string
   active: boolean
   display_order: number
-  provider: string
-  model: string
   api_key: string
-}
-
-const PROVIDERS = [
-  { value: "anthropic", label: "Anthropic (Claude)",  placeholder: "sk-ant-..." },
-  { value: "openai",    label: "OpenAI (GPT)",         placeholder: "sk-..." },
-  { value: "google",    label: "Google (Gemini)",      placeholder: "AIza..." },
-]
-
-const DEFAULT_MODELS: Record<string, string> = {
-  anthropic: "claude-sonnet-4-6",
-  openai:    "gpt-4o-mini",
-  google:    "gemini-1.5-flash",
 }
 
 const EMPTY = {
   name: "", category: "", icon_name: "Bot", system_prompt: "",
-  active: true, provider: "anthropic", model: "claude-sonnet-4-6", api_key: "",
+  active: true, api_key: "",
 }
 
 const inputCls = "w-full bg-shogun-bg-base border border-shogun-border rounded px-3 py-2 text-sm text-shogun-text-primary placeholder:text-shogun-text-muted focus:outline-none focus:border-shogun-accent transition-colors font-[var(--font-display)]"
 const labelCls = "block text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider mb-1"
 
-function ProviderBadge({ provider }: { provider: string }) {
+function detectProvider(key: string): string {
+  if (key.startsWith("sk-ant-")) return "Claude"
+  if (key.startsWith("sk-"))     return "GPT"
+  if (key.startsWith("AIza"))    return "Gemini"
+  return ""
+}
+
+function ProviderBadge({ apiKey }: { apiKey: string }) {
+  const provider = detectProvider(apiKey)
+  if (!provider) return null
   const colors: Record<string, string> = {
-    anthropic: "bg-[#95D600]/15 text-[#95D600]",
-    openai:    "bg-blue-500/15 text-blue-400",
-    google:    "bg-amber-500/15 text-amber-400",
+    Claude: "bg-[#95D600]/15 text-[#95D600]",
+    GPT:    "bg-blue-500/15 text-blue-400",
+    Gemini: "bg-amber-500/15 text-amber-400",
   }
-  const labels: Record<string, string> = { anthropic: "Claude", openai: "GPT", google: "Gemini" }
   return (
-    <span className={`text-[10px] px-2 py-0.5 rounded-full font-[var(--font-display)] font-semibold ${colors[provider] ?? "bg-shogun-border text-shogun-text-muted"}`}>
-      {labels[provider] ?? provider}
+    <span className={`text-[10px] px-2 py-0.5 rounded-full font-[var(--font-display)] font-semibold ${colors[provider]}`}>
+      {provider}
     </span>
   )
 }
@@ -67,7 +61,7 @@ function AgentForm({
   title: string
 }) {
   const [showKey, setShowKey] = useState(false)
-  const provider = PROVIDERS.find((p) => p.value === form.provider)
+  const detected = detectProvider(form.api_key)
 
   return (
     <div className="p-5 space-y-4">
@@ -82,37 +76,25 @@ function AgentForm({
           <label className={labelCls}>Categoria</label>
           <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Ex: Estratégia de Negócio" className={inputCls} />
         </div>
-        <div>
-          <label className={labelCls}>Provider</label>
-          <select
-            value={form.provider}
-            onChange={(e) => setForm({ ...form, provider: e.target.value, model: DEFAULT_MODELS[e.target.value] ?? "" })}
-            className={inputCls + " cursor-pointer"}
-          >
-            {PROVIDERS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className={labelCls}>Modelo</label>
-          <input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} placeholder={DEFAULT_MODELS[form.provider] ?? "modelo"} className={inputCls} />
-        </div>
         <div className="md:col-span-2">
-          <label className={labelCls}>Chave API do agente</label>
+          <label className={labelCls}>Chave API</label>
           <div className="relative">
             <input
               type={showKey ? "text" : "password"}
               value={form.api_key}
               onChange={(e) => setForm({ ...form, api_key: e.target.value })}
-              placeholder={provider?.placeholder ?? "Chave API…"}
+              placeholder="sk-ant-... / sk-... / AIza..."
               className={inputCls + " pr-10 font-mono"}
             />
             <button type="button" onClick={() => setShowKey((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-shogun-text-muted hover:text-shogun-text-primary">
               {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
             </button>
           </div>
-          <p className="text-[10px] text-shogun-text-muted font-[var(--font-display)] mt-1">
-            Chave exclusiva deste agente. Se não preenchida, usa variável de ambiente do servidor.
-          </p>
+          {detected && (
+            <p className="text-[11px] text-shogun-text-muted font-[var(--font-display)] mt-1">
+              Detectado: <span className="text-shogun-accent font-semibold">{detected}</span>
+            </p>
+          )}
         </div>
         <div>
           <label className={labelCls}>Ícone (lucide)</label>
@@ -234,7 +216,6 @@ export default function ShogunIAConfigPage() {
         <div className="px-4 py-3 bg-shogun-danger/10 border border-shogun-danger/30 rounded text-sm text-shogun-danger font-[var(--font-display)]">{error}</div>
       )}
 
-      {/* Novo agente */}
       {showForm && (
         <ShogunCard className="p-0 overflow-hidden">
           <AgentForm
@@ -248,7 +229,6 @@ export default function ShogunIAConfigPage() {
         </ShogunCard>
       )}
 
-      {/* Lista */}
       <ShogunCard className="p-0 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-10">
@@ -278,10 +258,8 @@ export default function ShogunIAConfigPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-semibold font-[var(--font-display)] text-shogun-text-primary">{agent.name}</span>
-                        <ProviderBadge provider={agent.provider} />
-                        <span className="text-[10px] font-mono text-shogun-text-muted">{agent.model}</span>
+                        {agent.api_key && <ProviderBadge apiKey={agent.api_key} />}
                         {!agent.active && <span className="text-xs px-1.5 py-0.5 rounded bg-shogun-border text-shogun-text-muted font-[var(--font-display)]">inativo</span>}
-                        {agent.api_key && <span className="text-[10px] px-1.5 py-0.5 rounded bg-shogun-accent/10 text-shogun-accent font-[var(--font-display)]">chave própria</span>}
                       </div>
                       {agent.category && <p className="text-xs text-shogun-text-muted font-[var(--font-display)] mt-0.5">{agent.category}</p>}
                       {agent.system_prompt && (
@@ -297,7 +275,7 @@ export default function ShogunIAConfigPage() {
                       <button
                         onClick={() => {
                           setEditingId(agent.id)
-                          setEditForm({ name: agent.name, category: agent.category, icon_name: agent.icon_name, system_prompt: agent.system_prompt, active: agent.active, provider: agent.provider || "anthropic", model: agent.model || "", api_key: "" })
+                          setEditForm({ name: agent.name, category: agent.category, icon_name: agent.icon_name, system_prompt: agent.system_prompt, active: agent.active, api_key: "" })
                         }}
                         className="p-1.5 text-shogun-text-muted hover:text-shogun-accent transition-colors"
                       >
