@@ -22,8 +22,6 @@ import {
   ArrowRight,
   ShoppingCart,
   Receipt,
-  Copy,
-  Check,
   GitCompare,
 } from "lucide-react"
 import { ShogunCard } from "@/components/ui/ShogunCard"
@@ -108,6 +106,7 @@ function SimpleKpiCard({
 }) {
   const isGood =
     change !== undefined && change !== null && (positiveGood ? change >= 0 : change <= 0)
+  const arrow = isGood ? "↑" : "↓"
 
   return (
     <div className="bg-shogun-bg-elevated border border-shogun-border rounded-2xl p-5 flex flex-col gap-2">
@@ -115,108 +114,42 @@ function SimpleKpiCard({
         <span className="text-sm font-[var(--font-display)] font-medium text-shogun-text-secondary">
           {label}
         </span>
-        <span className="text-shogun-text-muted">{icon}</span>
+        <span className="text-shogun-text-muted/60">{icon}</span>
       </div>
 
       <span className={`font-[var(--font-data)] text-4xl font-bold leading-none ${valueClassName}`}>
         {value}
       </span>
 
-      {/* Description text — always visible */}
-      <p className="text-xs font-[var(--font-display)] text-shogun-text-muted leading-snug">
+      {/* Description — lighter so it doesn't compete with the number */}
+      <p className="text-xs font-[var(--font-display)] text-white/35 leading-snug">
         {description}
       </p>
 
-      {/* Badge (e.g. ROAS status) */}
+      {/* ROAS status badge */}
       {badge && (
         <span className={`self-start text-xs font-[var(--font-display)] px-2 py-0.5 rounded-full font-semibold ${badge.className}`}>
           {badge.text}
         </span>
       )}
 
-      {/* Comparison row — only when enabled */}
+      {/* Comparison: ant: [prev]  ↑/↓ X% — side by side, only when enabled */}
       {showCompare && prevValue && change !== undefined && change !== null && (
-        <div className="flex items-center gap-2 pt-1 border-t border-shogun-border/50">
-          <span className="text-xs font-[var(--font-display)] text-shogun-text-muted">
+        <div className="flex items-center gap-2 flex-wrap mt-0.5">
+          <span className="text-xs font-[var(--font-display)] text-white/45">
             ant: {prevValue}
           </span>
           <span
-            className={`text-xs font-[var(--font-display)] px-1.5 py-0.5 rounded-full font-semibold ${
+            className={`inline-flex items-center gap-0.5 text-xs font-[var(--font-display)] font-semibold px-1.5 py-0.5 rounded-full ${
               isGood
                 ? "bg-shogun-accent/15 text-shogun-accent"
                 : "bg-red-400/15 text-red-400"
             }`}
           >
-            {change >= 0 ? "+" : ""}
-            {change.toFixed(1)}%
+            {arrow} {Math.abs(change).toFixed(1)}%
           </span>
         </div>
       )}
-    </div>
-  )
-}
-
-// ─── Compact summary banner ───────────────────────────────────────────────────
-
-const MONTHS_PT = [
-  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
-  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
-]
-
-function SummaryBanner({
-  cur,
-  dateRange,
-}: {
-  cur: MetricasPeriod
-  dateRange: { start: Date; end: Date }
-}) {
-  const [copied, setCopied] = useState(false)
-
-  const { start, end } = dateRange
-  const lastDayOfMonth = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate()
-  const isFullMonth =
-    start.getDate() === 1 &&
-    end.getDate() === lastDayOfMonth &&
-    start.getMonth() === end.getMonth()
-
-  const fmt2 = (n: number) => n.toString().padStart(2, "0")
-  const periodStr = isFullMonth
-    ? `Em ${MONTHS_PT[start.getMonth()]}`
-    : `No período de ${fmt2(start.getDate())}/${fmt2(start.getMonth() + 1)} a ${fmt2(end.getDate())}/${fmt2(end.getMonth() + 1)}`
-
-  const pedidos = Math.round(cur.purchases)
-  const receita = Math.round(cur.purchaseValue).toLocaleString("pt-BR")
-  const invested = Math.round(cur.spend).toLocaleString("pt-BR")
-  const roasDetail = cur.purchaseRoas.toFixed(2).replace(".", ",")
-
-  const text =
-    `${periodStr}, seus anúncios geraram ${pedidos} pedido${pedidos !== 1 ? "s" : ""} com receita atribuída de R$ ${receita}. ` +
-    `Foram investidos R$ ${invested} e para cada R$ 1,00 investido, R$ ${roasDetail} retornou em vendas.`
-
-  function handleCopy() {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }
-
-  return (
-    <div className="flex items-start gap-3 bg-shogun-bg-elevated border border-shogun-border rounded-xl px-4 py-3">
-      <p className="flex-1 text-sm font-[var(--font-display)] text-shogun-text-secondary leading-relaxed">
-        {text}
-      </p>
-      <button
-        onClick={handleCopy}
-        title="Copiar texto"
-        className={`shrink-0 flex items-center gap-1.5 text-xs font-[var(--font-display)] px-2.5 py-1.5 rounded-lg border transition-all ${
-          copied
-            ? "border-shogun-accent text-shogun-accent bg-shogun-accent/10"
-            : "border-shogun-border text-shogun-text-muted hover:text-shogun-text-primary hover:border-shogun-text-muted"
-        }`}
-      >
-        {copied ? <Check size={12} /> : <Copy size={12} />}
-        {copied ? "Copiado!" : "Copiar"}
-      </button>
     </div>
   )
 }
@@ -315,7 +248,7 @@ function DailyChart({ dailyData }: { dailyData: MetricasDaily[] }) {
           <Tooltip content={<CustomTooltip />} />
           <Line
             yAxisId="left"
-            type="monotone"
+            type="linear"
             dataKey="purchases"
             name="Pedidos"
             stroke="#95D600"
@@ -325,7 +258,7 @@ function DailyChart({ dailyData }: { dailyData: MetricasDaily[] }) {
           />
           <Line
             yAxisId="right"
-            type="monotone"
+            type="linear"
             dataKey="purchaseValue"
             name="Receita gerada"
             stroke="#3b82f6"
@@ -335,7 +268,7 @@ function DailyChart({ dailyData }: { dailyData: MetricasDaily[] }) {
           />
           <Line
             yAxisId="right"
-            type="monotone"
+            type="linear"
             dataKey="spend"
             name="Investimento"
             stroke="#f59e0b"
@@ -550,13 +483,13 @@ export default function MetricasPage() {
           {/* Compare toggle */}
           <button
             onClick={() => setShowCompare((v) => !v)}
-            className={`flex items-center gap-1.5 h-[38px] px-3 rounded-lg border text-xs font-[var(--font-display)] transition-all ${
+            className={`flex items-center gap-1.5 h-[38px] px-4 rounded-lg border font-[var(--font-display)] text-sm font-medium transition-all ${
               showCompare
-                ? "bg-shogun-accent/15 border-shogun-accent text-shogun-accent"
-                : "border-shogun-border text-shogun-text-muted hover:text-shogun-text-primary hover:border-shogun-text-muted"
+                ? "bg-shogun-accent text-black border-shogun-accent"
+                : "bg-shogun-accent/10 border-shogun-accent text-shogun-accent hover:bg-shogun-accent/20"
             }`}
           >
-            <GitCompare size={13} />
+            <GitCompare size={14} />
             Comparar
           </button>
 
@@ -630,9 +563,6 @@ export default function MetricasPage() {
           {/* ══════════════════ SIMPLES TAB ══════════════════ */}
           {tab === "simples" && (
             <div className="space-y-5">
-              {/* Resumo compacto no topo */}
-              {dateRange && <SummaryBanner cur={cur} dateRange={dateRange} />}
-
               {/* 5 KPI cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <SimpleKpiCard
@@ -669,7 +599,7 @@ export default function MetricasPage() {
                   value={cur.purchaseRoas.toFixed(2)}
                   icon={<Target size={18} />}
                   valueClassName={roasStyle(cur.purchaseRoas).text}
-                  badge={roasStyle(cur.purchaseRoas)}
+                  badge={{ text: roasStyle(cur.purchaseRoas).label, className: roasStyle(cur.purchaseRoas).badge }}
                   showCompare={showCompare}
                   prevValue={prev.purchaseRoas.toFixed(2)}
                   change={calcDelta(cur.purchaseRoas, prev.purchaseRoas)}
