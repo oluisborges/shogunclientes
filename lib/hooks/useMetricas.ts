@@ -35,12 +35,19 @@ export interface MetricasGender {
   purchaseValue: number
 }
 
+export interface MetricasDaily {
+  date: string
+  spend: number
+  purchases: number
+}
+
 export interface MetricasData {
   balance: number
   current: MetricasPeriod
   previous: MetricasPeriod
   campaigns: MetricasCampaign[]
   genderStats: MetricasGender[]
+  dailyData: MetricasDaily[]
 }
 
 interface UseMetricasReturn {

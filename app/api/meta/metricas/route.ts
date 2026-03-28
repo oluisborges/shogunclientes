@@ -35,6 +35,22 @@ interface MetaGenderResponse {
   data: MetaGenderInsight[]
 }
 
+interface MetaDailyInsight {
+  date_start: string
+  spend?: string
+  actions?: MetaAction[]
+}
+
+interface MetaDailyResponse {
+  data: MetaDailyInsight[]
+}
+
+interface MetaCampaignItem {
+  id: string
+  name: string
+  status: string
+}
+
 interface MetaCampaignsResponse {
   data: MetaCampaignItem[]
 }
@@ -128,7 +144,6 @@ export async function GET(request: NextRequest) {
     "spend,impressions,reach,clicks,ctr,cpc,cpp,frequency,purchase_roas,actions,action_values"
 
   try {
-    // Build time range strings for insights
     const currentTimeRange =
       dateStart && dateEnd
         ? JSON.stringify({ since: dateStart, until: dateEnd })
@@ -157,7 +172,14 @@ export async function GET(request: NextRequest) {
     }
     if (currentTimeRange) genderParams.time_range = currentTimeRange
 
-    const [currentInsights, prevInsights, campaignsData, accountData, genderData] =
+    const dailyParams: Record<string, string> = {
+      fields: "spend,actions",
+      level: "account",
+      time_increment: "1",
+    }
+    if (currentTimeRange) dailyParams.time_range = currentTimeRange
+
+    const [currentInsights, prevInsights, campaignsData, accountData, genderData, dailyInsights] =
       await Promise.all([
         metaFetch<MetaInsightsResponse>({
           endpoint: `/${accountId}/insights`,
@@ -186,6 +208,11 @@ export async function GET(request: NextRequest) {
           accessToken,
           params: genderParams,
         }).catch(() => ({ data: [] } as MetaGenderResponse)),
+        metaFetch<MetaDailyResponse>({
+          endpoint: `/${accountId}/insights`,
+          accessToken,
+          params: dailyParams,
+        }).catch(() => ({ data: [] } as MetaDailyResponse)),
       ])
 
     // Compute balance
@@ -201,12 +228,39 @@ export async function GET(request: NextRequest) {
     const current = parseInsights(currentInsights.data[0])
     const previous = parseInsights(prevInsights.data[0])
 
-    // Gender breakdown for purchases
-    const genderStats = (genderData.data || []).map((g) => ({
-      gender: g.gender,
-      purchases: extractAction(g.actions, "purchase"),
-      purchaseValue: extractAction(g.action_values, "purchase"),
-    })).filter((g) => g.gender !== "unknown" && g.purchases > 0)
+    // Gender breakdown
+    const genderStats = (genderData.data || [])
+      .map((g) => ({
+        gender: g.gender,
+        purchases: extractAction(g.actions, "purchase"),
+        purchaseValue: extractAction(g.action_values, "purchase"),
+      }))
+      .filter((g) => g.gender !== "unknown" && g.purchases > 0)
+
+    // Daily breakdown — fill all dates in range with zeros where no data
+    const dailyMap = new Map<string, { spend: number; purchases: number }>()
+    for (const d of dailyInsights.data || []) {
+      dailyMap.set(d.date_start, {
+        spend: parseFloat(d.spend || "0"),
+        purchases: extractAction(d.actions, "purchase"),
+      })
+    }
+
+    const dailyData: Array<{ date: string; spend: number; purchases: number }> = []
+    if (dateStart && dateEnd) {
+      const cur = new Date(dateStart)
+      const end = new Date(dateEnd)
+      while (cur <= end) {
+        const dateStr = cur.toISOString().split("T")[0]
+        const entry = dailyMap.get(dateStr)
+        dailyData.push({
+          date: dateStr,
+          spend: entry?.spend ?? 0,
+          purchases: entry?.purchases ?? 0,
+        })
+        cur.setDate(cur.getDate() + 1)
+      }
+    }
 
     return NextResponse.json({
       balance,
@@ -214,6 +268,7 @@ export async function GET(request: NextRequest) {
       previous,
       campaigns: campaignsData.data || [],
       genderStats,
+      dailyData,
     })
   } catch (err) {
     console.error("Métricas API error:", err)
