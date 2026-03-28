@@ -78,6 +78,7 @@ export default function AgentesPage() {
   const textareaRef                   = useRef<HTMLTextAreaElement>(null)
   const logActivity                   = useActivityLog()
   const hasLoggedAgentRef             = useRef<string | null>(null)
+  const conversationIdRef             = useRef<string | null>(null)
 
   const loadAgents = useCallback(async () => {
     setLoading(true)
@@ -103,6 +104,7 @@ export default function AgentesPage() {
     setError(null)
     setInput("")
     hasLoggedAgentRef.current = null
+    conversationIdRef.current = null
   }
 
   async function handleSend() {
@@ -114,10 +116,29 @@ export default function AgentesPage() {
     setSending(true)
     setError(null)
 
-    // Log first message to this agent session
+    // Create conversation record on first message
     if (hasLoggedAgentRef.current !== activeAgent.id) {
       hasLoggedAgentRef.current = activeAgent.id
-      logActivity("agent_chat", "Shogun IA", { agent: activeAgent.name, category: activeAgent.category })
+      try {
+        const convRes = await fetch("/api/agent-conversations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            agent_id: activeAgent.id,
+            agent_name: activeAgent.name,
+            messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
+          }),
+        })
+        if (convRes.ok) {
+          const convData = await convRes.json()
+          conversationIdRef.current = convData.id
+          logActivity("agent_chat", "Shogun IA", {
+            agent: activeAgent.name,
+            category: activeAgent.category,
+            conversation_id: convData.id,
+          })
+        }
+      } catch { /* non-critical */ }
     }
 
     try {
@@ -128,7 +149,21 @@ export default function AgentesPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? "Erro ao processar")
-      setMessages((prev) => [...prev, { id: ++msgId, role: "assistant", content: data.content }])
+
+      const assistantMsg: Message = { id: ++msgId, role: "assistant", content: data.content }
+      const finalMessages = [...nextMessages, assistantMsg]
+      setMessages(finalMessages)
+
+      // Persist updated conversation
+      if (conversationIdRef.current) {
+        fetch(`/api/agent-conversations/${conversationIdRef.current}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: finalMessages.map((m) => ({ role: m.role, content: m.content })),
+          }),
+        }).catch(() => {})
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro desconhecido")
     } finally {
