@@ -15,7 +15,6 @@ export default function CriarClientePage() {
   const [formData, setFormData] = useState({
     business_name: "",
     meta_account_id: "",
-    meta_access_token: ""
   })
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
@@ -66,7 +65,6 @@ export default function CriarClientePage() {
       setFormData({
         business_name: "",
         meta_account_id: "",
-        meta_access_token: ""
       })
 
       // Redirecionar após 2 segundos
@@ -146,20 +144,8 @@ export default function CriarClientePage() {
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-[var(--font-display)] font-semibold text-shogun-text-secondary mb-2">
-              Token de Acesso Meta (opcional)
-            </label>
-            <input
-              type="password"
-              value={formData.meta_access_token}
-              onChange={(e) => setFormData({ ...formData, meta_access_token: e.target.value })}
-              className="w-full bg-shogun-bg-base border border-shogun-border rounded px-3 py-2 text-shogun-text-primary focus:outline-none focus:border-shogun-accent font-mono text-sm"
-              placeholder="Token de acesso"
-            />
-          </div>
 
-          
+
           {error && (
             <div className="p-3 bg-shogun-danger/10 border border-shogun-danger/20 rounded">
               <p className="text-sm text-shogun-danger">{error}</p>

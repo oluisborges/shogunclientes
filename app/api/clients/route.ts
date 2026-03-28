@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { business_name, meta_account_id, meta_access_token } = body
+    const { business_name, meta_account_id } = body
 
     if (!business_name) {
       return NextResponse.json(
@@ -76,7 +76,6 @@ export async function POST(request: Request) {
       .insert({
         business_name,
         meta_account_id: meta_account_id || null,
-        meta_access_token: meta_access_token || null,
         active: true,
         created_at: new Date().toISOString(),
       })

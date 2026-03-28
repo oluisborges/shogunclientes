@@ -6,9 +6,7 @@ interface ClientCredentials {
 }
 
 /**
- * Returns the Meta account ID and access token for a given client.
- * Falls back to the global token (app_settings.meta_global_token) if the
- * client has no per-client token configured.
+ * Returns the Meta account ID and the global access token for a given client.
  */
 export async function getClientMetaCredentials(
   clientId: string
@@ -17,7 +15,7 @@ export async function getClientMetaCredentials(
 
   const { data: client, error: clientError } = await admin
     .from("clients")
-    .select("meta_account_id, meta_access_token")
+    .select("meta_account_id")
     .eq("id", clientId)
     .single()
 
@@ -28,16 +26,13 @@ export async function getClientMetaCredentials(
     }
   }
 
-  let accessToken: string | null = client.meta_access_token ?? null
+  const { data: setting } = await admin
+    .from("app_settings")
+    .select("value")
+    .eq("key", "meta_global_token")
+    .single()
 
-  if (!accessToken) {
-    const { data: setting } = await admin
-      .from("app_settings")
-      .select("value")
-      .eq("key", "meta_global_token")
-      .single()
-    accessToken = setting?.value ?? null
-  }
+  const accessToken = setting?.value ?? null
 
   if (!accessToken) {
     return {

@@ -75,7 +75,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json()
-  const { email, password, full_name, business_name, cnpj, meta_account_id, meta_access_token, niche, gestor_id } = body
+  const { email, password, full_name, business_name, cnpj, meta_account_id, niche, gestor_id } = body
 
   if (!email || !password || !business_name) {
     return NextResponse.json(
@@ -123,8 +123,7 @@ export async function POST(request: Request) {
       profile_id: userId,
       business_name,
       cnpj: cnpj || null,
-      meta_account_id:  meta_account_id  || null,
-      meta_access_token: meta_access_token || null,
+      meta_account_id: meta_account_id || null,
       active: true,
       niche: niche || null,
       gestor_id: gestor_id || null,
