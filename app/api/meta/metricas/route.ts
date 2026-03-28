@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
     if (currentTimeRange) genderParams.time_range = currentTimeRange
 
     const dailyParams: Record<string, string> = {
-      fields: "spend,actions",
+      fields: "spend,actions,action_values",
       level: "account",
       time_increment: "1",
     }
@@ -238,15 +238,16 @@ export async function GET(request: NextRequest) {
       .filter((g) => g.gender !== "unknown" && g.purchases > 0)
 
     // Daily breakdown — fill all dates in range with zeros where no data
-    const dailyMap = new Map<string, { spend: number; purchases: number }>()
+    const dailyMap = new Map<string, { spend: number; purchases: number; purchaseValue: number }>()
     for (const d of dailyInsights.data || []) {
       dailyMap.set(d.date_start, {
         spend: parseFloat(d.spend || "0"),
         purchases: extractAction(d.actions, "purchase"),
+        purchaseValue: extractAction(d.action_values, "purchase"),
       })
     }
 
-    const dailyData: Array<{ date: string; spend: number; purchases: number }> = []
+    const dailyData: Array<{ date: string; spend: number; purchases: number; purchaseValue: number }> = []
     if (dateStart && dateEnd) {
       const cur = new Date(dateStart)
       const end = new Date(dateEnd)
@@ -257,6 +258,7 @@ export async function GET(request: NextRequest) {
           date: dateStr,
           spend: entry?.spend ?? 0,
           purchases: entry?.purchases ?? 0,
+          purchaseValue: entry?.purchaseValue ?? 0,
         })
         cur.setDate(cur.getDate() + 1)
       }

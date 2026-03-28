@@ -24,13 +24,14 @@ import {
   Receipt,
   Copy,
   Check,
+  GitCompare,
 } from "lucide-react"
 import { ShogunCard } from "@/components/ui/ShogunCard"
 import { DatePicker } from "@/components/ui/DatePicker"
 import { useMetricas } from "@/lib/hooks/useMetricas"
 import { useDateRangeContext } from "@/lib/hooks/useDateRangeContext"
 import { useClientContext } from "@/lib/hooks/useClientContext"
-import type { MetricasCampaign, MetricasGender, MetricasPeriod, MetricasDaily } from "@/lib/hooks/useMetricas"
+import type { MetricasGender, MetricasPeriod, MetricasDaily } from "@/lib/hooks/useMetricas"
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
@@ -50,12 +51,6 @@ function fmtNum(n: number) {
 
 function fmtPct(n: number) {
   return `${n.toFixed(2)}%`
-}
-
-function fmtDelta(d: number | null) {
-  if (d === null) return null
-  const sign = d >= 0 ? "+" : ""
-  return `${sign}${d.toFixed(1)}% vs anterior`
 }
 
 function calcDelta(curr: number, prev: number): number | null {
@@ -86,180 +81,89 @@ function SkeletonGrid({ count, height = "h-32" }: { count: number; height?: stri
   )
 }
 
-// ─── Simple KPI Card (Simples tab) ────────────────────────────────────────────
+// ─── Simple KPI Card ─────────────────────────────────────────────────────────
 
 function SimpleKpiCard({
   label,
+  description,
   value,
   icon,
   valueClassName = "text-shogun-text-primary",
   badge,
+  showCompare = false,
+  prevValue,
   change,
   positiveGood = true,
 }: {
   label: string
+  description: string
   value: string
   icon: React.ReactNode
   valueClassName?: string
   badge?: { text: string; className: string }
+  showCompare?: boolean
+  prevValue?: string
   change?: number | null
   positiveGood?: boolean
 }) {
-  const delta = change !== undefined && change !== null ? fmtDelta(change) : null
-  const isGood = change !== undefined && change !== null && (positiveGood ? change >= 0 : change <= 0)
+  const isGood =
+    change !== undefined && change !== null && (positiveGood ? change >= 0 : change <= 0)
 
   return (
-    <div className="bg-shogun-bg-elevated border border-shogun-border rounded-2xl p-6 flex flex-col gap-3">
+    <div className="bg-shogun-bg-elevated border border-shogun-border rounded-2xl p-5 flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-[var(--font-display)] text-shogun-text-secondary">{label}</span>
+        <span className="text-sm font-[var(--font-display)] font-medium text-shogun-text-secondary">
+          {label}
+        </span>
         <span className="text-shogun-text-muted">{icon}</span>
       </div>
+
       <span className={`font-[var(--font-data)] text-4xl font-bold leading-none ${valueClassName}`}>
         {value}
       </span>
-      <div className="flex items-center gap-2 flex-wrap">
-        {badge && (
-          <span className={`text-xs font-[var(--font-display)] px-2 py-0.5 rounded-full font-semibold ${badge.className}`}>
-            {badge.text}
+
+      {/* Description text — always visible */}
+      <p className="text-xs font-[var(--font-display)] text-shogun-text-muted leading-snug">
+        {description}
+      </p>
+
+      {/* Badge (e.g. ROAS status) */}
+      {badge && (
+        <span className={`self-start text-xs font-[var(--font-display)] px-2 py-0.5 rounded-full font-semibold ${badge.className}`}>
+          {badge.text}
+        </span>
+      )}
+
+      {/* Comparison row — only when enabled */}
+      {showCompare && prevValue && change !== undefined && change !== null && (
+        <div className="flex items-center gap-2 pt-1 border-t border-shogun-border/50">
+          <span className="text-xs font-[var(--font-display)] text-shogun-text-muted">
+            ant: {prevValue}
           </span>
-        )}
-        {delta && (
           <span
-            className={`text-xs font-[var(--font-display)] px-2 py-0.5 rounded-full ${
+            className={`text-xs font-[var(--font-display)] px-1.5 py-0.5 rounded-full font-semibold ${
               isGood
                 ? "bg-shogun-accent/15 text-shogun-accent"
-                : "bg-shogun-danger/15 text-shogun-danger"
+                : "bg-red-400/15 text-red-400"
             }`}
           >
-            {delta}
+            {change >= 0 ? "+" : ""}
+            {change.toFixed(1)}%
           </span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
 
-// ─── Daily line chart ─────────────────────────────────────────────────────────
-
-function DailyChart({ dailyData }: { dailyData: MetricasDaily[] }) {
-  if (!dailyData.length) {
-    return (
-      <p className="text-shogun-text-muted text-sm font-[var(--font-display)] text-center py-8">
-        Sem dados diários disponíveis
-      </p>
-    )
-  }
-
-  const formatDate = (dateStr: string) => {
-    const parts = dateStr.split("-")
-    return `${parts[2]}/${parts[1]}`
-  }
-
-  const CustomTooltip = ({
-    active,
-    payload,
-    label,
-  }: {
-    active?: boolean
-    payload?: Array<{ dataKey: string; value: number; color: string }>
-    label?: string
-  }) => {
-    if (!active || !payload?.length) return null
-    return (
-      <div className="bg-shogun-bg-base border border-shogun-border rounded-lg px-3 py-2 text-sm font-[var(--font-display)] space-y-1">
-        <p className="text-shogun-text-muted text-xs">{label ? formatDate(label) : ""}</p>
-        {payload.map((p) => (
-          <p key={p.dataKey} style={{ color: p.color }} className="font-[var(--font-data)] font-semibold">
-            {p.dataKey === "purchases"
-              ? `${p.value} pedido${p.value !== 1 ? "s" : ""}`
-              : fmtBRLCents(p.value)}
-          </p>
-        ))}
-      </div>
-    )
-  }
-
-  return (
-    <div>
-      {/* Legend */}
-      <div className="flex items-center gap-5 mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-0.5 rounded-full bg-shogun-accent" />
-          <span className="text-xs font-[var(--font-display)] text-shogun-text-secondary">Pedidos</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-0.5 rounded-full bg-blue-500" />
-          <span className="text-xs font-[var(--font-display)] text-shogun-text-secondary">Gasto (R$)</span>
-        </div>
-      </div>
-
-      <ResponsiveContainer width="100%" height={260}>
-        <LineChart data={dailyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="var(--color-shogun-border)"
-            vertical={false}
-          />
-          <XAxis
-            dataKey="date"
-            tickFormatter={formatDate}
-            tick={{ fill: "var(--color-shogun-text-secondary)", fontSize: 11, fontFamily: "var(--font-display)" }}
-            axisLine={false}
-            tickLine={false}
-            interval="preserveStartEnd"
-          />
-          <YAxis
-            yAxisId="left"
-            orientation="left"
-            tick={{ fill: "var(--color-shogun-text-secondary)", fontSize: 11, fontFamily: "var(--font-display)" }}
-            axisLine={false}
-            tickLine={false}
-            tickFormatter={(v) => fmtNum(v)}
-            width={32}
-            allowDecimals={false}
-          />
-          <YAxis
-            yAxisId="right"
-            orientation="right"
-            tick={{ fill: "var(--color-shogun-text-secondary)", fontSize: 11, fontFamily: "var(--font-display)" }}
-            axisLine={false}
-            tickLine={false}
-            tickFormatter={(v) => `R$${fmtNum(v)}`}
-            width={52}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Line
-            yAxisId="left"
-            type="monotone"
-            dataKey="purchases"
-            stroke="#95D600"
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 4, fill: "#95D600", strokeWidth: 0 }}
-          />
-          <Line
-            yAxisId="right"
-            type="monotone"
-            dataKey="spend"
-            stroke="#3b82f6"
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 4, fill: "#3b82f6", strokeWidth: 0 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
-
-// ─── Summary block ────────────────────────────────────────────────────────────
+// ─── Compact summary banner ───────────────────────────────────────────────────
 
 const MONTHS_PT = [
   "janeiro", "fevereiro", "março", "abril", "maio", "junho",
   "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
 ]
 
-function SummaryBlock({
+function SummaryBanner({
   cur,
   dateRange,
 }: {
@@ -283,13 +187,11 @@ function SummaryBlock({
   const pedidos = Math.round(cur.purchases)
   const receita = Math.round(cur.purchaseValue).toLocaleString("pt-BR")
   const invested = Math.round(cur.spend).toLocaleString("pt-BR")
-  const roas = cur.purchaseRoas.toFixed(1).replace(".", ",")
   const roasDetail = cur.purchaseRoas.toFixed(2).replace(".", ",")
 
   const text =
     `${periodStr}, seus anúncios geraram ${pedidos} pedido${pedidos !== 1 ? "s" : ""} com receita atribuída de R$ ${receita}. ` +
-    `Foram investidos R$ ${invested} e seu ROAS foi de ${roas} — ` +
-    `para cada R$ 1 investido, R$ ${roasDetail} retornou em vendas.`
+    `Foram investidos R$ ${invested} e para cada R$ 1,00 investido, R$ ${roasDetail} retornou em vendas.`
 
   function handleCopy() {
     navigator.clipboard.writeText(text).then(() => {
@@ -299,38 +201,160 @@ function SummaryBlock({
   }
 
   return (
-    <ShogunCard>
-      <div className="flex items-start justify-between gap-4 mb-3">
-        <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary">
-          Resumo do período
-        </h2>
-        <button
-          onClick={handleCopy}
-          title="Copiar texto"
-          className={`flex items-center gap-1.5 text-xs font-[var(--font-display)] px-3 py-1.5 rounded-lg border transition-all shrink-0 ${
-            copied
-              ? "border-shogun-accent text-shogun-accent bg-shogun-accent/10"
-              : "border-shogun-border text-shogun-text-muted hover:text-shogun-text-primary hover:border-shogun-text-muted"
-          }`}
-        >
-          {copied ? <Check size={12} /> : <Copy size={12} />}
-          {copied ? "Copiado!" : "Copiar"}
-        </button>
-      </div>
-      <p className="text-shogun-text-primary font-[var(--font-display)] leading-relaxed text-base">
+    <div className="flex items-start gap-3 bg-shogun-bg-elevated border border-shogun-border rounded-xl px-4 py-3">
+      <p className="flex-1 text-sm font-[var(--font-display)] text-shogun-text-secondary leading-relaxed">
         {text}
       </p>
-    </ShogunCard>
+      <button
+        onClick={handleCopy}
+        title="Copiar texto"
+        className={`shrink-0 flex items-center gap-1.5 text-xs font-[var(--font-display)] px-2.5 py-1.5 rounded-lg border transition-all ${
+          copied
+            ? "border-shogun-accent text-shogun-accent bg-shogun-accent/10"
+            : "border-shogun-border text-shogun-text-muted hover:text-shogun-text-primary hover:border-shogun-text-muted"
+        }`}
+      >
+        {copied ? <Check size={12} /> : <Copy size={12} />}
+        {copied ? "Copiado!" : "Copiar"}
+      </button>
+    </div>
   )
 }
 
-// ─── Advanced tab components (reused from before) ────────────────────────────
+// ─── Daily line chart (3 lines) ───────────────────────────────────────────────
 
-function KpiCard({ label, value, change, note, positiveGood = true, icon }: {
+function DailyChart({ dailyData }: { dailyData: MetricasDaily[] }) {
+  if (!dailyData.length) {
+    return (
+      <p className="text-shogun-text-muted text-sm font-[var(--font-display)] text-center py-8">
+        Sem dados diários disponíveis
+      </p>
+    )
+  }
+
+  const formatDate = (dateStr: string) => {
+    const parts = dateStr.split("-")
+    return `${parts[2]}/${parts[1]}`
+  }
+
+  const CustomTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean
+    payload?: Array<{ dataKey: string; value: number; color: string; name: string }>
+    label?: string
+  }) => {
+    if (!active || !payload?.length) return null
+    return (
+      <div className="bg-shogun-bg-base border border-shogun-border rounded-lg px-3 py-2 text-sm font-[var(--font-display)] space-y-1">
+        <p className="text-shogun-text-muted text-xs mb-1">{label ? formatDate(label) : ""}</p>
+        {payload.map((p) => (
+          <p key={p.dataKey} style={{ color: p.color }} className="font-[var(--font-data)] font-semibold text-xs">
+            {p.name}:{" "}
+            {p.dataKey === "purchases"
+              ? `${p.value} pedido${p.value !== 1 ? "s" : ""}`
+              : fmtBRLFull(p.value)}
+          </p>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {/* Manual legend */}
+      <div className="flex items-center gap-5 mb-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-[2px] rounded-full bg-[#95D600]" />
+          <span className="text-xs font-[var(--font-display)] text-shogun-text-secondary">Pedidos</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-[2px] rounded-full bg-[#3b82f6]" />
+          <span className="text-xs font-[var(--font-display)] text-shogun-text-secondary">Receita gerada</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-[2px] rounded-full bg-[#f59e0b]" />
+          <span className="text-xs font-[var(--font-display)] text-shogun-text-secondary">Investimento</span>
+        </div>
+      </div>
+
+      <ResponsiveContainer width="100%" height={260}>
+        <LineChart data={dailyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-shogun-border)" vertical={false} />
+          <XAxis
+            dataKey="date"
+            tickFormatter={formatDate}
+            tick={{ fill: "var(--color-shogun-text-secondary)", fontSize: 11, fontFamily: "var(--font-display)" }}
+            axisLine={false}
+            tickLine={false}
+            interval="preserveStartEnd"
+          />
+          {/* Left axis: Pedidos (count) */}
+          <YAxis
+            yAxisId="left"
+            orientation="left"
+            tick={{ fill: "var(--color-shogun-text-secondary)", fontSize: 11, fontFamily: "var(--font-display)" }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(v) => fmtNum(v)}
+            width={32}
+            allowDecimals={false}
+          />
+          {/* Right axis: Receita + Investimento (BRL) */}
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            tick={{ fill: "var(--color-shogun-text-secondary)", fontSize: 11, fontFamily: "var(--font-display)" }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(v) => `R$${fmtNum(v)}`}
+            width={52}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Line
+            yAxisId="left"
+            type="monotone"
+            dataKey="purchases"
+            name="Pedidos"
+            stroke="#95D600"
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4, fill: "#95D600", strokeWidth: 0 }}
+          />
+          <Line
+            yAxisId="right"
+            type="monotone"
+            dataKey="purchaseValue"
+            name="Receita gerada"
+            stroke="#3b82f6"
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4, fill: "#3b82f6", strokeWidth: 0 }}
+          />
+          <Line
+            yAxisId="right"
+            type="monotone"
+            dataKey="spend"
+            name="Investimento"
+            stroke="#f59e0b"
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4, fill: "#f59e0b", strokeWidth: 0 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+// ─── Advanced tab components ──────────────────────────────────────────────────
+
+function KpiCard({ label, value, change, note, positiveGood = true, icon, showCompare = true }: {
   label: string; value: string; change: number | null
-  note?: string; positiveGood?: boolean; icon?: React.ReactNode
+  note?: string; positiveGood?: boolean; icon?: React.ReactNode; showCompare?: boolean
 }) {
-  const delta = fmtDelta(change)
   const isGood = change !== null && (positiveGood ? change >= 0 : change <= 0)
   return (
     <div className="bg-shogun-bg-elevated border border-shogun-border rounded-xl p-5 flex flex-col gap-2">
@@ -339,9 +363,9 @@ function KpiCard({ label, value, change, note, positiveGood = true, icon }: {
         {icon && <span className="text-shogun-text-muted">{icon}</span>}
       </div>
       <span className="font-[var(--font-data)] text-3xl font-bold text-shogun-text-primary leading-none">{value}</span>
-      {delta && (
+      {showCompare && change !== null && (
         <span className={`inline-flex self-start text-xs font-[var(--font-display)] px-2 py-0.5 rounded-full ${isGood ? "bg-shogun-accent/15 text-shogun-accent" : "bg-shogun-danger/15 text-shogun-danger"}`}>
-          {delta}
+          {change >= 0 ? "+" : ""}{change.toFixed(1)}% vs anterior
         </span>
       )}
       {note && <span className="text-xs text-shogun-text-muted font-[var(--font-display)]">{note}</span>}
@@ -349,18 +373,17 @@ function KpiCard({ label, value, change, note, positiveGood = true, icon }: {
   )
 }
 
-function MetricCard({ label, value, change, positiveGood = true }: {
-  label: string; value: string; change: number | null; positiveGood?: boolean
+function MetricCard({ label, value, change, positiveGood = true, showCompare = true }: {
+  label: string; value: string; change: number | null; positiveGood?: boolean; showCompare?: boolean
 }) {
-  const delta = fmtDelta(change)
   const isGood = change !== null && (positiveGood ? change >= 0 : change <= 0)
   return (
     <div className="bg-shogun-bg-elevated border border-shogun-border rounded-xl p-4 flex flex-col gap-1.5">
       <span className="text-xs font-[var(--font-display)] uppercase tracking-wider text-shogun-text-secondary leading-tight">{label}</span>
       <span className="font-[var(--font-data)] text-2xl font-bold text-shogun-text-primary leading-none">{value}</span>
-      {delta && (
+      {showCompare && change !== null && (
         <span className={`inline-flex self-start text-xs font-[var(--font-display)] px-1.5 py-0.5 rounded-full ${isGood ? "bg-shogun-accent/15 text-shogun-accent" : "bg-shogun-danger/15 text-shogun-danger"}`}>
-          {delta}
+          {change >= 0 ? "+" : ""}{change.toFixed(1)}% vs anterior
         </span>
       )}
     </div>
@@ -467,6 +490,7 @@ export default function MetricasPage() {
   const { dateRange, setDateRange, compareRange, setCompareRange } = useDateRangeContext()
   const { data, loading, error } = useMetricas()
   const [tab, setTab] = useState<Tab>("simples")
+  const [showCompare, setShowCompare] = useState(false)
 
   const effectiveCompareRange = useMemo(() => {
     if (compareRange) return compareRange
@@ -483,11 +507,15 @@ export default function MetricasPage() {
   const cur = data?.current
   const prev = data?.previous
 
+  // Ticket médio helpers
+  const curTicket = cur && cur.purchases > 0 ? cur.purchaseValue / cur.purchases : 0
+  const prevTicket = prev && prev.purchases > 0 ? prev.purchaseValue / prev.purchases : 0
+
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <h1 className="text-2xl font-[var(--font-display)] font-bold text-shogun-text-primary">
             Métricas
           </h1>
@@ -497,7 +525,7 @@ export default function MetricasPage() {
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-4 py-1.5 rounded-md text-sm font-[var(--font-display)] transition-all capitalize ${
+                className={`px-4 py-1.5 rounded-md text-sm font-[var(--font-display)] transition-all ${
                   tab === t
                     ? "bg-shogun-accent text-black font-semibold"
                     : "text-shogun-text-secondary hover:text-shogun-text-primary"
@@ -509,34 +537,49 @@ export default function MetricasPage() {
           </div>
         </div>
 
-        {/* Date selectors */}
+        {/* Date controls */}
         <div className="flex items-end gap-3">
+          {/* Main period */}
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-[var(--font-display)] uppercase tracking-wider text-shogun-text-muted px-1">
               Período
             </span>
             <DatePicker value={dateRange ?? undefined} onChange={setDateRange} />
           </div>
-          <div className="flex flex-col items-center pb-2.5">
-            <span className="text-xs font-[var(--font-display)] text-shogun-text-muted leading-none">vs</span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-1.5 px-1">
-              <span className="text-[10px] font-[var(--font-display)] uppercase tracking-wider text-shogun-text-muted">
-                Comparar com{!compareRange && <span className="text-shogun-accent ml-1">• auto</span>}
-              </span>
-              {compareRange && (
-                <button
-                  onClick={() => setCompareRange(null)}
-                  title="Voltar ao período anterior automático"
-                  className="text-shogun-text-muted hover:text-shogun-accent transition-colors"
-                >
-                  <RotateCcw size={10} />
-                </button>
-              )}
+
+          {/* Compare toggle */}
+          <button
+            onClick={() => setShowCompare((v) => !v)}
+            className={`flex items-center gap-1.5 h-[38px] px-3 rounded-lg border text-xs font-[var(--font-display)] transition-all ${
+              showCompare
+                ? "bg-shogun-accent/15 border-shogun-accent text-shogun-accent"
+                : "border-shogun-border text-shogun-text-muted hover:text-shogun-text-primary hover:border-shogun-text-muted"
+            }`}
+          >
+            <GitCompare size={13} />
+            Comparar
+          </button>
+
+          {/* Compare period — only visible when showCompare */}
+          {showCompare && (
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-1.5 px-1">
+                <span className="text-[10px] font-[var(--font-display)] uppercase tracking-wider text-shogun-text-muted">
+                  Comparar com{!compareRange && <span className="text-shogun-accent ml-1">• auto</span>}
+                </span>
+                {compareRange && (
+                  <button
+                    onClick={() => setCompareRange(null)}
+                    title="Voltar ao período anterior automático"
+                    className="text-shogun-text-muted hover:text-shogun-accent transition-colors"
+                  >
+                    <RotateCcw size={10} />
+                  </button>
+                )}
+              </div>
+              <DatePicker value={effectiveCompareRange} onChange={setCompareRange} />
             </div>
-            <DatePicker value={effectiveCompareRange} onChange={setCompareRange} />
-          </div>
+          )}
         </div>
       </div>
 
@@ -552,12 +595,12 @@ export default function MetricasPage() {
 
       {/* Loading skeleton */}
       {selectedClientId && loading && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <SkeletonGrid count={4} height="h-40" />
+        <div className="space-y-4">
+          <div className="animate-pulse bg-shogun-bg-elevated border border-shogun-border rounded-xl h-14" />
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            <SkeletonGrid count={5} height="h-44" />
           </div>
           <div className="animate-pulse bg-shogun-bg-elevated border border-shogun-border rounded-xl h-80" />
-          <div className="animate-pulse bg-shogun-bg-elevated border border-shogun-border rounded-xl h-32" />
         </div>
       )}
 
@@ -586,51 +629,72 @@ export default function MetricasPage() {
         <>
           {/* ══════════════════ SIMPLES TAB ══════════════════ */}
           {tab === "simples" && (
-            <div className="space-y-6">
-              {/* Block 1 — 4 big KPI cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-5">
+              {/* Resumo compacto no topo */}
+              {dateRange && <SummaryBanner cur={cur} dateRange={dateRange} />}
+
+              {/* 5 KPI cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <SimpleKpiCard
-                  label="Pedidos gerados"
+                  label="Pedidos"
+                  description="Número de pedidos que vieram através dos anúncios"
                   value={fmtNum(cur.purchases)}
-                  icon={<ShoppingCart size={20} />}
+                  icon={<ShoppingCart size={18} />}
+                  showCompare={showCompare}
+                  prevValue={fmtNum(prev.purchases)}
                   change={calcDelta(cur.purchases, prev.purchases)}
                 />
                 <SimpleKpiCard
                   label="Receita gerada"
+                  description="Receita gerada através dos anúncios"
                   value={fmtBRLFull(cur.purchaseValue)}
-                  icon={<Receipt size={20} />}
+                  icon={<Receipt size={18} />}
+                  showCompare={showCompare}
+                  prevValue={fmtBRLFull(prev.purchaseValue)}
                   change={calcDelta(cur.purchaseValue, prev.purchaseValue)}
                 />
                 <SimpleKpiCard
-                  label="Valor investido"
+                  label="Valor Investido"
+                  description="Valor que você investiu nos anúncios"
                   value={fmtBRLFull(cur.spend)}
-                  icon={<TrendingUp size={20} />}
+                  icon={<TrendingUp size={18} />}
+                  showCompare={showCompare}
+                  prevValue={fmtBRLFull(prev.spend)}
                   change={calcDelta(cur.spend, prev.spend)}
                   positiveGood={false}
                 />
                 <SimpleKpiCard
                   label="ROAS"
+                  description={`Para cada R$ 1,00 investido, retornou R$ ${cur.purchaseRoas.toFixed(2).replace(".", ",")}`}
                   value={cur.purchaseRoas.toFixed(2)}
-                  icon={<Target size={20} />}
+                  icon={<Target size={18} />}
                   valueClassName={roasStyle(cur.purchaseRoas).text}
                   badge={roasStyle(cur.purchaseRoas)}
+                  showCompare={showCompare}
+                  prevValue={prev.purchaseRoas.toFixed(2)}
                   change={calcDelta(cur.purchaseRoas, prev.purchaseRoas)}
+                />
+                <SimpleKpiCard
+                  label="Ticket Médio"
+                  description="Valor médio por pedido gerado pelos anúncios"
+                  value={fmtBRLFull(curTicket)}
+                  icon={<BarChart2 size={18} />}
+                  showCompare={showCompare}
+                  prevValue={fmtBRLFull(prevTicket)}
+                  change={calcDelta(curTicket, prevTicket)}
                 />
               </div>
 
-              {/* Block 2 — Daily evolution chart */}
+              {/* Gráfico de evolução diária */}
               <ShogunCard>
-                <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-1">
+                <h2 className="text-base font-[var(--font-display)] font-semibold text-shogun-text-primary mb-1">
                   Evolução diária
                 </h2>
                 <p className="text-xs text-shogun-text-muted font-[var(--font-display)] mb-4">
-                  Pedidos e gasto por dia no período selecionado
+                  Pedidos, receita e investimento por dia no período selecionado
                 </p>
                 <DailyChart dailyData={data.dailyData} />
               </ShogunCard>
-
-              {/* Block 3 — Auto-generated summary */}
-              {dateRange && <SummaryBlock cur={cur} dateRange={dateRange} />}
             </div>
           )}
 
@@ -650,6 +714,7 @@ export default function MetricasPage() {
                     note="Total gasto no período"
                     positiveGood={false}
                     icon={<TrendingUp size={16} />}
+                    showCompare={showCompare}
                   />
                   <KpiCard
                     label="Valor da conversão"
@@ -657,6 +722,7 @@ export default function MetricasPage() {
                     change={calcDelta(cur.purchaseValue, prev.purchaseValue)}
                     note="Receita atribuída (Meta)"
                     icon={<BarChart2 size={16} />}
+                    showCompare={showCompare}
                   />
                   <KpiCard
                     label="ROAS"
@@ -664,6 +730,7 @@ export default function MetricasPage() {
                     change={calcDelta(cur.purchaseRoas, prev.purchaseRoas)}
                     note="Retorno sobre investimento"
                     icon={<Target size={16} />}
+                    showCompare={showCompare}
                   />
                   <KpiCard
                     label="Compras"
@@ -671,16 +738,15 @@ export default function MetricasPage() {
                     change={calcDelta(cur.purchases, prev.purchases)}
                     note="Compras atribuídas"
                     icon={<ShoppingCart size={16} />}
+                    showCompare={showCompare}
                   />
                   <KpiCard
                     label="Ticket médio"
-                    value={fmtBRLFull(cur.purchases > 0 ? cur.purchaseValue / cur.purchases : 0)}
-                    change={calcDelta(
-                      cur.purchases > 0 ? cur.purchaseValue / cur.purchases : 0,
-                      prev.purchases > 0 ? prev.purchaseValue / prev.purchases : 0
-                    )}
+                    value={fmtBRLFull(curTicket)}
+                    change={calcDelta(curTicket, prevTicket)}
                     note="Valor médio por compra"
                     icon={<Receipt size={16} />}
+                    showCompare={showCompare}
                   />
                 </div>
               </section>
@@ -691,18 +757,18 @@ export default function MetricasPage() {
                   Métricas detalhadas
                 </h2>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <MetricCard label="Alcance total" value={fmtNum(cur.reach)} change={calcDelta(cur.reach, prev.reach)} />
-                  <MetricCard label="Impressões totais" value={fmtNum(cur.impressions)} change={calcDelta(cur.impressions, prev.impressions)} />
-                  <MetricCard label="Total de cliques no link" value={fmtNum(cur.linkClicks)} change={calcDelta(cur.linkClicks, prev.linkClicks)} />
-                  <MetricCard label="CTR (taxa de cliques)" value={fmtPct(cur.ctr)} change={calcDelta(cur.ctr, prev.ctr)} />
-                  <MetricCard label="Visualizações da landing page" value={fmtNum(cur.lpViews)} change={calcDelta(cur.lpViews, prev.lpViews)} />
-                  <MetricCard label="Adições ao carrinho" value={fmtNum(cur.addToCart)} change={calcDelta(cur.addToCart, prev.addToCart)} />
-                  <MetricCard label="Finalizações de compra iniciadas" value={fmtNum(cur.initiateCheckout)} change={calcDelta(cur.initiateCheckout, prev.initiateCheckout)} />
-                  <MetricCard label="Compras" value={fmtNum(cur.purchases)} change={calcDelta(cur.purchases, prev.purchases)} />
-                  <MetricCard label="CPM médio" value={fmtBRLCents(cur.cpp)} change={calcDelta(cur.cpp, prev.cpp)} positiveGood={false} />
-                  <MetricCard label="CPC médio" value={fmtBRLCents(cur.cpc)} change={calcDelta(cur.cpc, prev.cpc)} positiveGood={false} />
-                  <MetricCard label="Custo por compra" value={fmtBRLCents(cur.costPerPurchase)} change={calcDelta(cur.costPerPurchase, prev.costPerPurchase)} positiveGood={false} />
-                  <MetricCard label="Frequência" value={cur.frequency.toFixed(2)} change={calcDelta(cur.frequency, prev.frequency)} positiveGood={false} />
+                  <MetricCard label="Alcance total" value={fmtNum(cur.reach)} change={calcDelta(cur.reach, prev.reach)} showCompare={showCompare} />
+                  <MetricCard label="Impressões totais" value={fmtNum(cur.impressions)} change={calcDelta(cur.impressions, prev.impressions)} showCompare={showCompare} />
+                  <MetricCard label="Total de cliques no link" value={fmtNum(cur.linkClicks)} change={calcDelta(cur.linkClicks, prev.linkClicks)} showCompare={showCompare} />
+                  <MetricCard label="CTR (taxa de cliques)" value={fmtPct(cur.ctr)} change={calcDelta(cur.ctr, prev.ctr)} showCompare={showCompare} />
+                  <MetricCard label="Visualizações da landing page" value={fmtNum(cur.lpViews)} change={calcDelta(cur.lpViews, prev.lpViews)} showCompare={showCompare} />
+                  <MetricCard label="Adições ao carrinho" value={fmtNum(cur.addToCart)} change={calcDelta(cur.addToCart, prev.addToCart)} showCompare={showCompare} />
+                  <MetricCard label="Finalizações de compra iniciadas" value={fmtNum(cur.initiateCheckout)} change={calcDelta(cur.initiateCheckout, prev.initiateCheckout)} showCompare={showCompare} />
+                  <MetricCard label="Compras" value={fmtNum(cur.purchases)} change={calcDelta(cur.purchases, prev.purchases)} showCompare={showCompare} />
+                  <MetricCard label="CPM médio" value={fmtBRLCents(cur.cpp)} change={calcDelta(cur.cpp, prev.cpp)} positiveGood={false} showCompare={showCompare} />
+                  <MetricCard label="CPC médio" value={fmtBRLCents(cur.cpc)} change={calcDelta(cur.cpc, prev.cpc)} positiveGood={false} showCompare={showCompare} />
+                  <MetricCard label="Custo por compra" value={fmtBRLCents(cur.costPerPurchase)} change={calcDelta(cur.costPerPurchase, prev.costPerPurchase)} positiveGood={false} showCompare={showCompare} />
+                  <MetricCard label="Frequência" value={cur.frequency.toFixed(2)} change={calcDelta(cur.frequency, prev.frequency)} positiveGood={false} showCompare={showCompare} />
                 </div>
               </section>
 

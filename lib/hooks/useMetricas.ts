@@ -39,6 +39,7 @@ export interface MetricasDaily {
   date: string
   spend: number
   purchases: number
+  purchaseValue: number
 }
 
 export interface MetricasData {
