@@ -26,9 +26,13 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
-  const isAuthRoute      = pathname.startsWith("/login")
+  const isAuthRoute       = pathname.startsWith("/login")
   const isAguardandoRoute = pathname === "/aguardando-aprovacao"
-  const isPending        = user?.user_metadata?.status === "pending"
+  const isApiRoute        = pathname.startsWith("/api/")
+  const isPending         = user?.user_metadata?.status === "pending"
+
+  // API routes handle their own auth — never redirect them
+  if (isApiRoute) return supabaseResponse
 
   // Unauthenticated: must go to login
   if (!user && !isAuthRoute && !isAguardandoRoute) {
