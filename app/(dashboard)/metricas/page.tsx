@@ -25,6 +25,7 @@ import {
   ShoppingCart,
   Receipt,
   GitCompare,
+  Info,
 } from "lucide-react"
 import { ShogunCard } from "@/components/ui/ShogunCard"
 import { DatePicker } from "@/components/ui/DatePicker"
@@ -426,16 +427,22 @@ function GenderDonut({ genderStats }: { genderStats: MetricasGender[] }) {
       </div>
 
       {/* Donut */}
-      <ResponsiveContainer width="100%" height={200}>
-        <PieChart>
-          <Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={88} dataKey="value" paddingAngle={3}>
-            {data.map((entry) => (
-              <Cell key={entry.gender} fill={GENDER_COLORS[entry.gender] ?? "#6b7280"} />
-            ))}
-          </Pie>
-          <Tooltip content={<GenderTooltip />} />
-        </PieChart>
-      </ResponsiveContainer>
+      <div className="relative w-full">
+        <ResponsiveContainer width="100%" height={200}>
+          <PieChart>
+            <Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={88} dataKey="value" paddingAngle={3}>
+              {data.map((entry) => (
+                <Cell key={entry.gender} fill={GENDER_COLORS[entry.gender] ?? "#6b7280"} />
+              ))}
+            </Pie>
+            <Tooltip content={<GenderTooltip />} />
+          </PieChart>
+        </ResponsiveContainer>
+        {/* Hint icon in the donut hole */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <Info size={14} className="text-white/20" />
+        </div>
+      </div>
     </div>
   )
 }
