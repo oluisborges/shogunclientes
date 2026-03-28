@@ -595,9 +595,9 @@ export default function UsuariosPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-shogun-border">
-                    {["Usuário", "Ação", "Detalhes", "Data/Hora"].map((h) => (
+                    {["Usuário", "Ação", "Detalhes", "Data/Hora"].map((h, i) => (
                       <th
-                        key={h}
+                        key={i}
                         className="px-3 py-2 text-left text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider"
                       >
                         {h}
@@ -662,8 +662,8 @@ export default function UsuariosPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-shogun-bg-base border-b border-shogun-border">
-                  {["Nome", "E-mail", "Empresa", "Nicho", "Gestor", "Perfil", ""].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">{h}</th>
+                  {["Nome", "E-mail", "Empresa", "Nicho", "Gestor", "Perfil", ""].map((h, i) => (
+                    <th key={i} className="px-4 py-3 text-left text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
