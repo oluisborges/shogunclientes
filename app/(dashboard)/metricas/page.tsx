@@ -400,45 +400,42 @@ function GenderDonut({ genderStats }: { genderStats: MetricasGender[] }) {
     )
   }
 
-  // Sort: female first, male second for consistent left/right placement
-  const sorted = [...genderStats].sort((a) => (a.gender === "female" ? -1 : 1))
-
-  function GenderStat({ g }: { g: MetricasGender }) {
-    const color = GENDER_COLORS[g.gender] ?? "#6b7280"
-    return (
-      <div className="flex flex-col items-center gap-1 w-[110px] shrink-0">
-        <div className="w-2.5 h-2.5 rounded-sm" style={{ background: color }} />
-        <span className="text-[10px] font-[var(--font-display)] uppercase tracking-widest text-white/40 mt-0.5">
-          {g.gender === "male" ? "Homens" : "Mulheres"}
-        </span>
-        <span className="font-[var(--font-data)] text-4xl font-bold leading-none" style={{ color }}>
-          {fmtNum(g.purchases)}
-        </span>
-        <span className="text-xs text-white/40 font-[var(--font-display)] text-center leading-snug">
-          {total > 0 ? ((g.purchases / total) * 100).toFixed(0) : 0}% das compras
-        </span>
-      </div>
-    )
-  }
-
   return (
-    <div className="flex items-center justify-between gap-2">
-      {sorted[0] && <GenderStat g={sorted[0]} />}
-
-      <div className="flex-1 min-w-0">
-        <ResponsiveContainer width="100%" height={200}>
-          <PieChart>
-            <Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={88} dataKey="value" paddingAngle={3}>
-              {data.map((entry) => (
-                <Cell key={entry.gender} fill={GENDER_COLORS[entry.gender] ?? "#6b7280"} />
-              ))}
-            </Pie>
-            <Tooltip content={<GenderTooltip />} />
-          </PieChart>
-        </ResponsiveContainer>
+    <div className="flex flex-col items-center">
+      {/* Stats row */}
+      <div className="flex gap-10 mb-5 w-full justify-center">
+        {genderStats.map((g) => {
+          const color = GENDER_COLORS[g.gender] ?? "#6b7280"
+          return (
+            <div key={g.gender} className="flex flex-col items-center gap-0.5">
+              <div className="flex items-center gap-1.5 mb-1">
+                <div className="w-2 h-2 rounded-sm" style={{ background: color }} />
+                <span className="text-[10px] font-[var(--font-display)] uppercase tracking-widest text-white/40">
+                  {g.gender === "male" ? "Homens" : "Mulheres"}
+                </span>
+              </div>
+              <span className="font-[var(--font-data)] text-3xl font-bold leading-none" style={{ color }}>
+                {fmtNum(g.purchases)}
+              </span>
+              <span className="text-xs text-white/40 font-[var(--font-display)] mt-1">
+                {total > 0 ? ((g.purchases / total) * 100).toFixed(0) : 0}% das compras
+              </span>
+            </div>
+          )
+        })}
       </div>
 
-      {sorted[1] && <GenderStat g={sorted[1]} />}
+      {/* Donut */}
+      <ResponsiveContainer width="100%" height={200}>
+        <PieChart>
+          <Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={88} dataKey="value" paddingAngle={3}>
+            {data.map((entry) => (
+              <Cell key={entry.gender} fill={GENDER_COLORS[entry.gender] ?? "#6b7280"} />
+            ))}
+          </Pie>
+          <Tooltip content={<GenderTooltip />} />
+        </PieChart>
+      </ResponsiveContainer>
     </div>
   )
 }
