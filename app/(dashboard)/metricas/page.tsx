@@ -372,34 +372,61 @@ function GenderDonut({ genderStats }: { genderStats: MetricasGender[] }) {
     return <p className="text-white/40 text-sm font-[var(--font-display)] text-center mt-8">Sem dados de público disponíveis</p>
   }
 
+  // Custom tooltip with lpViews, purchases and rate
+  const GenderTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { gender: string; name: string; value: number } }> }) => {
+    if (!active || !payload?.length) return null
+    const entry = payload[0].payload
+    const stat = genderStats.find((g) => g.gender === entry.gender)
+    if (!stat) return null
+    const pct = total > 0 ? ((stat.purchases / total) * 100).toFixed(0) : "0"
+    const rate = stat.lpViews > 0 ? ((stat.purchases / stat.lpViews) * 100).toFixed(1) : "—"
+    const color = GENDER_COLORS[stat.gender] ?? "#6b7280"
+    return (
+      <div className="bg-shogun-bg-base border border-shogun-border rounded-xl px-4 py-3 font-[var(--font-display)] space-y-1.5 min-w-[190px]">
+        <p className="font-semibold text-sm mb-2" style={{ color }}>{entry.name}</p>
+        <div className="flex justify-between text-xs gap-4">
+          <span className="text-white/50">Vis. de Cardápio</span>
+          <span className="font-[var(--font-data)] font-semibold text-shogun-text-primary">{fmtNum(stat.lpViews)}</span>
+        </div>
+        <div className="flex justify-between text-xs gap-4">
+          <span className="text-white/50">Compras</span>
+          <span className="font-[var(--font-data)] font-semibold" style={{ color }}>{fmtNum(stat.purchases)} ({pct}%)</span>
+        </div>
+        <div className="flex justify-between text-xs gap-4 pt-1 border-t border-white/10">
+          <span className="text-white/50">Taxa de compra</span>
+          <span className="font-[var(--font-data)] font-bold text-shogun-accent">{rate}%</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="flex gap-8">
+    <div className="flex flex-col items-center">
+      {/* Stats row — with generous bottom margin before the donut */}
+      <div className="flex gap-12 mb-8">
         {genderStats.map((g) => (
           <div key={g.gender} className="flex flex-col items-center gap-0.5">
-            <span className="text-[10px] font-[var(--font-display)] uppercase tracking-wider text-white/40">
+            <span className="text-[10px] font-[var(--font-display)] uppercase tracking-widest text-white/40">
               {g.gender === "male" ? "Homens" : "Mulheres"}
             </span>
-            <span className="font-[var(--font-data)] text-2xl font-bold" style={{ color: GENDER_COLORS[g.gender] ?? "#6b7280" }}>
+            <span className="font-[var(--font-data)] text-3xl font-bold" style={{ color: GENDER_COLORS[g.gender] ?? "#6b7280" }}>
               {fmtNum(g.purchases)}
             </span>
             <span className="text-xs text-white/40 font-[var(--font-display)]">
-              {total > 0 ? ((g.purchases / total) * 100).toFixed(0) : 0}%
+              {total > 0 ? ((g.purchases / total) * 100).toFixed(0) : 0}% das compras
             </span>
           </div>
         ))}
       </div>
-      <ResponsiveContainer width="100%" height={180}>
+
+      <ResponsiveContainer width="100%" height={200}>
         <PieChart>
-          <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={75} dataKey="value" paddingAngle={2}>
+          <Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={88} dataKey="value" paddingAngle={3}>
             {data.map((entry) => (
               <Cell key={entry.gender} fill={GENDER_COLORS[entry.gender] ?? "#6b7280"} />
             ))}
           </Pie>
-          <Tooltip
-            contentStyle={{ backgroundColor: "var(--color-shogun-bg-base)", border: "1px solid var(--color-shogun-border)", borderRadius: "8px", fontFamily: "var(--font-display)", color: "var(--color-shogun-text-primary)" }}
-            formatter={(value: number, name: string) => [`${fmtNum(value)} compras (${total > 0 ? ((value / total) * 100).toFixed(0) : 0}%)`, name]}
-          />
+          <Tooltip content={<GenderTooltip />} />
           <Legend formatter={(value) => <span className="text-xs text-white/50 font-[var(--font-display)]">{value}</span>} />
         </PieChart>
       </ResponsiveContainer>

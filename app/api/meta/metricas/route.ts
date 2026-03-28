@@ -257,6 +257,7 @@ export async function GET(request: NextRequest) {
         gender: g.gender,
         purchases: extractAction(g.actions, "purchase"),
         purchaseValue: extractAction(g.action_values, "purchase"),
+        lpViews: extractAction(g.actions, "landing_page_view"),
       }))
       .filter((g) => g.gender !== "unknown" && g.purchases > 0)
 

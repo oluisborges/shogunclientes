@@ -33,6 +33,7 @@ export interface MetricasGender {
   gender: string
   purchases: number
   purchaseValue: number
+  lpViews: number
 }
 
 export interface MetricasDaily {
