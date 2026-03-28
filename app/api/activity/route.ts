@@ -21,13 +21,24 @@ export async function POST(req: NextRequest) {
   const { action_type, page_label, path, details } = body
   if (!action_type || !path) return NextResponse.json({ error: "Missing fields" }, { status: 400 })
 
-  await admin.from("user_activity_logs").insert({
+  // Try with details (requires migration 012); fall back without it
+  const { error: insertError } = await admin.from("user_activity_logs").insert({
     user_id: user.id,
     action_type,
     page_label: page_label ?? null,
     path,
     details: details ?? null,
   })
+
+  if (insertError) {
+    // Retry without details in case column doesn't exist yet
+    await admin.from("user_activity_logs").insert({
+      user_id: user.id,
+      action_type,
+      page_label: page_label ?? null,
+      path,
+    })
+  }
 
   return NextResponse.json({ ok: true })
 }
@@ -50,34 +61,52 @@ export async function GET(req: NextRequest) {
   const userId = searchParams.get("userId") ?? undefined
   const limit = parseInt(searchParams.get("limit") ?? "200")
 
-  let query = admin
+  // Fetch logs (without profile join — FK goes to auth.users, not profiles)
+  let logsQuery = admin
     .from("user_activity_logs")
-    .select(`
-      id, action_type, page_label, path, details, created_at, user_id,
-      profiles:user_id ( full_name, email: id )
-    `)
+    .select("id, action_type, page_label, path, created_at, user_id")
     .order("created_at", { ascending: false })
     .limit(limit)
 
-  if (userId) query = query.eq("user_id", userId)
+  if (userId) logsQuery = logsQuery.eq("user_id", userId)
 
-  const { data, error } = await query
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const { data: rows, error: logsError } = await logsQuery
+  if (logsError) return NextResponse.json({ error: logsError.message }, { status: 500 })
 
-  // Flatten profile into each log entry
-  const logs = (data ?? []).map((row: Record<string, unknown>) => {
-    const profile = row.profiles as { full_name: string | null; email: string } | null
-    return {
-      id: row.id,
-      user_id: row.user_id,
-      action_type: row.action_type,
-      page_label: row.page_label,
-      path: row.path,
-      details: row.details,
-      created_at: row.created_at,
-      user_name: profile?.full_name ?? "—",
-    }
-  })
+  // Try to also fetch details column (exists only after migration 012)
+  const detailsMap = new Map<string, unknown>()
+  try {
+    let detailsQuery = admin
+      .from("user_activity_logs")
+      .select("id, details")
+      .order("created_at", { ascending: false })
+      .limit(limit)
+    if (userId) detailsQuery = detailsQuery.eq("user_id", userId)
+    const { data: detailsRows } = await detailsQuery
+    for (const r of detailsRows ?? []) detailsMap.set(r.id, r.details)
+  } catch { /* column may not exist yet */ }
+
+  // Build name map from profiles table
+  const userIds = [...new Set((rows ?? []).map((r) => r.user_id as string))]
+  const nameMap = new Map<string, string>()
+  if (userIds.length > 0) {
+    const { data: profiles } = await admin
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", userIds)
+    for (const p of profiles ?? []) nameMap.set(p.id, p.full_name ?? "—")
+  }
+
+  const logs = (rows ?? []).map((row) => ({
+    id: row.id,
+    user_id: row.user_id,
+    action_type: row.action_type,
+    page_label: row.page_label,
+    path: row.path,
+    details: detailsMap.get(row.id) ?? null,
+    created_at: row.created_at,
+    user_name: nameMap.get(row.user_id) ?? "—",
+  }))
 
   return NextResponse.json(logs)
 }
