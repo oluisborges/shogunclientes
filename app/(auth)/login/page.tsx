@@ -37,7 +37,7 @@ function RegisterModal({
     e.preventDefault()
     setError(null)
 
-    if (reg.password !== reg.confirm) { setError("As senhas não coincidem."); return }
+    if (reg.password !== reg.confirm) { setError("As senhas n\u00e3o coincidem."); return }
     if (reg.password.length < 6)      { setError("A senha deve ter pelo menos 6 caracteres."); return }
 
     setLoading(true)
@@ -63,15 +63,11 @@ function RegisterModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
-
-      {/* Modal */}
       <div className="relative w-full max-w-md bg-shogun-bg-elevated border border-shogun-border rounded-xl shadow-2xl overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-shogun-border">
           <div>
             <h2 className="text-base font-bold font-[var(--font-display)] text-shogun-text-primary">
@@ -88,90 +84,35 @@ function RegisterModal({
             <X size={18} />
           </button>
         </div>
-
-        {/* Form */}
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-3 max-h-[70vh] overflow-y-auto">
           <div>
             <label className={labelCls}>Nome completo *</label>
-            <input
-              type="text"
-              value={reg.full_name}
-              onChange={(e) => setReg({ ...reg, full_name: e.target.value })}
-              className={inputCls}
-              placeholder="João Silva"
-              required
-            />
+            <input type="text" value={reg.full_name} onChange={(e) => setReg({ ...reg, full_name: e.target.value })} className={inputCls} placeholder="Jo\u00e3o Silva" required />
           </div>
-
           <div>
             <label className={labelCls}>Nome da empresa *</label>
-            <input
-              type="text"
-              value={reg.business_name}
-              onChange={(e) => setReg({ ...reg, business_name: e.target.value })}
-              className={inputCls}
-              placeholder="Minha Empresa Ltda"
-              required
-            />
+            <input type="text" value={reg.business_name} onChange={(e) => setReg({ ...reg, business_name: e.target.value })} className={inputCls} placeholder="Minha Empresa Ltda" required />
           </div>
-
           <div>
             <label className={labelCls}>CNPJ</label>
-            <input
-              type="text"
-              value={reg.cnpj}
-              onChange={(e) => setReg({ ...reg, cnpj: formatCnpj(e.target.value) })}
-              className={inputCls}
-              placeholder="00.000.000/0001-00"
-            />
+            <input type="text" value={reg.cnpj} onChange={(e) => setReg({ ...reg, cnpj: formatCnpj(e.target.value) })} className={inputCls} placeholder="00.000.000/0001-00" />
           </div>
-
           <div>
             <label className={labelCls}>E-mail *</label>
-            <input
-              type="email"
-              value={reg.email}
-              onChange={(e) => setReg({ ...reg, email: e.target.value })}
-              className={inputCls}
-              placeholder="seu@email.com"
-              required
-            />
+            <input type="email" value={reg.email} onChange={(e) => setReg({ ...reg, email: e.target.value })} className={inputCls} placeholder="seu@email.com" required />
           </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Senha *</label>
-              <input
-                type="password"
-                value={reg.password}
-                onChange={(e) => setReg({ ...reg, password: e.target.value })}
-                className={inputCls}
-                placeholder="Mín. 6 caracteres"
-                required
-              />
+              <input type="password" value={reg.password} onChange={(e) => setReg({ ...reg, password: e.target.value })} className={inputCls} placeholder="M\u00edn. 6 caracteres" required />
             </div>
             <div>
               <label className={labelCls}>Confirmar senha *</label>
-              <input
-                type="password"
-                value={reg.confirm}
-                onChange={(e) => setReg({ ...reg, confirm: e.target.value })}
-                className={inputCls}
-                placeholder="Repita a senha"
-                required
-              />
+              <input type="password" value={reg.confirm} onChange={(e) => setReg({ ...reg, confirm: e.target.value })} className={inputCls} placeholder="Repita a senha" required />
             </div>
           </div>
-
-          {error && (
-            <p className="text-shogun-danger text-sm font-[var(--font-display)]">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-shogun-accent hover:bg-shogun-accent/90 text-shogun-bg-base font-[var(--font-display)] font-semibold py-2.5 rounded transition-colors disabled:opacity-50 mt-1"
-          >
+          {error && <p className="text-shogun-danger text-sm font-[var(--font-display)]">{error}</p>}
+          <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 bg-shogun-accent hover:bg-shogun-accent/90 text-shogun-bg-base font-[var(--font-display)] font-semibold py-2.5 rounded transition-colors disabled:opacity-50 mt-1">
             <UserPlus size={16} />
             {loading ? "Enviando..." : "Solicitar acesso"}
           </button>
@@ -192,24 +133,13 @@ function SuccessModal({ onClose }: { onClose: () => void }) {
           </svg>
         </div>
         <div>
-          <h2 className="font-[var(--font-display)] text-lg font-bold text-shogun-text-primary">
-            Cadastro enviado!
-          </h2>
+          <h2 className="font-[var(--font-display)] text-lg font-bold text-shogun-text-primary">Cadastro enviado!</h2>
           <p className="text-shogun-text-secondary text-sm mt-2 leading-relaxed">
-            <strong className="text-shogun-text-primary">
-              Peça no grupo do Shogun para que liberem o seu acesso.
-            </strong>
+            <strong className="text-shogun-text-primary">Pe\u00e7a no grupo do Shogun para que liberem o seu acesso.</strong>
           </p>
-          <p className="text-shogun-text-muted text-xs mt-2">
-            Após a aprovação você poderá entrar com seu e-mail e senha.
-          </p>
+          <p className="text-shogun-text-muted text-xs mt-2">Ap\u00f3s a aprovação você poderá entrar com seu e-mail e senha.</p>
         </div>
-        <button
-          onClick={onClose}
-          className="w-full py-2.5 bg-shogun-accent hover:bg-shogun-accent/90 text-shogun-bg-base text-sm font-semibold font-[var(--font-display)] rounded transition-colors"
-        >
-          Entendido
-        </button>
+        <button onClick={onClose} className="w-full py-2.5 bg-shogun-accent hover:bg-shogun-accent/90 text-shogun-bg-base text-sm font-semibold font-[var(--font-display)] rounded transition-colors">Entendido</button>
       </div>
     </div>
   )
@@ -231,7 +161,13 @@ export default function LoginPage() {
     try {
       const supabase = createClient()
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) { setLoginError("Email ou senha inválidos."); return }
+      const success = !error
+      fetch("/api/auth/login-attempt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, success }),
+      }).catch(() => {})
+      if (error) { setLoginError("Email ou senha inv\u00e1lidos."); return }
       const isPending = data.user?.user_metadata?.status === "pending"
       router.push(isPending ? "/aguardando-aprovacao" : "/dashboard")
     } finally {
@@ -251,57 +187,29 @@ export default function LoginPage() {
 
       <div className="w-full max-w-sm mx-auto px-6">
         <div className="text-center mb-10">
-          <h1 className="font-[var(--font-display)] text-2xl font-bold text-shogun-text-primary tracking-tight">
-            SHOGUN
-          </h1>
+          <h1 className="font-[var(--font-display)] text-2xl font-bold text-shogun-text-primary tracking-tight">SHOGUN</h1>
           <p className="text-shogun-text-secondary text-sm mt-1">Relatórios de Performance</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="text-label block mb-2">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-shogun-bg-elevated border border-shogun-border rounded px-4 py-3 text-shogun-text-primary text-sm font-[var(--font-display)] placeholder:text-shogun-text-muted focus:outline-none focus:border-shogun-accent transition-colors"
-              placeholder="seu@email.com"
-              required
-            />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-shogun-bg-elevated border border-shogun-border rounded px-4 py-3 text-shogun-text-primary text-sm font-[var(--font-display)] placeholder:text-shogun-text-muted focus:outline-none focus:border-shogun-accent transition-colors" placeholder="seu@email.com" required />
           </div>
-
           <div>
             <label className="text-label block mb-2">Senha</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-shogun-bg-elevated border border-shogun-border rounded px-4 py-3 text-shogun-text-primary text-sm font-[var(--font-display)] placeholder:text-shogun-text-muted focus:outline-none focus:border-shogun-accent transition-colors"
-              placeholder="••••••••"
-              required
-            />
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-shogun-bg-elevated border border-shogun-border rounded px-4 py-3 text-shogun-text-primary text-sm font-[var(--font-display)] placeholder:text-shogun-text-muted focus:outline-none focus:border-shogun-accent transition-colors" placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" required />
           </div>
-
-          {loginError && (
-            <p className="text-shogun-danger text-sm font-[var(--font-display)]">{loginError}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-shogun-accent hover:bg-shogun-accent-muted text-shogun-bg-base font-[var(--font-display)] font-semibold py-3 rounded transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-          >
+          {loginError && <p className="text-shogun-danger text-sm font-[var(--font-display)]">{loginError}</p>}
+          <button type="submit" disabled={loading} className="w-full bg-shogun-accent hover:bg-shogun-accent-muted text-shogun-bg-base font-[var(--font-display)] font-semibold py-3 rounded transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
             <LogIn size={18} />
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
 
         <div className="mt-6 text-center">
-          <button
-            onClick={() => setShowRegister(true)}
-            className="text-shogun-text-secondary text-sm font-[var(--font-display)] hover:text-shogun-accent transition-colors"
-          >
-            Não tem conta?{" "}
+          <button onClick={() => setShowRegister(true)} className="text-shogun-text-secondary text-sm font-[var(--font-display)] hover:text-shogun-accent transition-colors">
+            N\u00e3o tem conta?{" "}
             <span className="text-shogun-accent font-semibold">Criar conta</span>
           </button>
         </div>
