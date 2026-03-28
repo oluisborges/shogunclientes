@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createAdminClient } from "@/lib/supabase/admin"
 import { metaFetch } from "@/lib/meta/client"
+import { getClientMetaCredentials } from "@/lib/meta/getClientToken"
 
 interface MetaAction {
   action_type: string
@@ -135,40 +135,12 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  const adminClient = createAdminClient()
-
-  const { data: client, error: clientError } = await adminClient
-    .from("clients")
-    .select("meta_account_id, meta_access_token")
-    .eq("id", clientId)
-    .single()
-
-  if (clientError || !client?.meta_account_id) {
-    return NextResponse.json(
-      { error: "Conta Meta não configurada. Entre em contato com o suporte pelo grupo do Shogun." },
-      { status: 404 }
-    )
+  const creds = await getClientMetaCredentials(clientId)
+  if ("error" in creds) {
+    return NextResponse.json({ error: creds.error }, { status: creds.status })
   }
 
-  // Use per-client token if set, otherwise fall back to global token
-  let accessToken = client.meta_access_token ?? null
-  if (!accessToken) {
-    const { data: setting } = await adminClient
-      .from("app_settings")
-      .select("value")
-      .eq("key", "meta_global_token")
-      .single()
-    accessToken = setting?.value ?? null
-  }
-
-  if (!accessToken) {
-    return NextResponse.json(
-      { error: "Token Meta não configurado. Entre em contato com o suporte pelo grupo do Shogun." },
-      { status: 404 }
-    )
-  }
-
-  const { meta_account_id: accountId } = client
+  const { accountId, accessToken } = creds
   const insightFields =
     "spend,impressions,reach,clicks,ctr,cpc,cpp,frequency,purchase_roas,actions,action_values"
 
