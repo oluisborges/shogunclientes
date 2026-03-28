@@ -337,6 +337,10 @@ export default function DisponibilidadePage() {
                   const { bg, border, color, cursor } = dayStyle(status)
                   const isSelected = selectedDay === dateStr
                   const timeBlockCount = blockedTimeMap.get(dateStr)?.size ?? 0
+                  const availableCount = status === "full-blocked" ? 0
+                    : status === "partial-blocked" ? WORKING_SLOTS.length - timeBlockCount
+                    : status === "available" ? WORKING_SLOTS.length
+                    : null
 
                   return (
                     <button
@@ -358,8 +362,8 @@ export default function DisponibilidadePage() {
                       }}
                     >
                       <span className="text-sm font-semibold font-[var(--font-data)]">{day}</span>
-                      {status === "full-blocked" && <span className="text-[9px] font-[var(--font-display)]">Bloqueado</span>}
-                      {status === "partial-blocked" && <span className="text-[9px] font-[var(--font-display)]">{timeBlockCount} slot{timeBlockCount > 1 ? "s" : ""}</span>}
+                      {availableCount === 0 && <span className="text-[9px] font-[var(--font-display)]">Bloqueado</span>}
+                      {availableCount !== null && availableCount > 0 && <span className="text-[9px] font-[var(--font-display)]">{availableCount} disp.</span>}
                       {status === "after-window" && <span className="text-[9px] font-[var(--font-display)] text-shogun-text-muted">Fora</span>}
                     </button>
                   )

@@ -26,11 +26,14 @@ export async function GET(request: Request) {
     const monthStr = `${year}-${String(month).padStart(2, "0")}`
     const admin = createAdminClient()
 
+    const lastDay = new Date(year, month, 0).getDate()
+    const lastDate = `${monthStr}-${String(lastDay).padStart(2, "0")}`
+
     const [windowRes, slotsRes] = await Promise.all([
       admin.from("booking_window_config").select("window_end").eq("target_month", monthStr).maybeSingle(),
       admin.from("booking_blocked_slots").select("blocked_date, blocked_time")
         .gte("blocked_date", `${monthStr}-01`)
-        .lte("blocked_date", `${monthStr}-31`),
+        .lte("blocked_date", lastDate),
     ])
 
     // Monta sets de bloqueio
