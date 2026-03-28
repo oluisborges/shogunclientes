@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { inputCls, labelCls, selectCls } from "@/lib/form-styles"
-import { Plus, Trash2, Users, Building2, Pencil, Check, X, UserCog, History, RefreshCw, ChevronDown } from "lucide-react"
+import { Plus, Trash2, Users, Building2, Pencil, Check, X, UserCog, History, RefreshCw, ChevronDown, Clock, CheckCircle, XCircle } from "lucide-react"
 import { ShogunCard } from "@/components/ui/ShogunCard"
 
 interface UserRow {
@@ -43,6 +43,22 @@ const EMPTY_FORM: CreateForm = {
   cnpj: "", meta_account_id: "", niche: "", gestor_id: "",
 }
 
+interface PendingReg {
+  id: string
+  user_id: string
+  full_name: string
+  business_name: string
+  cnpj: string | null
+  email: string
+  created_at: string
+}
+
+interface ApproveForm {
+  meta_account_id: string
+  niche: string
+  gestor_id: string
+}
+
 interface ActivityLog {
   id: string
   user_id: string
@@ -78,6 +94,11 @@ export default function UsuariosPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]       = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+
+  const [pendingRegs, setPendingRegs]     = useState<PendingReg[]>([])
+  const [approvingId, setApprovingId]     = useState<string | null>(null)
+  const [approveForm, setApproveForm]     = useState<ApproveForm>({ meta_account_id: "", niche: "", gestor_id: "" })
+  const [approveLoading, setApproveLoading] = useState(false)
 
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<EditForm>({ email: "", password: "", full_name: "", business_name: "", cnpj: "", meta_account_id: "", niche: "", gestor_id: "" })
@@ -123,13 +144,15 @@ export default function UsuariosPage() {
   const loadAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [usersRes, gestoresRes] = await Promise.all([
+      const [usersRes, gestoresRes, pendingRes] = await Promise.all([
         fetch("/api/admin/users"),
         fetch("/api/admin/gestores"),
+        fetch("/api/admin/users/pending"),
       ])
       if (!usersRes.ok) throw new Error((await usersRes.json()).error)
       setUsers(await usersRes.json())
       if (gestoresRes.ok) setGestores(await gestoresRes.json())
+      if (pendingRes.ok) setPendingRegs(await pendingRes.json())
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar")
     } finally {
@@ -261,6 +284,38 @@ export default function UsuariosPage() {
     }
   }
 
+  async function handleApprove(id: string) {
+    if (!approveForm.meta_account_id.trim()) { setError("Informe o ID da conta Meta (act_...) para aprovar."); return }
+    setApproveLoading(true)
+    setError(null)
+    try {
+      const res = await fetch("/api/admin/users/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...approveForm }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error)
+      setApprovingId(null)
+      setApproveForm({ meta_account_id: "", niche: "", gestor_id: "" })
+      await loadAll()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao aprovar")
+    } finally {
+      setApproveLoading(false)
+    }
+  }
+
+  async function handleReject(id: string, name: string) {
+    if (!confirm(`Recusar o cadastro de "${name}"? O usuário será removido.`)) return
+    try {
+      const res = await fetch(`/api/admin/users/approve?id=${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error((await res.json()).error)
+      await loadAll()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao recusar")
+    }
+  }
+
   const nicheLabel = (n: string | null) => NICHES.find((x) => x.value === n)?.label ?? "—"
   const gestorName = (id: string | null) => gestores.find((g) => g.id === id)?.name ?? "—"
 
@@ -287,6 +342,105 @@ export default function UsuariosPage() {
 
       {error && (
         <div className="px-4 py-3 bg-shogun-danger/10 border border-shogun-danger/30 rounded text-sm text-shogun-danger font-[var(--font-display)]">{error}</div>
+      )}
+
+      {/* ── Solicitações pendentes ── */}
+      {pendingRegs.length > 0 && (
+        <ShogunCard className="border-amber-500/30 bg-amber-500/5">
+          <div className="flex items-center gap-2 mb-4">
+            <Clock size={17} className="text-amber-400" />
+            <h2 className="text-sm font-semibold font-[var(--font-display)] text-shogun-text-primary">
+              Solicitações pendentes
+            </h2>
+            <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-bold font-[var(--font-display)] bg-amber-500/20 text-amber-400">
+              {pendingRegs.length}
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {pendingRegs.map((reg) => (
+              <div key={reg.id} className="rounded-lg border border-shogun-border bg-shogun-bg-base">
+                <div className="flex items-start justify-between gap-4 px-4 py-3">
+                  <div className="flex-1 min-w-0 space-y-0.5">
+                    <p className="text-sm font-semibold font-[var(--font-display)] text-shogun-text-primary">{reg.full_name}</p>
+                    <p className="text-xs font-[var(--font-display)] text-shogun-text-secondary flex items-center gap-1.5">
+                      <Building2 size={11} className="shrink-0" /> {reg.business_name}
+                      {reg.cnpj && <span className="text-shogun-text-muted">· {formatCnpj(reg.cnpj)}</span>}
+                    </p>
+                    <p className="text-xs text-shogun-text-muted font-[var(--font-display)]">{reg.email}</p>
+                    <p className="text-[10px] text-shogun-text-muted font-[var(--font-display)]">
+                      {new Date(reg.created_at).toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                    <button
+                      onClick={() => { setApprovingId(approvingId === reg.id ? null : reg.id); setApproveForm({ meta_account_id: "", niche: "", gestor_id: "" }); setError(null) }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold font-[var(--font-display)] rounded bg-shogun-accent/15 text-shogun-accent hover:bg-shogun-accent/25 transition-colors"
+                    >
+                      <CheckCircle size={13} /> Aprovar
+                    </button>
+                    <button
+                      onClick={() => handleReject(reg.id, reg.full_name)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold font-[var(--font-display)] rounded bg-shogun-danger/10 text-shogun-danger hover:bg-shogun-danger/20 transition-colors"
+                    >
+                      <XCircle size={13} /> Recusar
+                    </button>
+                  </div>
+                </div>
+
+                {approvingId === reg.id && (
+                  <div className="border-t border-shogun-border px-4 py-3 space-y-3">
+                    <p className="text-xs font-[var(--font-display)] text-shogun-text-secondary">
+                      Para aprovar, informe o ID da conta de anúncios Meta (obrigatório):
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className={labelCls}>Conta Meta (act_...) *</label>
+                        <input
+                          type="text"
+                          autoFocus
+                          placeholder="act_000000000"
+                          value={approveForm.meta_account_id}
+                          onChange={(e) => setApproveForm({ ...approveForm, meta_account_id: e.target.value })}
+                          className={inputCls}
+                        />
+                      </div>
+                      <div>
+                        <label className={labelCls}>Nicho</label>
+                        <select value={approveForm.niche} onChange={(e) => setApproveForm({ ...approveForm, niche: e.target.value })} className={selectCls}>
+                          <option value="">Selecione…</option>
+                          {NICHES.map((n) => <option key={n.value} value={n.value}>{n.label}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className={labelCls}>Gestor</label>
+                        <select value={approveForm.gestor_id} onChange={(e) => setApproveForm({ ...approveForm, gestor_id: e.target.value })} className={selectCls}>
+                          <option value="">Sem gestor</option>
+                          {gestores.filter((g) => g.active).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleApprove(reg.id)}
+                        disabled={approveLoading || !approveForm.meta_account_id.trim()}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-shogun-accent text-shogun-bg-base rounded text-xs font-semibold font-[var(--font-display)] hover:bg-shogun-accent/90 disabled:opacity-50 transition-colors"
+                      >
+                        <Check size={13} /> {approveLoading ? "Aprovando…" : "Confirmar aprovação"}
+                      </button>
+                      <button
+                        onClick={() => setApprovingId(null)}
+                        className="px-4 py-2 border border-shogun-border rounded text-xs font-[var(--font-display)] text-shogun-text-secondary hover:text-shogun-text-primary transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </ShogunCard>
       )}
 
       {/* Gestores */}

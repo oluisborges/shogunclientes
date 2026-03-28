@@ -13,9 +13,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            request.cookies.set(name, value)
-          )
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
@@ -25,21 +23,31 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith("/login")
+  const { pathname } = request.nextUrl
+  const isAuthRoute      = pathname.startsWith("/login")
+  const isAguardandoRoute = pathname === "/aguardando-aprovacao"
+  const isPending        = user?.user_metadata?.status === "pending"
 
-  if (!user && !isAuthRoute) {
+  // Unauthenticated: must go to login
+  if (!user && !isAuthRoute && !isAguardandoRoute) {
     const url = request.nextUrl.clone()
     url.pathname = "/login"
     return NextResponse.redirect(url)
   }
 
-  if (user && isAuthRoute) {
+  // Pending user: can only see /aguardando-aprovacao
+  if (user && isPending && !isAguardandoRoute) {
     const url = request.nextUrl.clone()
-    url.pathname = "/metricas"
+    url.pathname = "/aguardando-aprovacao"
+    return NextResponse.redirect(url)
+  }
+
+  // Approved/admin user on login page: go to dashboard
+  if (user && !isPending && isAuthRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/dashboard"
     return NextResponse.redirect(url)
   }
 
