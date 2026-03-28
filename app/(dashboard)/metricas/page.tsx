@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import {
   BarChart,
   Bar,
@@ -12,7 +13,7 @@ import {
   Pie,
   Legend,
 } from "recharts"
-import { TrendingUp, Target, BarChart2 } from "lucide-react"
+import { TrendingUp, Target, BarChart2, RotateCcw } from "lucide-react"
 import { ShogunCard } from "@/components/ui/ShogunCard"
 import { DatePicker } from "@/components/ui/DatePicker"
 import { useMetricas } from "@/lib/hooks/useMetricas"
@@ -30,6 +31,11 @@ function fmtBRL(n: number) {
 // Full integer BRL — no abbreviation, no cents
 function fmtBRLFull(n: number) {
   return `R$ ${Math.round(n).toLocaleString("pt-BR")}`
+}
+
+// BRL with 2 decimal places (for CPC, CPM, Custo por compra)
+function fmtBRLCents(n: number) {
+  return `R$ ${n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 function fmtNum(n: number) {
@@ -235,6 +241,19 @@ export default function MetricasPage() {
   const { dateRange, setDateRange, compareRange, setCompareRange } = useDateRangeContext()
   const { data, loading, error } = useMetricas()
 
+  // Effective comparison range: custom if set, otherwise auto-computed
+  const effectiveCompareRange = useMemo(() => {
+    if (compareRange) return compareRange
+    if (!dateRange) return undefined
+    const periodMs = dateRange.end.getTime() - dateRange.start.getTime()
+    const periodDays = Math.round(periodMs / (1000 * 60 * 60 * 24)) + 1
+    const prevEnd = new Date(dateRange.start)
+    prevEnd.setDate(prevEnd.getDate() - 1)
+    const prevStart = new Date(prevEnd)
+    prevStart.setDate(prevStart.getDate() - (periodDays - 1))
+    return { start: prevStart, end: prevEnd }
+  }, [dateRange, compareRange])
+
   const cur = data?.current
   const prev = data?.previous
 
@@ -251,22 +270,50 @@ export default function MetricasPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <h1 className="text-2xl font-[var(--font-display)] font-bold text-shogun-text-primary">
           Métricas
         </h1>
-        <div className="flex items-center gap-2 flex-wrap">
-          <DatePicker
-            value={dateRange ?? undefined}
-            onChange={setDateRange}
-            placeholder="Período atual"
-          />
-          <span className="text-xs text-shogun-text-muted font-[var(--font-display)]">vs</span>
-          <DatePicker
-            value={compareRange ?? undefined}
-            onChange={setCompareRange}
-            placeholder="Período anterior (auto)"
-          />
+
+        {/* Date selectors */}
+        <div className="flex items-end gap-3">
+          {/* Main period */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-[var(--font-display)] uppercase tracking-wider text-shogun-text-muted px-1">
+              Período
+            </span>
+            <DatePicker
+              value={dateRange ?? undefined}
+              onChange={setDateRange}
+            />
+          </div>
+
+          {/* Divider */}
+          <div className="flex flex-col items-center pb-2.5">
+            <span className="text-xs font-[var(--font-display)] text-shogun-text-muted leading-none">vs</span>
+          </div>
+
+          {/* Comparison period */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5 px-1">
+              <span className="text-[10px] font-[var(--font-display)] uppercase tracking-wider text-shogun-text-muted">
+                Comparar com{!compareRange && <span className="text-shogun-accent ml-1">• auto</span>}
+              </span>
+              {compareRange && (
+                <button
+                  onClick={() => setCompareRange(null)}
+                  title="Voltar ao período anterior automático"
+                  className="text-shogun-text-muted hover:text-shogun-accent transition-colors"
+                >
+                  <RotateCcw size={10} />
+                </button>
+              )}
+            </div>
+            <DatePicker
+              value={effectiveCompareRange}
+              onChange={setCompareRange}
+            />
+          </div>
         </div>
       </div>
 
@@ -403,19 +450,19 @@ export default function MetricasPage() {
               />
               <MetricCard
                 label="CPM médio"
-                value={fmtBRL(cur.cpp)}
+                value={fmtBRLCents(cur.cpp)}
                 change={calcDelta(cur.cpp, prev.cpp)}
                 positiveGood={false}
               />
               <MetricCard
                 label="CPC médio"
-                value={fmtBRL(cur.cpc)}
+                value={fmtBRLCents(cur.cpc)}
                 change={calcDelta(cur.cpc, prev.cpc)}
                 positiveGood={false}
               />
               <MetricCard
                 label="Custo por compra"
-                value={fmtBRL(cur.costPerPurchase)}
+                value={fmtBRLCents(cur.costPerPurchase)}
                 change={calcDelta(cur.costPerPurchase, prev.costPerPurchase)}
                 positiveGood={false}
               />

@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation"
 import {
   BarChart3,
   Megaphone,
-  History,
   Target,
   CalendarClock,
   Trophy,
@@ -22,7 +21,6 @@ import { cn } from "@/lib/utils"
 const NAV_ITEMS = [
   { label: "Métricas", href: "/metricas", icon: BarChart3 },
   { label: "Campanhas", href: "/campanhas", icon: Megaphone },
-  { label: "Histórico", href: "/historico", icon: History },
   { label: "Metas", href: "/metas", icon: Target },
   { label: "Agendamento", href: "/agendamento", icon: CalendarClock },
   { label: "Conquistas", href: "/conquistas", icon: Trophy },
