@@ -43,7 +43,7 @@ export function Sidebar() {
   }, [])
 
   const navItems = isAdmin
-    ? [...NAV_ITEMS, { label: "Disponibilidade", href: "/disponibilidade", icon: CalendarRange }, { label: "Usuários", href: "/usuarios", icon: Users }]
+    ? [...NAV_ITEMS, { label: "Config. Agenda", href: "/disponibilidade", icon: CalendarRange }, { label: "Usuários", href: "/usuarios", icon: Users }]
     : NAV_ITEMS
 
   return (

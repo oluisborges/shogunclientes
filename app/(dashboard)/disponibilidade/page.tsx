@@ -57,6 +57,7 @@ export default function DisponibilidadePage() {
   const [saving, setSaving]       = useState(false)
   const [windowEndInput, setWindowEndInput] = useState("")
   const [savingWindow, setSavingWindow] = useState(false)
+  const [error, setError]         = useState<string | null>(null)
 
   const year  = viewDate.getFullYear()
   const month = viewDate.getMonth() + 1
@@ -64,13 +65,16 @@ export default function DisponibilidadePage() {
 
   const loadConfig = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const res = await fetch(`/api/admin/booking-config?month=${monthKey}`)
-      if (!res.ok) return
+      if (!res.ok) { const e = await res.json(); setError(e.error ?? "Erro ao carregar config"); return }
       const data = await res.json()
       setSlots(data.slots ?? [])
       setWindowCfg(data.window ?? null)
       setWindowEndInput(data.window?.window_end ?? "")
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro de rede")
     } finally {
       setLoading(false)
     }
@@ -108,22 +112,30 @@ export default function DisponibilidadePage() {
 
   async function toggleFullDay(dateStr: string) {
     setSaving(true)
+    setError(null)
     try {
       if (blockedFullDays.has(dateStr)) {
-        // Desbloquear: remove o registro de dia inteiro
         const slot = slots.find(s => s.blocked_date === dateStr && !s.blocked_time)
-        if (slot) await fetch(`/api/admin/booking-config/${slot.id}`, { method: "DELETE" })
+        if (slot) {
+          const res = await fetch(`/api/admin/booking-config/${slot.id}`, { method: "DELETE" })
+          if (!res.ok) { const e = await res.json(); setError(e.error ?? "Erro ao desbloquear"); return }
+        }
       } else {
-        // Bloquear dia inteiro: remove time slots do dia e adiciona fullday
         const timeSlots = slots.filter(s => s.blocked_date === dateStr && s.blocked_time)
-        await Promise.all(timeSlots.map(s => fetch(`/api/admin/booking-config/${s.id}`, { method: "DELETE" })))
-        await fetch("/api/admin/booking-config", {
+        for (const s of timeSlots) {
+          const res = await fetch(`/api/admin/booking-config/${s.id}`, { method: "DELETE" })
+          if (!res.ok) { const e = await res.json(); setError(e.error ?? "Erro ao remover slot"); return }
+        }
+        const res = await fetch("/api/admin/booking-config", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ blocked_date: dateStr, reason: reason || null }),
         })
+        if (!res.ok) { const e = await res.json(); setError(e.error ?? "Erro ao bloquear dia"); return }
       }
       await loadConfig()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro de rede")
     } finally {
       setSaving(false)
       setReason("")
@@ -132,18 +144,23 @@ export default function DisponibilidadePage() {
 
   async function toggleSlot(dateStr: string, time: string) {
     setSaving(true)
+    setError(null)
     try {
       const existing = blockedTimeMap.get(dateStr)?.get(time)
       if (existing) {
-        await fetch(`/api/admin/booking-config/${existing.id}`, { method: "DELETE" })
+        const res = await fetch(`/api/admin/booking-config/${existing.id}`, { method: "DELETE" })
+        if (!res.ok) { const e = await res.json(); setError(e.error ?? "Erro ao desbloquear horário"); return }
       } else {
-        await fetch("/api/admin/booking-config", {
+        const res = await fetch("/api/admin/booking-config", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ blocked_date: dateStr, blocked_time: time, reason: reason || null }),
         })
+        if (!res.ok) { const e = await res.json(); setError(e.error ?? "Erro ao bloquear horário"); return }
       }
       await loadConfig()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro de rede")
     } finally {
       setSaving(false)
     }
@@ -152,13 +169,17 @@ export default function DisponibilidadePage() {
   async function saveWindowEnd() {
     if (!windowEndInput) return
     setSavingWindow(true)
+    setError(null)
     try {
-      await fetch("/api/admin/booking-config", {
+      const res = await fetch("/api/admin/booking-config", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ target_month: monthKey, window_end: windowEndInput }),
       })
+      if (!res.ok) { const e = await res.json(); setError(e.error ?? "Erro ao salvar janela"); return }
       await loadConfig()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro de rede")
     } finally {
       setSavingWindow(false)
     }
@@ -208,6 +229,17 @@ export default function DisponibilidadePage() {
         <CalendarRange size={22} className="text-shogun-accent" />
         <h1 className="text-2xl font-bold font-[var(--font-display)] text-shogun-text-primary">Disponibilidade</h1>
       </div>
+
+      {/* Error banner */}
+      {error && (
+        <div
+          className="flex items-center justify-between px-4 py-2 rounded-lg text-sm font-[var(--font-display)]"
+          style={{ background: "rgba(255,80,80,0.1)", border: "1px solid rgba(255,80,80,0.4)", color: "#ff6060" }}
+        >
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="ml-4 opacity-70 hover:opacity-100"><X size={14} /></button>
+        </div>
+      )}
 
       {/* Navegação de mês + janela */}
       <div

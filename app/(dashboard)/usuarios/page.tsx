@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { Plus, Trash2, Users, Building2, Pencil, Check, X, UserCog, CalendarOff, ChevronDown, ChevronUp } from "lucide-react"
+import { Plus, Trash2, Users, Building2, Pencil, Check, X, UserCog } from "lucide-react"
 import { ShogunCard } from "@/components/ui/ShogunCard"
 
 interface UserRow {
@@ -24,7 +24,6 @@ interface UserRow {
 }
 
 interface Gestor { id: string; name: string; email: string; active: boolean }
-interface BlockedDate { id: string; blocked_date: string; reason: string | null }
 
 interface CreateForm {
   email: string; password: string; full_name: string
@@ -58,39 +57,25 @@ function formatCnpj(value: string): string {
     .replace(/(\d{4})(\d)/, "$1-$2")
 }
 
-function formatDateBR(dateStr: string) {
-  const [y, m, d] = dateStr.split("-")
-  return `${d}/${m}/${y}`
-}
-
 export default function UsuariosPage() {
   const router = useRouter()
-  const [users, setUsers]           = useState<UserRow[]>([])
-  const [gestores, setGestores]     = useState<Gestor[]>([])
-  const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([])
-  const [loading, setLoading]       = useState(true)
-  const [showForm, setShowForm]     = useState(false)
-  const [form, setForm]             = useState<CreateForm>(EMPTY_FORM)
+  const [users, setUsers]       = useState<UserRow[]>([])
+  const [gestores, setGestores] = useState<Gestor[]>([])
+  const [loading, setLoading]   = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm]         = useState<CreateForm>(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError]           = useState<string | null>(null)
-  const [deleteId, setDeleteId]     = useState<string | null>(null)
+  const [error, setError]       = useState<string | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
-  // Edição de usuário
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
-  const [editForm, setEditForm]     = useState<EditForm>({ email: "", password: "", full_name: "", business_name: "", cnpj: "", meta_account_id: "", niche: "", gestor_id: "" })
+  const [editForm, setEditForm] = useState<EditForm>({ email: "", password: "", full_name: "", business_name: "", cnpj: "", meta_account_id: "", niche: "", gestor_id: "" })
   const [savingUser, setSavingUser] = useState(false)
 
-  // Gestores inline
-  const [gestorForm, setGestorForm]     = useState({ name: "", email: "" })
-  const [addingGestor, setAddingGestor] = useState(false)
+  const [gestorForm, setGestorForm]       = useState({ name: "", email: "" })
+  const [addingGestor, setAddingGestor]   = useState(false)
   const [editingGestor, setEditingGestor] = useState<Gestor | null>(null)
   const [savingGestor, setSavingGestor]   = useState(false)
-
-  // Disponibilidade
-  const [newBlockedDate, setNewBlockedDate] = useState("")
-  const [newBlockedReason, setNewBlockedReason] = useState("")
-  const [addingBlocked, setAddingBlocked] = useState(false)
-  const [showAvailability, setShowAvailability] = useState(false)
 
   useEffect(() => {
     async function checkAdmin() {
@@ -106,15 +91,13 @@ export default function UsuariosPage() {
   const loadAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [usersRes, gestoresRes, blockedRes] = await Promise.all([
+      const [usersRes, gestoresRes] = await Promise.all([
         fetch("/api/admin/users"),
         fetch("/api/admin/gestores"),
-        fetch("/api/admin/booking-config"),
       ])
       if (!usersRes.ok) throw new Error((await usersRes.json()).error)
       setUsers(await usersRes.json())
       if (gestoresRes.ok) setGestores(await gestoresRes.json())
-      if (blockedRes.ok) setBlockedDates(await blockedRes.json())
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar")
     } finally {
@@ -162,14 +145,14 @@ export default function UsuariosPage() {
   function startEdit(user: UserRow) {
     setEditingUserId(user.id)
     setEditForm({
-      email:          user.email,
-      password:       "",
-      full_name:      user.full_name ?? "",
-      business_name:  user.client?.business_name ?? "",
-      cnpj:           user.client?.cnpj ? formatCnpj(user.client.cnpj) : "",
+      email:           user.email,
+      password:        "",
+      full_name:       user.full_name ?? "",
+      business_name:   user.client?.business_name ?? "",
+      cnpj:            user.client?.cnpj ? formatCnpj(user.client.cnpj) : "",
       meta_account_id: user.client?.meta_account_id ?? "",
-      niche:          user.client?.niche ?? "",
-      gestor_id:      user.client?.gestor_id ?? "",
+      niche:           user.client?.niche ?? "",
+      gestor_id:       user.client?.gestor_id ?? "",
     })
   }
 
@@ -178,16 +161,15 @@ export default function UsuariosPage() {
     setError(null)
     try {
       const body: Record<string, string | null> = {
-        full_name:      editForm.full_name || null,
-        business_name:  editForm.business_name || null,
-        cnpj:           editForm.cnpj.replace(/\D/g, "") || null,
+        full_name:       editForm.full_name || null,
+        business_name:   editForm.business_name || null,
+        cnpj:            editForm.cnpj.replace(/\D/g, "") || null,
         meta_account_id: editForm.meta_account_id || null,
-        niche:          editForm.niche || null,
-        gestor_id:      editForm.gestor_id || null,
+        niche:           editForm.niche || null,
+        gestor_id:       editForm.gestor_id || null,
       }
-      if (editForm.email) body.email = editForm.email
+      if (editForm.email)    body.email    = editForm.email
       if (editForm.password) body.password = editForm.password
-
       const res = await fetch(`/api/admin/users/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -247,67 +229,29 @@ export default function UsuariosPage() {
     }
   }
 
-  async function handleAddBlockedDate() {
-    if (!newBlockedDate) return
-    setAddingBlocked(true)
-    try {
-      const res = await fetch("/api/admin/booking-config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ blocked_date: newBlockedDate, reason: newBlockedReason || null }),
-      })
-      if (!res.ok) throw new Error((await res.json()).error)
-      const d = await res.json()
-      setBlockedDates((prev) => [...prev, d].sort((a, b) => a.blocked_date.localeCompare(b.blocked_date)))
-      setNewBlockedDate("")
-      setNewBlockedReason("")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao bloquear data")
-    } finally {
-      setAddingBlocked(false)
-    }
-  }
-
-  async function handleRemoveBlockedDate(id: string) {
-    try {
-      const res = await fetch(`/api/admin/booking-config/${id}`, { method: "DELETE" })
-      if (!res.ok) throw new Error((await res.json()).error)
-      setBlockedDates((prev) => prev.filter((d) => d.id !== id))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao remover data")
-    }
-  }
-
   const inputCls  = "w-full bg-shogun-bg-base border border-shogun-border rounded px-3 py-2 text-sm text-shogun-text-primary placeholder:text-shogun-text-muted focus:outline-none focus:border-shogun-accent transition-colors font-[var(--font-display)]"
   const labelCls  = "block text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider mb-1"
   const selectCls = inputCls + " cursor-pointer"
-
   const nicheLabel = (n: string | null) => NICHES.find((x) => x.value === n)?.label ?? "—"
   const gestorName = (id: string | null) => gestores.find((g) => g.id === id)?.name ?? "—"
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Users size={24} className="text-shogun-accent" />
           <h1 className="text-2xl font-[var(--font-display)] font-bold text-shogun-text-primary">Usuários</h1>
         </div>
-        <button
-          onClick={() => { setShowForm(!showForm); setError(null) }}
-          className="flex items-center gap-2 px-4 py-2 bg-shogun-accent text-shogun-bg-base rounded text-sm font-[var(--font-display)] font-semibold hover:bg-shogun-accent/90 transition-colors"
-        >
+        <button onClick={() => { setShowForm(!showForm); setError(null) }} className="flex items-center gap-2 px-4 py-2 bg-shogun-accent text-shogun-bg-base rounded text-sm font-[var(--font-display)] font-semibold hover:bg-shogun-accent/90 transition-colors">
           <Plus size={16} /> Criar usuário
         </button>
       </div>
 
       {error && (
-        <div className="px-4 py-3 bg-shogun-danger/10 border border-shogun-danger/30 rounded text-sm text-shogun-danger font-[var(--font-display)]">
-          {error}
-        </div>
+        <div className="px-4 py-3 bg-shogun-danger/10 border border-shogun-danger/30 rounded text-sm text-shogun-danger font-[var(--font-display)]">{error}</div>
       )}
 
-      {/* ── Gestores ── */}
+      {/* Gestores */}
       <ShogunCard>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -355,77 +299,7 @@ export default function UsuariosPage() {
         </div>
       </ShogunCard>
 
-      {/* ── Disponibilidade de agendamento ── */}
-      <ShogunCard>
-        <button
-          onClick={() => setShowAvailability(!showAvailability)}
-          className="flex items-center justify-between w-full"
-        >
-          <div className="flex items-center gap-2">
-            <CalendarOff size={18} className="text-shogun-accent" />
-            <h2 className="text-sm font-semibold font-[var(--font-display)] text-shogun-text-primary">Disponibilidade de agendamento</h2>
-            {blockedDates.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-[var(--font-display)] bg-shogun-danger/20 text-shogun-danger">
-                {blockedDates.length} bloqueada{blockedDates.length > 1 ? "s" : ""}
-              </span>
-            )}
-          </div>
-          {showAvailability ? <ChevronUp size={16} className="text-shogun-text-muted" /> : <ChevronDown size={16} className="text-shogun-text-muted" />}
-        </button>
-
-        {showAvailability && (
-          <div className="mt-4 space-y-4">
-            {/* Adicionar data bloqueada */}
-            <div className="flex items-end gap-3">
-              <div className="flex-1">
-                <label className={labelCls}>Data a bloquear</label>
-                <input
-                  type="date"
-                  value={newBlockedDate}
-                  onChange={(e) => setNewBlockedDate(e.target.value)}
-                  className={inputCls}
-                />
-              </div>
-              <div className="flex-1">
-                <label className={labelCls}>Motivo (opcional)</label>
-                <input
-                  type="text"
-                  value={newBlockedReason}
-                  onChange={(e) => setNewBlockedReason(e.target.value)}
-                  placeholder="Ex: Feriado, folga..."
-                  className={inputCls}
-                />
-              </div>
-              <button
-                onClick={handleAddBlockedDate}
-                disabled={!newBlockedDate || addingBlocked}
-                className="px-4 py-2 bg-shogun-danger/20 border border-shogun-danger/40 text-shogun-danger rounded text-sm font-[var(--font-display)] font-medium hover:bg-shogun-danger/30 disabled:opacity-40 transition-colors"
-              >
-                {addingBlocked ? "Bloqueando…" : "Bloquear"}
-              </button>
-            </div>
-
-            {/* Lista de datas bloqueadas */}
-            {blockedDates.length > 0 ? (
-              <div className="space-y-1.5">
-                {blockedDates.map((d) => (
-                  <div key={d.id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-shogun-bg-base border border-shogun-border/50">
-                    <span className="text-sm font-[var(--font-data)] text-shogun-danger">{formatDateBR(d.blocked_date)}</span>
-                    <span className="text-sm text-shogun-text-muted font-[var(--font-display)] flex-1">{d.reason ?? "Sem motivo"}</span>
-                    <button onClick={() => handleRemoveBlockedDate(d.id)} className="text-shogun-text-muted hover:text-shogun-danger transition-colors">
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-shogun-text-muted font-[var(--font-display)]">Nenhuma data bloqueada. Todos os dias úteis do mês estarão disponíveis.</p>
-            )}
-          </div>
-        )}
-      </ShogunCard>
-
-      {/* ── Formulário de criação ── */}
+      {/* Formulário de criação */}
       {showForm && (
         <ShogunCard>
           <h2 className="text-base font-[var(--font-display)] font-semibold text-shogun-text-primary mb-5">Novo usuário</h2>
@@ -464,16 +338,14 @@ export default function UsuariosPage() {
         </ShogunCard>
       )}
 
-      {/* ── Tabela de usuários ── */}
+      {/* Tabela de usuários */}
       <ShogunCard className="p-0 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-shogun-accent" />
           </div>
         ) : users.length === 0 ? (
-          <div className="text-center py-12 text-shogun-text-secondary text-sm font-[var(--font-display)]">
-            Nenhum usuário cadastrado
-          </div>
+          <div className="text-center py-12 text-shogun-text-secondary text-sm font-[var(--font-display)]">Nenhum usuário cadastrado</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -508,19 +380,10 @@ export default function UsuariosPage() {
                         <div className="flex items-center gap-1">
                           {user.role !== "admin" && (
                             <>
-                              <button
-                                onClick={() => editingUserId === user.id ? setEditingUserId(null) : startEdit(user)}
-                                className="p-1.5 text-shogun-text-muted hover:text-shogun-accent transition-colors"
-                                title="Editar"
-                              >
+                              <button onClick={() => editingUserId === user.id ? setEditingUserId(null) : startEdit(user)} className="p-1.5 text-shogun-text-muted hover:text-shogun-accent transition-colors" title="Editar">
                                 <Pencil size={14} />
                               </button>
-                              <button
-                                onClick={() => handleDelete(user.id)}
-                                disabled={deleteId === user.id}
-                                className="p-1.5 text-shogun-text-muted hover:text-shogun-danger transition-colors disabled:opacity-40"
-                                title="Remover"
-                              >
+                              <button onClick={() => handleDelete(user.id)} disabled={deleteId === user.id} className="p-1.5 text-shogun-text-muted hover:text-shogun-danger transition-colors disabled:opacity-40" title="Remover">
                                 <Trash2 size={14} />
                               </button>
                             </>
@@ -528,36 +391,16 @@ export default function UsuariosPage() {
                         </div>
                       </td>
                     </tr>
-
-                    {/* Linha de edição expandida */}
                     {editingUserId === user.id && (
                       <tr key={`edit-${user.id}`} className="bg-shogun-bg-base border-b border-shogun-accent/20">
                         <td colSpan={7} className="px-4 py-4">
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <div>
-                              <label className={labelCls}>Nome</label>
-                              <input type="text" value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} className={inputCls} />
-                            </div>
-                            <div>
-                              <label className={labelCls}>E-mail</label>
-                              <input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} className={inputCls} />
-                            </div>
-                            <div>
-                              <label className={labelCls}>Nova senha</label>
-                              <input type="password" placeholder="Deixe vazio para não alterar" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} className={inputCls} />
-                            </div>
-                            <div>
-                              <label className={labelCls}>Empresa</label>
-                              <input type="text" value={editForm.business_name} onChange={(e) => setEditForm({ ...editForm, business_name: e.target.value })} className={inputCls} />
-                            </div>
-                            <div>
-                              <label className={labelCls}>CNPJ</label>
-                              <input type="text" value={editForm.cnpj} onChange={(e) => setEditForm({ ...editForm, cnpj: formatCnpj(e.target.value) })} className={inputCls} />
-                            </div>
-                            <div>
-                              <label className={labelCls}>Conta Meta</label>
-                              <input type="text" value={editForm.meta_account_id} onChange={(e) => setEditForm({ ...editForm, meta_account_id: e.target.value })} className={inputCls} />
-                            </div>
+                            <div><label className={labelCls}>Nome</label><input type="text" value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} className={inputCls} /></div>
+                            <div><label className={labelCls}>E-mail</label><input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} className={inputCls} /></div>
+                            <div><label className={labelCls}>Nova senha</label><input type="password" placeholder="Deixe vazio para não alterar" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} className={inputCls} /></div>
+                            <div><label className={labelCls}>Empresa</label><input type="text" value={editForm.business_name} onChange={(e) => setEditForm({ ...editForm, business_name: e.target.value })} className={inputCls} /></div>
+                            <div><label className={labelCls}>CNPJ</label><input type="text" value={editForm.cnpj} onChange={(e) => setEditForm({ ...editForm, cnpj: formatCnpj(e.target.value) })} className={inputCls} /></div>
+                            <div><label className={labelCls}>Conta Meta</label><input type="text" value={editForm.meta_account_id} onChange={(e) => setEditForm({ ...editForm, meta_account_id: e.target.value })} className={inputCls} /></div>
                             <div>
                               <label className={labelCls}>Nicho</label>
                               <select value={editForm.niche} onChange={(e) => setEditForm({ ...editForm, niche: e.target.value })} className={selectCls}>
