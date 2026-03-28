@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { inputCls, labelCls, selectCls } from "@/lib/form-styles"
 import { Plus, Trash2, Users, Building2, Pencil, Check, X, UserCog, History, RefreshCw, ChevronDown } from "lucide-react"
 import { ShogunCard } from "@/components/ui/ShogunCard"
 
@@ -260,9 +261,6 @@ export default function UsuariosPage() {
     }
   }
 
-  const inputCls  = "w-full bg-shogun-bg-base border border-shogun-border rounded px-3 py-2 text-sm text-shogun-text-primary placeholder:text-shogun-text-muted focus:outline-none focus:border-shogun-accent transition-colors font-[var(--font-display)]"
-  const labelCls  = "block text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider mb-1"
-  const selectCls = inputCls + " cursor-pointer"
   const nicheLabel = (n: string | null) => NICHES.find((x) => x.value === n)?.label ?? "—"
   const gestorName = (id: string | null) => gestores.find((g) => g.id === id)?.name ?? "—"
 

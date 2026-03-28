@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { Plus, Pencil, Trash2, Check, X, ChevronUp, ChevronDown, Bot, Eye, EyeOff } from "lucide-react"
 import { ShogunCard } from "@/components/ui/ShogunCard"
+import { inputCls, labelCls } from "@/lib/form-styles"
 
 interface Agent {
   id: string
@@ -20,8 +21,6 @@ const EMPTY = {
   active: true, api_key: "",
 }
 
-const inputCls = "w-full bg-shogun-bg-base border border-shogun-border rounded px-3 py-2 text-sm text-shogun-text-primary placeholder:text-shogun-text-muted focus:outline-none focus:border-shogun-accent transition-colors font-[var(--font-display)]"
-const labelCls = "block text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider mb-1"
 
 function detectProvider(key: string): string {
   if (key.startsWith("sk-ant-")) return "Claude"
