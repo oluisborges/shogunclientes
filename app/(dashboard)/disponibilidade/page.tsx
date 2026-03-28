@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, X, CalendarRange } from "lucide-react"
 
 interface BlockedSlot { id: string; blocked_date: string; blocked_time: string | null; reason: string | null }
 interface WindowConfig { target_month: string; window_end: string }
+interface BookedSlot { id: string; date: string; time: string; clientName: string }
 
 const WORKING_SLOTS = [
   "09:30","10:00","10:30","11:00","11:30",
@@ -50,6 +51,7 @@ export default function DisponibilidadePage() {
   })
 
   const [slots, setSlots]         = useState<BlockedSlot[]>([])
+  const [bookings, setBookings]   = useState<BookedSlot[]>([])
   const [windowCfg, setWindowCfg] = useState<WindowConfig | null>(null)
   const [loading, setLoading]     = useState(true)
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
@@ -71,6 +73,7 @@ export default function DisponibilidadePage() {
       if (!res.ok) { const e = await res.json(); setError(e.error ?? "Erro ao carregar config"); return }
       const data = await res.json()
       setSlots(data.slots ?? [])
+      setBookings(data.bookings ?? [])
       setWindowCfg(data.window ?? null)
       setWindowEndInput(data.window?.window_end ?? "")
     } catch (e) {
@@ -101,6 +104,13 @@ export default function DisponibilidadePage() {
       if (!blockedTimeMap.has(s.blocked_date)) blockedTimeMap.set(s.blocked_date, new Map())
       blockedTimeMap.get(s.blocked_date)!.set(s.blocked_time, s)
     }
+  }
+
+  // Índice de horários já agendados por clientes
+  const bookedTimeMap = new Map<string, Map<string, BookedSlot>>()
+  for (const b of bookings) {
+    if (!bookedTimeMap.has(b.date)) bookedTimeMap.set(b.date, new Map())
+    bookedTimeMap.get(b.date)!.set(b.time, b)
   }
 
   const secondBD  = getSecondBusinessDay(year, month)
@@ -228,6 +238,7 @@ export default function DisponibilidadePage() {
   const selectedDateStr = selectedDay
   const selFullBlocked  = selectedDateStr ? blockedFullDays.has(selectedDateStr) : false
   const selTimeBlocked  = selectedDateStr ? (blockedTimeMap.get(selectedDateStr) ?? new Map()) : new Map<string, BlockedSlot>()
+  const selTimeBooked   = selectedDateStr ? (bookedTimeMap.get(selectedDateStr)  ?? new Map()) : new Map<string, BookedSlot>()
   const selStatus       = selectedDay ? dayStatus(parseInt(selectedDay.split("-")[2])) : null
 
   return (
@@ -298,10 +309,10 @@ export default function DisponibilidadePage() {
       {/* Legenda */}
       <div className="flex items-center gap-4 text-xs font-[var(--font-display)]">
         {[
-          { color: "rgba(149,214,0,0.4)", label: "Disponível" },
-          { color: "rgba(255,80,80,0.5)",  label: "Dia bloqueado" },
-          { color: "rgba(255,160,40,0.5)", label: "Horários parciais bloqueados" },
-          { color: "#1e3a4a",              label: "Fora da janela" },
+          { color: "rgba(149,214,0,0.4)",   label: "Disponível" },
+          { color: "rgba(255,80,80,0.5)",   label: "Bloqueado" },
+          { color: "rgba(99,102,241,0.55)", label: "Agendado" },
+          { color: "#1e3a4a",               label: "Fora da janela" },
         ].map(({ color, label }) => (
           <span key={label} className="flex items-center gap-1.5 text-shogun-text-muted">
             <span className="inline-block w-3 h-3 rounded-sm" style={{ background: color }} />
@@ -336,10 +347,12 @@ export default function DisponibilidadePage() {
                   const status  = dayStatus(day)
                   const { bg, border, color, cursor } = dayStyle(status)
                   const isSelected = selectedDay === dateStr
-                  const timeBlockCount = blockedTimeMap.get(dateStr)?.size ?? 0
-                  const availableCount = status === "full-blocked" ? 0
-                    : status === "partial-blocked" ? WORKING_SLOTS.length - timeBlockCount
-                    : status === "available" ? WORKING_SLOTS.length
+                  const timeBlockCount  = blockedTimeMap.get(dateStr)?.size ?? 0
+                  const bookedCount     = bookedTimeMap.get(dateStr)?.size ?? 0
+                  const unavailable     = timeBlockCount + bookedCount
+                  const availableCount  = status === "full-blocked" ? bookedCount
+                    : status !== "weekend" && status !== "before" && status !== "after-window"
+                      ? Math.max(0, WORKING_SLOTS.length - unavailable)
                     : null
 
                   return (
@@ -393,7 +406,9 @@ export default function DisponibilidadePage() {
                     {DAYS_PT[new Date(selectedDay + "T12:00:00").getDay()]}, {selectedDay.split("-").reverse().slice(0, 2).join("/")}
                   </p>
                   <p className="text-xs text-shogun-text-muted font-[var(--font-display)] mt-0.5">
-                    {selStatus === "after-window" ? "Fora da janela de agendamento" : selFullBlocked ? "Dia inteiro bloqueado" : `${selTimeBlocked.size} horário(s) bloqueado(s)`}
+                    {selStatus === "after-window" ? "Fora da janela de agendamento"
+                      : selFullBlocked ? `Dia bloqueado${selTimeBooked.size > 0 ? ` · ${selTimeBooked.size} agendado(s)` : ""}`
+                      : `${selTimeBlocked.size} bloqueado(s) · ${selTimeBooked.size} agendado(s)`}
                   </p>
                 </div>
                 <button onClick={() => setSelectedDay(null)} className="text-shogun-text-muted hover:text-shogun-text-primary">
@@ -433,18 +448,28 @@ export default function DisponibilidadePage() {
                   <div className="grid grid-cols-3 gap-1.5">
                     {WORKING_SLOTS.map((slot) => {
                       const isBlocked = selTimeBlocked.has(slot)
+                      const bookedBy  = selTimeBooked.get(slot)
+                      const isBooked  = !!bookedBy
+                      const style = isBooked
+                        ? { background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.55)", color: "#a5b4fc" }
+                        : isBlocked
+                          ? { background: "rgba(255,80,80,0.15)", border: "1px solid rgba(255,80,80,0.5)", color: "#ff6060" }
+                          : { background: "rgba(149,214,0,0.05)", border: "1px solid #1e3a4a", color: "#6a9a70" }
                       return (
                         <button
                           key={slot}
-                          onClick={() => toggleSlot(selectedDay, slot)}
-                          disabled={saving}
-                          className="py-1.5 rounded text-[11px] font-[var(--font-data)] transition-all disabled:opacity-50"
-                          style={isBlocked
-                            ? { background: "rgba(255,80,80,0.15)", border: "1px solid rgba(255,80,80,0.5)", color: "#ff6060" }
-                            : { background: "rgba(149,214,0,0.05)", border: "1px solid #1e3a4a", color: "#6a9a70" }
-                          }
+                          onClick={() => !isBooked && toggleSlot(selectedDay, slot)}
+                          disabled={saving || isBooked}
+                          title={isBooked ? bookedBy.clientName : undefined}
+                          className="py-1.5 rounded text-[11px] font-[var(--font-data)] transition-all disabled:opacity-100 flex flex-col items-center leading-tight"
+                          style={style}
                         >
-                          {slot}
+                          <span>{slot}</span>
+                          {isBooked && (
+                            <span className="text-[8px] font-[var(--font-display)] opacity-80 max-w-full overflow-hidden text-ellipsis whitespace-nowrap px-1">
+                              {bookedBy.clientName.length > 9 ? bookedBy.clientName.slice(0, 9) + "…" : bookedBy.clientName}
+                            </span>
+                          )}
                         </button>
                       )
                     })}
