@@ -48,7 +48,7 @@ function toIso(date: Date): string {
 
 export function useMetricas(): UseMetricasReturn {
   const { selectedClientId } = useClientContext()
-  const { dateRange } = useDateRangeContext()
+  const { dateRange, compareRange } = useDateRangeContext()
   const [data, setData] = useState<MetricasData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -67,14 +67,19 @@ export function useMetricas(): UseMetricasReturn {
         const dateStart = toIso(dateRange!.start)
         const dateEnd = toIso(dateRange!.end)
 
-        // Compute previous period: same number of days ending the day before date_start
-        const periodMs =
-          dateRange!.end.getTime() - dateRange!.start.getTime()
-        const periodDays = Math.round(periodMs / (1000 * 60 * 60 * 24)) + 1
-        const prevEndDate = new Date(dateRange!.start)
-        prevEndDate.setDate(prevEndDate.getDate() - 1)
-        const prevStartDate = new Date(prevEndDate)
-        prevStartDate.setDate(prevStartDate.getDate() - (periodDays - 1))
+        // Use custom compare range if set, otherwise auto-compute previous period
+        let prevStartDate: Date, prevEndDate: Date
+        if (compareRange) {
+          prevStartDate = compareRange.start
+          prevEndDate = compareRange.end
+        } else {
+          const periodMs = dateRange!.end.getTime() - dateRange!.start.getTime()
+          const periodDays = Math.round(periodMs / (1000 * 60 * 60 * 24)) + 1
+          prevEndDate = new Date(dateRange!.start)
+          prevEndDate.setDate(prevEndDate.getDate() - 1)
+          prevStartDate = new Date(prevEndDate)
+          prevStartDate.setDate(prevStartDate.getDate() - (periodDays - 1))
+        }
 
         const params = new URLSearchParams({
           client_id: selectedClientId!,
@@ -102,7 +107,7 @@ export function useMetricas(): UseMetricasReturn {
     }
 
     fetchData()
-  }, [selectedClientId, dateRange])
+  }, [selectedClientId, dateRange, compareRange])
 
   return { data, loading, error }
 }

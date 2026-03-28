@@ -12,19 +12,24 @@ import {
   Pie,
   Legend,
 } from "recharts"
-import { TrendingUp, Target, BarChart2, Activity } from "lucide-react"
+import { TrendingUp, Target, BarChart2 } from "lucide-react"
 import { ShogunCard } from "@/components/ui/ShogunCard"
 import { DatePicker } from "@/components/ui/DatePicker"
 import { useMetricas } from "@/lib/hooks/useMetricas"
 import { useDateRangeContext } from "@/lib/hooks/useDateRangeContext"
 import { useClientContext } from "@/lib/hooks/useClientContext"
-import type { MetricasPeriod, MetricasCampaign } from "@/lib/hooks/useMetricas"
+import type { MetricasCampaign } from "@/lib/hooks/useMetricas"
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
 function fmtBRL(n: number) {
   if (n >= 1000) return `R$ ${(n / 1000).toFixed(1).replace(".", ",")}k`
   return `R$ ${n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`
+}
+
+// Full integer BRL — no abbreviation, no cents
+function fmtBRLFull(n: number) {
+  return `R$ ${Math.round(n).toLocaleString("pt-BR")}`
 }
 
 function fmtNum(n: number) {
@@ -227,7 +232,7 @@ function CampaignDonut({ campaigns }: { campaigns: MetricasCampaign[] }) {
 
 export default function MetricasPage() {
   const { selectedClientId } = useClientContext()
-  const { dateRange, setDateRange } = useDateRangeContext()
+  const { dateRange, setDateRange, compareRange, setCompareRange } = useDateRangeContext()
   const { data, loading, error } = useMetricas()
 
   const cur = data?.current
@@ -246,14 +251,23 @@ export default function MetricasPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-[var(--font-display)] font-bold text-shogun-text-primary">
           Métricas
         </h1>
-        <DatePicker
-          value={dateRange ?? undefined}
-          onChange={setDateRange}
-        />
+        <div className="flex items-center gap-2 flex-wrap">
+          <DatePicker
+            value={dateRange ?? undefined}
+            onChange={setDateRange}
+            placeholder="Período atual"
+          />
+          <span className="text-xs text-shogun-text-muted font-[var(--font-display)]">vs</span>
+          <DatePicker
+            value={compareRange ?? undefined}
+            onChange={setCompareRange}
+            placeholder="Período anterior (auto)"
+          />
+        </div>
       </div>
 
       {/* No client selected */}
@@ -272,8 +286,8 @@ export default function MetricasPage() {
             <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">
               Resumo executivo
             </h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <SkeletonGrid count={4} height="h-36" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <SkeletonGrid count={3} height="h-36" />
             </div>
           </section>
           <section>
@@ -313,17 +327,10 @@ export default function MetricasPage() {
             <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">
               Resumo executivo
             </h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <KpiCard
-                label="Saldo no Meta"
-                value={fmtBRL(data.balance)}
-                change={null}
-                note="Saldo disponível na conta"
-                icon={<Activity size={16} />}
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <KpiCard
                 label="Valor investido (período)"
-                value={fmtBRL(cur.spend)}
+                value={fmtBRLFull(cur.spend)}
                 change={calcDelta(cur.spend, prev.spend)}
                 note="Total gasto no período"
                 positiveGood={false}
@@ -331,7 +338,7 @@ export default function MetricasPage() {
               />
               <KpiCard
                 label="Valor da conversão da compra"
-                value={fmtBRL(cur.purchaseValue)}
+                value={fmtBRLFull(cur.purchaseValue)}
                 change={calcDelta(cur.purchaseValue, prev.purchaseValue)}
                 note="Receita atribuída (Meta)"
                 positiveGood={true}
