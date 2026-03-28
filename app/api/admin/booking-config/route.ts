@@ -47,12 +47,19 @@ export async function POST(request: Request) {
   if (!blocked_date) return NextResponse.json({ error: "Data obrigatória" }, { status: 400 })
 
   const admin = createAdminClient()
+
+  // Remove qualquer bloqueio existente para o mesmo dia/slot antes de inserir
+  if (blocked_time) {
+    await admin.from("booking_blocked_slots")
+      .delete().eq("blocked_date", blocked_date).eq("blocked_time", blocked_time)
+  } else {
+    await admin.from("booking_blocked_slots")
+      .delete().eq("blocked_date", blocked_date).is("blocked_time", null)
+  }
+
   const { data, error } = await admin
     .from("booking_blocked_slots")
-    .upsert(
-      { blocked_date, blocked_time: blocked_time ?? null, reason: reason ?? null },
-      { onConflict: blocked_time ? "blocked_date,blocked_time" : "blocked_date" }
-    )
+    .insert({ blocked_date, blocked_time: blocked_time ?? null, reason: reason ?? null })
     .select()
     .single()
 

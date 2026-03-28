@@ -8,9 +8,9 @@ const FREEBUSY_CALENDAR_ID = process.env.GOOGLE_FREEBUSY_CALENDAR_ID ?? CALENDAR
 
 const TZ = "America/Sao_Paulo"
 
-// Horários de trabalho: 8h-12h e 13h-18h (slots de 30min)
-const MORNING_SLOTS   = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30"]
-const AFTERNOON_SLOTS = ["13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30"]
+// Horários disponíveis para reunião: 09:30–11:30 e 14:00–16:30
+const MORNING_SLOTS   = ["09:30","10:00","10:30","11:00","11:30"]
+const AFTERNOON_SLOTS = ["14:00","14:30","15:00","15:30","16:00","16:30"]
 const WORKING_SLOTS   = [...MORNING_SLOTS, ...AFTERNOON_SLOTS]
 
 // Sempre convidados em todas as reuniões (donos do Grupo Shogun)
@@ -60,7 +60,12 @@ export function getSecondBusinessDay(year: number, month: number): Date {
   return new Date(year, month - 1, day)
 }
 
-/** Retorna o ciclo atual: "YYYY-MM" do mês alvo (próximo mês se dia >= 25) */
+/**
+ * Retorna o ciclo atual "YYYY-MM":
+ * - Dia 25+: próximo mês
+ * - Dia 1-15: mês atual
+ * - Dia 16-24: mês atual (janela fechada, mas ciclo ainda é o atual)
+ */
 export function getCurrentCycle(): string {
   const now = new Date()
   const target = now.getDate() >= 25
@@ -69,9 +74,15 @@ export function getCurrentCycle(): string {
   return `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`
 }
 
-/** Verifica se a janela de agendamento está aberta (dia >= 25) */
+/**
+ * Verifica se a janela de agendamento está aberta:
+ * - Dia 1-15: agendar mês atual
+ * - Dia 16-24: janela fechada
+ * - Dia 25+: agendar próximo mês
+ */
 export function isBookingWindowOpen(): boolean {
-  return new Date().getDate() >= 25
+  const day = new Date().getDate()
+  return day <= 15 || day >= 25
 }
 
 export interface AvailableDay {

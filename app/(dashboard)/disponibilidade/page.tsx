@@ -9,8 +9,8 @@ interface BlockedSlot { id: string; blocked_date: string; blocked_time: string |
 interface WindowConfig { target_month: string; window_end: string }
 
 const WORKING_SLOTS = [
-  "08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30",
-  "13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30",
+  "09:30","10:00","10:30","11:00","11:30",
+  "14:00","14:30","15:00","15:30","16:00","16:30",
 ]
 const DAYS_PT = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"]
 const MONTHS_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
@@ -50,7 +50,7 @@ export default function DisponibilidadePage() {
   })
 
   const [slots, setSlots]         = useState<BlockedSlot[]>([])
-  const [window, setWindowCfg]    = useState<WindowConfig | null>(null)
+  const [windowCfg, setWindowCfg] = useState<WindowConfig | null>(null)
   const [loading, setLoading]     = useState(true)
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
   const [reason, setReason]       = useState("")
@@ -101,7 +101,10 @@ export default function DisponibilidadePage() {
 
   const secondBD  = getSecondBusinessDay(year, month)
   const daysTotal = getDaysInMonth(year, month)
-  const windowEndDate = window?.window_end ? new Date(window.window_end + "T23:59:59") : null
+  // Padrão: dia 15 do mês se não configurado
+  const windowEndDate = windowCfg?.window_end
+    ? new Date(windowCfg.window_end + "T23:59:59")
+    : new Date(year, month - 1, 15, 23, 59, 59)
 
   async function toggleFullDay(dateStr: string) {
     setSaving(true)
@@ -244,9 +247,9 @@ export default function DisponibilidadePage() {
           >
             {savingWindow ? "…" : "Salvar"}
           </button>
-          {window?.window_end && (
+          {windowCfg?.window_end && (
             <span className="text-xs text-shogun-text-muted font-[var(--font-display)]">
-              Até {window.window_end.split("-").reverse().join("/")}
+              Até {windowCfg.window_end.split("-").reverse().join("/")}
             </span>
           )}
         </div>

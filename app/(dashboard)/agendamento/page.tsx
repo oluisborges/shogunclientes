@@ -47,6 +47,7 @@ function getCycleLabel(cycle: string) {
 
 function getTargetMonth() {
   const now = new Date()
+  // Dia 25+: próximo mês; dia 1-15: mês atual; dia 16-24: mês atual (janela fechada)
   const target = now.getDate() >= 25
     ? new Date(now.getFullYear(), now.getMonth() + 1, 1)
     : new Date(now.getFullYear(), now.getMonth(), 1)

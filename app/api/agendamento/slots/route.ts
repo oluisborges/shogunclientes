@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { getAvailableSlots, getCurrentCycle, isBookingWindowOpen, getSecondBusinessDay } from "@/lib/services/google-calendar"
+import { getAvailableSlots, getCurrentCycle, isBookingWindowOpen } from "@/lib/services/google-calendar"
 
 export async function GET(request: Request) {
   try {
@@ -46,7 +46,11 @@ export async function GET(request: Request) {
       }
     }
 
-    const windowEnd = windowRes.data?.window_end ? new Date(windowRes.data.window_end + "T23:59:59") : undefined
+    // Padrão: fechar no dia 15 do mês alvo se não configurado
+    const defaultWindowEnd = new Date(year, month - 1, 15, 23, 59, 59)
+    const windowEnd = windowRes.data?.window_end
+      ? new Date(windowRes.data.window_end + "T23:59:59")
+      : defaultWindowEnd
 
     const slots = await getAvailableSlots(year, month, blockedFullDays, blockedTimeSlots, windowEnd)
     return NextResponse.json({ open: true, slots, cycle: getCurrentCycle() })
