@@ -2,9 +2,9 @@
 
 import { useState, useMemo } from "react"
 import {
+  ComposedChart,
   LineChart,
   Line,
-  BarChart,
   Bar,
   XAxis,
   YAxis,
@@ -33,7 +33,7 @@ import { useDateRangeContext } from "@/lib/hooks/useDateRangeContext"
 import { useClientContext } from "@/lib/hooks/useClientContext"
 import type { MetricasGender, MetricasPeriod, MetricasDaily, MetricasAge } from "@/lib/hooks/useMetricas"
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmtBRLFull(n: number) {
   return `R$ ${Math.round(n).toLocaleString("pt-BR")}`
@@ -66,7 +66,7 @@ function roasStyle(roas: number): { badge: { text: string; className: string } |
   return { badge: null }
 }
 
-// ─── Comparison row (shared by both tabs) ────────────────────────────────────
+// ─── Comparison row ───────────────────────────────────────────────────────────
 
 function CompareRow({
   prevValue,
@@ -80,9 +80,8 @@ function CompareRow({
   if (change === null) return null
   const isGood = positiveGood ? change >= 0 : change <= 0
   const arrow = isGood ? "↑" : "↓"
-
   return (
-    <div className="flex items-center gap-2 flex-wrap mt-0.5">
+    <div className="flex items-center gap-2 flex-wrap">
       <span className="text-xs font-[var(--font-display)] text-white/40">
         anterior: {prevValue}
       </span>
@@ -103,16 +102,13 @@ function SkeletonGrid({ count, height = "h-32" }: { count: number; height?: stri
   return (
     <>
       {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className={`animate-pulse bg-shogun-bg-elevated border border-shogun-border rounded-xl ${height}`}
-        />
+        <div key={i} className={`animate-pulse bg-shogun-bg-elevated border border-shogun-border rounded-xl ${height}`} />
       ))}
     </>
   )
 }
 
-// ─── Simple KPI Card ─────────────────────────────────────────────────────────
+// ─── Simple KPI Card ──────────────────────────────────────────────────────────
 
 function SimpleKpiCard({
   label,
@@ -137,35 +133,36 @@ function SimpleKpiCard({
 }) {
   return (
     <div className="bg-shogun-bg-elevated border border-shogun-border rounded-2xl p-5 flex flex-col gap-2">
+      {/* Label + icon */}
       <div className="flex items-center justify-between">
-        <span className="text-sm font-[var(--font-display)] font-medium text-shogun-text-secondary">
-          {label}
-        </span>
+        <span className="text-sm font-[var(--font-display)] font-medium text-shogun-text-secondary">{label}</span>
         <span className="text-white/30">{icon}</span>
       </div>
 
+      {/* Main value */}
       <span className="font-[var(--font-data)] text-4xl font-bold leading-none text-shogun-text-primary">
         {value}
       </span>
 
-      <p className="text-xs font-[var(--font-display)] text-white/35 leading-snug">
-        {description}
-      </p>
+      {/* Comparison — right below the number */}
+      {showCompare && prevValue && change !== undefined && change !== null && (
+        <CompareRow prevValue={prevValue} change={change} positiveGood={positiveGood} />
+      )}
 
+      {/* Description */}
+      <p className="text-xs font-[var(--font-display)] text-white/35 leading-snug">{description}</p>
+
+      {/* Badge (ROAS) */}
       {badge && (
         <span className={`self-start text-xs font-[var(--font-display)] px-2 py-0.5 rounded-full font-semibold ${badge.className}`}>
           {badge.text}
         </span>
       )}
-
-      {showCompare && prevValue && change !== undefined && change !== null && (
-        <CompareRow prevValue={prevValue} change={change} positiveGood={positiveGood} />
-      )}
     </div>
   )
 }
 
-// ─── Metric Card (Avançado detailed grid) ────────────────────────────────────
+// ─── Metric Card (Avançado grid) ──────────────────────────────────────────────
 
 function MetricCard({
   label,
@@ -184,52 +181,30 @@ function MetricCard({
 }) {
   return (
     <div className="bg-shogun-bg-elevated border border-shogun-border rounded-xl p-4 flex flex-col gap-1.5">
-      <span className="text-xs font-[var(--font-display)] uppercase tracking-wider text-white/40 leading-tight">
-        {label}
-      </span>
-      <span className="font-[var(--font-data)] text-2xl font-bold text-shogun-text-primary leading-none">
-        {value}
-      </span>
-      {showCompare && (
-        <CompareRow prevValue={prevValue} change={change} positiveGood={positiveGood} />
-      )}
+      <span className="text-xs font-[var(--font-display)] uppercase tracking-wider text-white/40 leading-tight">{label}</span>
+      <span className="font-[var(--font-data)] text-2xl font-bold text-shogun-text-primary leading-none">{value}</span>
+      {showCompare && <CompareRow prevValue={prevValue} change={change} positiveGood={positiveGood} />}
     </div>
   )
 }
 
-// ─── Daily line chart (3 lines) ───────────────────────────────────────────────
+// ─── Daily line chart ─────────────────────────────────────────────────────────
 
 function DailyChart({ dailyData }: { dailyData: MetricasDaily[] }) {
   if (!dailyData.length) {
-    return (
-      <p className="text-white/40 text-sm font-[var(--font-display)] text-center py-8">
-        Sem dados diários disponíveis
-      </p>
-    )
+    return <p className="text-white/40 text-sm font-[var(--font-display)] text-center py-8">Sem dados diários disponíveis</p>
   }
 
-  const formatDate = (dateStr: string) => {
-    const parts = dateStr.split("-")
-    return `${parts[2]}/${parts[1]}`
-  }
+  const formatDate = (s: string) => { const p = s.split("-"); return `${p[2]}/${p[1]}` }
 
-  const CustomTooltip = ({
-    active,
-    payload,
-    label,
-  }: {
-    active?: boolean
-    payload?: Array<{ dataKey: string; value: number; color: string; name: string }>
-    label?: string
-  }) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ dataKey: string; value: number; color: string; name: string }>; label?: string }) => {
     if (!active || !payload?.length) return null
     return (
       <div className="bg-shogun-bg-base border border-shogun-border rounded-lg px-3 py-2 font-[var(--font-display)] space-y-1">
         <p className="text-white/40 text-xs mb-1">{label ? formatDate(label) : ""}</p>
         {payload.map((p) => (
           <p key={p.dataKey} style={{ color: p.color }} className="font-[var(--font-data)] font-semibold text-xs">
-            {p.name}:{" "}
-            {p.dataKey === "purchases" ? `${p.value} pedido${p.value !== 1 ? "s" : ""}` : fmtBRLFull(p.value)}
+            {p.name}: {p.dataKey === "purchases" ? `${p.value} pedido${p.value !== 1 ? "s" : ""}` : fmtBRLFull(p.value)}
           </p>
         ))}
       </div>
@@ -250,37 +225,12 @@ function DailyChart({ dailyData }: { dailyData: MetricasDaily[] }) {
           </div>
         ))}
       </div>
-
       <ResponsiveContainer width="100%" height={260}>
         <LineChart data={dailyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-shogun-border)" vertical={false} />
-          <XAxis
-            dataKey="date"
-            tickFormatter={formatDate}
-            tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }}
-            axisLine={false}
-            tickLine={false}
-            interval="preserveStartEnd"
-          />
-          <YAxis
-            yAxisId="left"
-            orientation="left"
-            tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }}
-            axisLine={false}
-            tickLine={false}
-            tickFormatter={fmtNum}
-            width={32}
-            allowDecimals={false}
-          />
-          <YAxis
-            yAxisId="right"
-            orientation="right"
-            tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }}
-            axisLine={false}
-            tickLine={false}
-            tickFormatter={(v) => `R$${fmtNum(v)}`}
-            width={52}
-          />
+          <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+          <YAxis yAxisId="left" orientation="left" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} tickFormatter={fmtNum} width={32} allowDecimals={false} />
+          <YAxis yAxisId="right" orientation="right" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `R$${fmtNum(v)}`} width={52} />
           <Tooltip content={<CustomTooltip />} />
           <Line yAxisId="left" type="linear" dataKey="purchases" name="Pedidos" stroke="#95D600" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: "#95D600", strokeWidth: 0 }} />
           <Line yAxisId="right" type="linear" dataKey="purchaseValue" name="Receita gerada" stroke="#3b82f6" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: "#3b82f6", strokeWidth: 0 }} />
@@ -291,33 +241,26 @@ function DailyChart({ dailyData }: { dailyData: MetricasDaily[] }) {
   )
 }
 
-// ─── Age breakdown bar chart ──────────────────────────────────────────────────
+// ─── Age bar chart with conversion rate ───────────────────────────────────────
 
 function AgeBarChart({ ageStats }: { ageStats: MetricasAge[] }) {
   if (!ageStats.length) {
-    return (
-      <p className="text-white/40 text-sm font-[var(--font-display)] text-center py-8">
-        Sem dados de faixa etária disponíveis
-      </p>
-    )
+    return <p className="text-white/40 text-sm font-[var(--font-display)] text-center py-8">Sem dados de faixa etária disponíveis</p>
   }
 
-  const CustomTooltip = ({
-    active,
-    payload,
-    label,
-  }: {
-    active?: boolean
-    payload?: Array<{ value: number; color: string; name: string }>
-    label?: string
-  }) => {
+  const chartData = ageStats.map((a) => ({
+    ...a,
+    rate: a.lpViews > 0 ? parseFloat(((a.purchases / a.lpViews) * 100).toFixed(1)) : 0,
+  }))
+
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; color: string; name: string; dataKey: string }>; label?: string }) => {
     if (!active || !payload?.length) return null
     return (
       <div className="bg-shogun-bg-base border border-shogun-border rounded-lg px-3 py-2 font-[var(--font-display)] space-y-1">
         <p className="text-white/40 text-xs mb-1">{label} anos</p>
         {payload.map((p) => (
-          <p key={p.name} style={{ color: p.color }} className="font-[var(--font-data)] font-semibold text-xs">
-            {p.name}: {fmtNum(p.value)}
+          <p key={p.dataKey} style={{ color: p.color }} className="font-[var(--font-data)] font-semibold text-xs">
+            {p.name}: {p.dataKey === "rate" ? `${p.value}%` : fmtNum(p.value)}
           </p>
         ))}
       </div>
@@ -326,38 +269,32 @@ function AgeBarChart({ ageStats }: { ageStats: MetricasAge[] }) {
 
   return (
     <div>
-      <div className="flex items-center gap-5 mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-sm bg-[#95D600]" />
-          <span className="text-xs font-[var(--font-display)] text-white/50">Compras</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-sm bg-[#3b82f6]" />
-          <span className="text-xs font-[var(--font-display)] text-white/50">Vis. Pág. Destino</span>
-        </div>
+      <div className="flex items-center gap-5 mb-4 flex-wrap">
+        {[
+          { color: "#95D600", label: "Compras", square: true },
+          { color: "#3b82f6", label: "Visualização de Cardápio", square: true },
+          { color: "#f59e0b", label: "Taxa de compra (%)", square: false },
+        ].map((item) => (
+          <div key={item.label} className="flex items-center gap-2">
+            {item.square
+              ? <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: item.color }} />
+              : <div className="w-4 h-[2px] rounded-full" style={{ backgroundColor: item.color }} />
+            }
+            <span className="text-xs font-[var(--font-display)] text-white/50">{item.label}</span>
+          </div>
+        ))}
       </div>
-      <ResponsiveContainer width="100%" height={240}>
-        <BarChart data={ageStats} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barCategoryGap="30%">
+      <ResponsiveContainer width="100%" height={260}>
+        <ComposedChart data={chartData} margin={{ top: 4, right: 40, left: 0, bottom: 0 }} barCategoryGap="30%">
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-shogun-border)" vertical={false} />
-          <XAxis
-            dataKey="age"
-            tickFormatter={(v) => v}
-            tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis
-            tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }}
-            axisLine={false}
-            tickLine={false}
-            tickFormatter={fmtNum}
-            width={36}
-            allowDecimals={false}
-          />
+          <XAxis dataKey="age" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="left" orientation="left" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} tickFormatter={fmtNum} width={36} allowDecimals={false} />
+          <YAxis yAxisId="right" orientation="right" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} width={40} />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-          <Bar dataKey="purchases" name="Compras" fill="#95D600" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="lpViews" name="Vis. Pág. Destino" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-        </BarChart>
+          <Bar yAxisId="left" dataKey="purchases" name="Compras" fill="#95D600" radius={[4, 4, 0, 0]} />
+          <Bar yAxisId="left" dataKey="lpViews" name="Visualização de Cardápio" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+          <Line yAxisId="right" type="linear" dataKey="rate" name="Taxa de compra (%)" stroke="#f59e0b" strokeWidth={2} dot={{ fill: "#f59e0b", r: 4, strokeWidth: 0 }} activeDot={{ r: 5, fill: "#f59e0b", strokeWidth: 0 }} />
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   )
@@ -367,32 +304,40 @@ function AgeBarChart({ ageStats }: { ageStats: MetricasAge[] }) {
 
 function PerformanceFunnel({ cur }: { cur: MetricasPeriod }) {
   const steps = [
-    { label: "Alcance", value: cur.reach },
-    { label: "Cliques", value: cur.linkClicks },
-    { label: "Vis. Pág. Destino", value: cur.lpViews },
-    { label: "Compras", value: cur.purchases },
+    { label: "Alcance", sub: "pessoas atingidas", value: cur.reach, color: "#95D600" },
+    { label: "Cliques", sub: "cliques no anúncio", value: cur.linkClicks, color: "#3b82f6" },
+    { label: "Visualização de Cardápio", sub: "acessaram o cardápio", value: cur.lpViews, color: "#f59e0b" },
+    { label: "Compras", sub: "pedidos realizados", value: cur.purchases, color: "#ec4899" },
   ]
+
   return (
-    <div className="flex items-stretch w-full mt-2">
+    <div className="flex items-stretch w-full gap-0">
       {steps.map((step, i) => {
         const next = steps[i + 1]
         const rate = next && step.value > 0 ? (next.value / step.value) * 100 : null
         return (
           <div key={step.label} className="flex items-center flex-1 min-w-0">
-            <div className="flex-1 flex flex-col items-center gap-1 bg-shogun-bg-base border border-shogun-border rounded-xl p-3">
+            <div className="flex-1 flex flex-col items-center gap-2 p-5 bg-shogun-bg-base border border-shogun-border rounded-2xl">
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: step.color }}
+              />
               <span className="text-[10px] font-[var(--font-display)] uppercase tracking-wider text-white/40 text-center leading-tight">
                 {step.label}
               </span>
-              <span className="font-[var(--font-data)] text-xl font-bold text-shogun-text-primary">
+              <span className="font-[var(--font-data)] text-3xl font-bold" style={{ color: step.color }}>
                 {fmtNum(step.value)}
+              </span>
+              <span className="text-[10px] font-[var(--font-display)] text-white/30 text-center">
+                {step.sub}
               </span>
             </div>
             {next && (
-              <div className="flex flex-col items-center px-1.5 shrink-0">
-                <span className="text-[10px] font-[var(--font-display)] text-shogun-accent font-semibold mb-0.5 whitespace-nowrap">
+              <div className="flex flex-col items-center px-2 shrink-0 gap-1">
+                <span className="text-xs font-[var(--font-display)] font-bold text-shogun-accent whitespace-nowrap">
                   {rate !== null ? `${rate.toFixed(1)}%` : "—"}
                 </span>
-                <ArrowRight size={14} className="text-white/30" />
+                <ArrowRight size={16} className="text-white/25" />
               </div>
             )}
           </div>
@@ -415,11 +360,7 @@ function GenderDonut({ genderStats }: { genderStats: MetricasGender[] }) {
   }))
 
   if (data.length === 0) {
-    return (
-      <p className="text-white/40 text-sm font-[var(--font-display)] text-center mt-8">
-        Sem dados de público disponíveis
-      </p>
-    )
+    return <p className="text-white/40 text-sm font-[var(--font-display)] text-center mt-8">Sem dados de público disponíveis</p>
   }
 
   return (
@@ -447,21 +388,10 @@ function GenderDonut({ genderStats }: { genderStats: MetricasGender[] }) {
             ))}
           </Pie>
           <Tooltip
-            contentStyle={{
-              backgroundColor: "var(--color-shogun-bg-base)",
-              border: "1px solid var(--color-shogun-border)",
-              borderRadius: "8px",
-              fontFamily: "var(--font-display)",
-              color: "var(--color-shogun-text-primary)",
-            }}
-            formatter={(value: number, name: string) => [
-              `${fmtNum(value)} compras (${total > 0 ? ((value / total) * 100).toFixed(0) : 0}%)`,
-              name,
-            ]}
+            contentStyle={{ backgroundColor: "var(--color-shogun-bg-base)", border: "1px solid var(--color-shogun-border)", borderRadius: "8px", fontFamily: "var(--font-display)", color: "var(--color-shogun-text-primary)" }}
+            formatter={(value: number, name: string) => [`${fmtNum(value)} compras (${total > 0 ? ((value / total) * 100).toFixed(0) : 0}%)`, name]}
           />
-          <Legend formatter={(value) => (
-            <span className="text-xs text-white/50 font-[var(--font-display)]">{value}</span>
-          )} />
+          <Legend formatter={(value) => <span className="text-xs text-white/50 font-[var(--font-display)]">{value}</span>} />
         </PieChart>
       </ResponsiveContainer>
     </div>
@@ -496,7 +426,6 @@ export default function MetricasPage() {
   const curTicket = cur && cur.purchases > 0 ? cur.purchaseValue / cur.purchases : 0
   const prevTicket = prev && prev.purchases > 0 ? prev.purchaseValue / prev.purchases : 0
 
-  // 5 KPI cards shared between both tabs
   const kpiCards = cur && prev ? (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       <SimpleKpiCard
@@ -554,18 +483,14 @@ export default function MetricasPage() {
       {/* ── Header ── */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-[var(--font-display)] font-bold text-shogun-text-primary">
-            Métricas
-          </h1>
+          <h1 className="text-2xl font-[var(--font-display)] font-bold text-shogun-text-primary">Métricas</h1>
           <div className="flex gap-1 bg-shogun-bg-elevated border border-shogun-border rounded-lg p-1">
             {(["simples", "avancado"] as Tab[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
                 className={`px-4 py-1.5 rounded-md text-sm font-[var(--font-display)] transition-all ${
-                  tab === t
-                    ? "bg-shogun-accent text-black font-semibold"
-                    : "text-white/50 hover:text-shogun-text-primary"
+                  tab === t ? "bg-shogun-accent text-black font-semibold" : "text-white/50 hover:text-shogun-text-primary"
                 }`}
               >
                 {t === "simples" ? "Simples" : "Avançado"}
@@ -576,9 +501,7 @@ export default function MetricasPage() {
 
         <div className="flex items-end gap-3">
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-[var(--font-display)] uppercase tracking-wider text-white/40 px-1">
-              Período
-            </span>
+            <span className="text-[10px] font-[var(--font-display)] uppercase tracking-wider text-white/40 px-1">Período</span>
             <DatePicker value={dateRange ?? undefined} onChange={setDateRange} />
           </div>
 
@@ -601,11 +524,7 @@ export default function MetricasPage() {
                   Comparar com{!compareRange && <span className="text-shogun-accent ml-1">• auto</span>}
                 </span>
                 {compareRange && (
-                  <button
-                    onClick={() => setCompareRange(null)}
-                    title="Voltar ao período anterior automático"
-                    className="text-white/40 hover:text-shogun-accent transition-colors"
-                  >
+                  <button onClick={() => setCompareRange(null)} className="text-white/40 hover:text-shogun-accent transition-colors">
                     <RotateCcw size={10} />
                   </button>
                 )}
@@ -620,18 +539,14 @@ export default function MetricasPage() {
       {!selectedClientId && (
         <div className="text-center py-16">
           <Target size={40} className="mx-auto text-white/20 mb-3" />
-          <p className="text-white/50 font-[var(--font-display)]">
-            Selecione um cliente para visualizar as métricas
-          </p>
+          <p className="text-white/50 font-[var(--font-display)]">Selecione um cliente para visualizar as métricas</p>
         </div>
       )}
 
       {/* Loading */}
       {selectedClientId && loading && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-            <SkeletonGrid count={5} height="h-44" />
-          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4"><SkeletonGrid count={5} height="h-44" /></div>
           <div className="animate-pulse bg-shogun-bg-elevated border border-shogun-border rounded-xl h-80" />
         </div>
       )}
@@ -646,9 +561,7 @@ export default function MetricasPage() {
       {/* No data */}
       {selectedClientId && !loading && !error && !data && (
         <div className="text-center py-16">
-          <p className="text-white/50 font-[var(--font-display)]">
-            Configure a conta Meta nas configurações
-          </p>
+          <p className="text-white/50 font-[var(--font-display)]">Configure a conta Meta nas configurações</p>
         </div>
       )}
 
@@ -658,14 +571,9 @@ export default function MetricasPage() {
           {tab === "simples" && (
             <div className="space-y-5">
               {kpiCards}
-
               <ShogunCard>
-                <h2 className="text-base font-[var(--font-display)] font-semibold text-shogun-text-primary mb-1">
-                  Evolução diária
-                </h2>
-                <p className="text-xs text-white/40 font-[var(--font-display)] mb-4">
-                  Pedidos, receita e investimento por dia no período selecionado
-                </p>
+                <h2 className="text-base font-[var(--font-display)] font-semibold text-shogun-text-primary mb-1">Evolução diária</h2>
+                <p className="text-xs text-white/40 font-[var(--font-display)] mb-4">Pedidos, receita e investimento por dia no período selecionado</p>
                 <DailyChart dailyData={data.dailyData} />
               </ShogunCard>
             </div>
@@ -674,60 +582,48 @@ export default function MetricasPage() {
           {/* ══════════════════ AVANÇADO ══════════════════ */}
           {tab === "avancado" && (
             <div className="space-y-6">
-              {/* Resumo executivo — same 5 cards as Simples, no chart */}
+              {/* Resumo executivo */}
               <section>
-                <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">
-                  Resumo executivo
-                </h2>
+                <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">Resumo executivo</h2>
                 {kpiCards}
               </section>
 
               {/* Métricas detalhadas */}
               <section>
-                <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">
-                  Métricas detalhadas
-                </h2>
+                <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">Métricas detalhadas</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <MetricCard label="Alcance total" value={fmtNum(cur.reach)} prevValue={fmtNum(prev.reach)} change={calcDelta(cur.reach, prev.reach)} showCompare={showCompare} />
                   <MetricCard label="Impressões totais" value={fmtNum(cur.impressions)} prevValue={fmtNum(prev.impressions)} change={calcDelta(cur.impressions, prev.impressions)} showCompare={showCompare} />
                   <MetricCard label="Total de cliques no link" value={fmtNum(cur.linkClicks)} prevValue={fmtNum(prev.linkClicks)} change={calcDelta(cur.linkClicks, prev.linkClicks)} showCompare={showCompare} />
                   <MetricCard label="CTR (taxa de cliques)" value={fmtPct(cur.ctr)} prevValue={fmtPct(prev.ctr)} change={calcDelta(cur.ctr, prev.ctr)} showCompare={showCompare} />
-                  <MetricCard label="Visualizações da landing page" value={fmtNum(cur.lpViews)} prevValue={fmtNum(prev.lpViews)} change={calcDelta(cur.lpViews, prev.lpViews)} showCompare={showCompare} />
+                  <MetricCard label="Visualização de Cardápio" value={fmtNum(cur.lpViews)} prevValue={fmtNum(prev.lpViews)} change={calcDelta(cur.lpViews, prev.lpViews)} showCompare={showCompare} />
                   <MetricCard label="Adições ao carrinho" value={fmtNum(cur.addToCart)} prevValue={fmtNum(prev.addToCart)} change={calcDelta(cur.addToCart, prev.addToCart)} showCompare={showCompare} />
                   <MetricCard label="Finalizações de compra iniciadas" value={fmtNum(cur.initiateCheckout)} prevValue={fmtNum(prev.initiateCheckout)} change={calcDelta(cur.initiateCheckout, prev.initiateCheckout)} showCompare={showCompare} />
                   <MetricCard label="Compras" value={fmtNum(cur.purchases)} prevValue={fmtNum(prev.purchases)} change={calcDelta(cur.purchases, prev.purchases)} showCompare={showCompare} />
-                  <MetricCard label="CPM médio" value={fmtBRLCents(cur.cpp)} prevValue={fmtBRLCents(prev.cpp)} change={calcDelta(cur.cpp, prev.cpp)} positiveGood={false} showCompare={showCompare} />
-                  <MetricCard label="CPC médio" value={fmtBRLCents(cur.cpc)} prevValue={fmtBRLCents(prev.cpc)} change={calcDelta(cur.cpc, prev.cpc)} positiveGood={false} showCompare={showCompare} />
+                  <MetricCard label="CPM médio (Custo Por Mil visualizações de cardápio)" value={fmtBRLCents(cur.cpp)} prevValue={fmtBRLCents(prev.cpp)} change={calcDelta(cur.cpp, prev.cpp)} positiveGood={false} showCompare={showCompare} />
+                  <MetricCard label="CPC médio (Custo Por Clique)" value={fmtBRLCents(cur.cpc)} prevValue={fmtBRLCents(prev.cpc)} change={calcDelta(cur.cpc, prev.cpc)} positiveGood={false} showCompare={showCompare} />
                   <MetricCard label="Custo por compra" value={fmtBRLCents(cur.costPerPurchase)} prevValue={fmtBRLCents(prev.costPerPurchase)} change={calcDelta(cur.costPerPurchase, prev.costPerPurchase)} positiveGood={false} showCompare={showCompare} />
                   <MetricCard label="Frequência" value={cur.frequency.toFixed(2)} prevValue={prev.frequency.toFixed(2)} change={calcDelta(cur.frequency, prev.frequency)} positiveGood={false} showCompare={showCompare} />
                 </div>
               </section>
 
-              {/* Funil + Público comprador */}
+              {/* Público comprador + Faixa etária */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <ShogunCard>
-                  <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">
-                    Funil de performance
-                  </h2>
-                  <PerformanceFunnel cur={cur} />
+                  <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">Público comprador</h2>
+                  <GenderDonut genderStats={data.genderStats} />
                 </ShogunCard>
                 <ShogunCard>
-                  <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-4">
-                    Público comprador
-                  </h2>
-                  <GenderDonut genderStats={data.genderStats} />
+                  <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-1">Faixa etária</h2>
+                  <p className="text-xs text-white/40 font-[var(--font-display)] mb-4">Compras e visualizações de cardápio por idade, com taxa de compra</p>
+                  <AgeBarChart ageStats={data.ageStats} />
                 </ShogunCard>
               </div>
 
-              {/* Faixa etária */}
+              {/* Funil de performance — full width at bottom */}
               <ShogunCard>
-                <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-1">
-                  Faixa etária
-                </h2>
-                <p className="text-xs text-white/40 font-[var(--font-display)] mb-4">
-                  Compras e visualizações da página de destino por faixa de idade
-                </p>
-                <AgeBarChart ageStats={data.ageStats} />
+                <h2 className="text-lg font-[var(--font-display)] font-semibold text-shogun-text-primary mb-6">Funil de performance</h2>
+                <PerformanceFunnel cur={cur} />
               </ShogunCard>
             </div>
           )}
