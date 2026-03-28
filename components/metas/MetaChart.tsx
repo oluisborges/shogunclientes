@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import {
   LineChart,
   Line,
@@ -9,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts"
-import { Lock } from "lucide-react"
+import { Lock, LockOpen } from "lucide-react"
 import { formatCurrency, formatCurrencyInt } from "@/lib/metas/utils"
 import type { MonthData } from "@/lib/metas/utils"
 
@@ -30,8 +31,30 @@ const LEGEND = [
   { label: "Tráfego", color: "#f97316", dashed: true },
 ]
 
+const CONFETTI_PIECES = [
+  { color: "#95D600", left: "15%", delay: 0 },
+  { color: "#f97316", left: "28%", delay: 0.12 },
+  { color: "#8b5cf6", left: "42%", delay: 0.04 },
+  { color: "#ec4899", left: "55%", delay: 0.2 },
+  { color: "#f59e0b", left: "68%", delay: 0.08 },
+  { color: "#3b82f6", left: "80%", delay: 0.28 },
+  { color: "#95D600", left: "22%", delay: 0.18 },
+  { color: "#f97316", left: "72%", delay: 0.32 },
+  { color: "#ec4899", left: "38%", delay: 0.24 },
+  { color: "#8b5cf6", left: "60%", delay: 0.06 },
+]
+
+function getMotivationalText(pct: number): string | null {
+  if (pct >= 100) return null
+  if (pct === 0) return "Vamos começar com força total! 💪"
+  if (pct < 25) return "Bom início! Continue empurrando! 🚀"
+  if (pct < 50) return "Ótimo ritmo! Você está no caminho certo! 🔥"
+  if (pct < 75) return "Na metade do caminho, não pare agora! ⚡"
+  if (pct < 90) return "Quase lá! Acelera os últimos esforços! 💥"
+  return "Falta pouquinho! Vai com tudo! 🎯"
+}
+
 export function MetaChart({ data }: MetaChartProps) {
-  // Include ALL weeks — future weeks have Meta value but no fat/tráfego
   const chartData = data.weeks.map((w) => ({
     name: `Sem ${w.weekNumber}`,
     Meta: w.meta,
@@ -40,15 +63,70 @@ export function MetaChart({ data }: MetaChartProps) {
   }))
 
   const progress = Math.min(data.percentAtingido, 100)
+  const atingido = data.percentAtingido >= 100
+
+  const [celebrating, setCelebrating] = useState(false)
+  useEffect(() => {
+    if (atingido) {
+      setCelebrating(true)
+      const t = setTimeout(() => setCelebrating(false), 3000)
+      return () => clearTimeout(t)
+    }
+  }, [atingido])
+
+  // Show motivational text only for the current month
+  const now = new Date()
+  const isCurrentMonth =
+    data.year === now.getFullYear() && data.month === now.getMonth() + 1
+  const motivationalText =
+    isCurrentMonth && !atingido ? getMotivationalText(data.percentAtingido) : null
+
+  const trafegoPercent =
+    data.totalFaturamento > 0
+      ? ((data.totalTrafego / data.totalFaturamento) * 100).toFixed(0)
+      : "0"
+
+  const badgeColors = atingido
+    ? { bg: "radial-gradient(circle, rgba(149,214,0,0.3) 0%, rgba(149,214,0,0.06) 100%)", border: "2px solid rgba(149,214,0,0.8)", text: "#95D600", sub: "#5a8a00" }
+    : { bg: "radial-gradient(circle, rgba(245,158,11,0.3) 0%, rgba(245,158,11,0.06) 100%)", border: "2px solid rgba(245,158,11,0.6)", text: "#f59e0b", sub: "#b45309" }
 
   return (
     <div
-      className="rounded-xl flex flex-col gap-5 overflow-hidden"
+      className="rounded-xl flex flex-col gap-5 overflow-hidden relative"
       style={{ background: "#1A3A31", border: "1px solid #2A5040", padding: "28px 32px" }}
     >
+      {/* ── Confetti ── */}
+      {celebrating && (
+        <>
+          <style>{`
+            @keyframes confetti-rise {
+              0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+              80%  { opacity: 0.8; }
+              100% { transform: translateY(-200px) rotate(540deg) scale(0.5); opacity: 0; }
+            }
+          `}</style>
+          {CONFETTI_PIECES.map((c, i) => (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                bottom: "35%",
+                left: c.left,
+                width: 9,
+                height: 9,
+                borderRadius: 2,
+                background: c.color,
+                animation: `confetti-rise 2s ease-out ${c.delay}s forwards`,
+                pointerEvents: "none",
+                zIndex: 10,
+              }}
+            />
+          ))}
+        </>
+      )}
+
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">
-        {/* Left */}
         <div className="flex-1 min-w-0">
           <p
             className="uppercase tracking-widest mb-4"
@@ -57,38 +135,36 @@ export function MetaChart({ data }: MetaChartProps) {
             Performance do Mês
           </p>
 
-          {/* Big value + "de R$..." inline */}
           <div className="flex items-baseline gap-4 flex-wrap">
             <span
               className="font-bold leading-none"
-              style={{
-                fontSize: 52,
-                fontFamily: "var(--font-data)",
-                color: "#E8F0EB",
-                lineHeight: 1,
-              }}
+              style={{ fontSize: 52, fontFamily: "var(--font-data)", color: "#E8F0EB", lineHeight: 1 }}
             >
               {formatCurrencyInt(data.totalFaturamento)}
             </span>
-            <span
-              style={{
-                fontSize: 16,
-                fontFamily: "var(--font-display)",
-                color: "#808080",
-                whiteSpace: "nowrap",
-              }}
-            >
+            <span style={{ fontSize: 16, fontFamily: "var(--font-display)", color: "#808080", whiteSpace: "nowrap" }}>
               de {formatCurrencyInt(data.totalMeta)}
             </span>
           </div>
 
-          {/* Tráfego */}
           {data.totalTrafego > 0 && (
             <p
-              className="mt-2 font-medium"
+              className="mt-2 font-medium flex items-center gap-2 flex-wrap"
               style={{ fontSize: 15, fontFamily: "var(--font-display)", color: "#f97316" }}
             >
               {formatCurrencyInt(data.totalTrafego)} via Meta Ads
+              <span style={{ fontSize: 12, color: "rgba(249,115,22,0.65)", fontWeight: 400 }}>
+                ({trafegoPercent}% do faturamento)
+              </span>
+            </p>
+          )}
+
+          {motivationalText && (
+            <p
+              className="mt-3"
+              style={{ fontSize: 13, fontFamily: "var(--font-display)", color: "#95D600", fontWeight: 500 }}
+            >
+              {motivationalText}
             </p>
           )}
         </div>
@@ -96,24 +172,21 @@ export function MetaChart({ data }: MetaChartProps) {
         {/* Badge */}
         <div
           className="flex-shrink-0 flex flex-col items-center justify-center"
-          style={{
-            width: 80,
-            height: 80,
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(245,158,11,0.3) 0%, rgba(245,158,11,0.06) 100%)",
-            border: "2px solid rgba(245,158,11,0.6)",
-          }}
+          style={{ width: 80, height: 80, borderRadius: "50%", background: badgeColors.bg, border: badgeColors.border }}
         >
-          <Lock size={12} style={{ color: "#f59e0b", marginBottom: 2 }} />
+          {atingido
+            ? <LockOpen size={13} style={{ color: badgeColors.text, marginBottom: 2 }} />
+            : <Lock size={12} style={{ color: badgeColors.text, marginBottom: 2 }} />
+          }
           <span
             className="font-bold leading-none"
-            style={{ fontSize: 22, fontFamily: "var(--font-data)", color: "#f59e0b" }}
+            style={{ fontSize: 22, fontFamily: "var(--font-data)", color: badgeColors.text }}
           >
             {data.percentAtingido.toFixed(0)}%
           </span>
           <span
             className="uppercase tracking-wide mt-0.5"
-            style={{ fontSize: 8, fontFamily: "var(--font-display)", color: "#b45309" }}
+            style={{ fontSize: 8, fontFamily: "var(--font-display)", color: badgeColors.sub }}
           >
             concluído
           </span>
@@ -122,15 +195,12 @@ export function MetaChart({ data }: MetaChartProps) {
 
       {/* ── Progress bar ── */}
       <div className="space-y-1.5">
-        <div
-          className="rounded-full overflow-hidden"
-          style={{ height: 6, background: "#223A32" }}
-        >
+        <div className="rounded-full overflow-hidden" style={{ height: 6, background: "#223A32" }}>
           <div
             className="h-full rounded-full transition-all duration-700"
             style={{
               width: `${progress}%`,
-              background: "linear-gradient(90deg, #95D600 0%, #f97316 100%)",
+              background: atingido ? "#95D600" : "linear-gradient(90deg, #95D600 0%, #f97316 100%)",
             }}
           />
         </div>
@@ -161,12 +231,7 @@ export function MetaChart({ data }: MetaChartProps) {
             }}
           >
             <svg width="14" height="6" style={{ flexShrink: 0 }}>
-              <line
-                x1="0" y1="3" x2="14" y2="3"
-                stroke={color}
-                strokeWidth={2}
-                strokeDasharray={dashed ? "4 2" : "0"}
-              />
+              <line x1="0" y1="3" x2="14" y2="3" stroke={color} strokeWidth={2} strokeDasharray={dashed ? "4 2" : "0"} />
             </svg>
             {label}
           </div>
@@ -205,20 +270,17 @@ export function MetaChart({ data }: MetaChartProps) {
             <Line
               type="linear" dataKey="Meta" stroke="#8b5cf6" strokeWidth={2}
               strokeDasharray="6 3" connectNulls={false}
-              dot={{ fill: "#8b5cf6", r: 4, strokeWidth: 0 }}
-              activeDot={{ r: 6 }}
+              dot={{ fill: "#8b5cf6", r: 4, strokeWidth: 0 }} activeDot={{ r: 6 }}
             />
             <Line
               type="linear" dataKey="Faturamento" stroke="#95D600" strokeWidth={2}
               connectNulls={false}
-              dot={{ fill: "#95D600", r: 4, strokeWidth: 0 }}
-              activeDot={{ r: 6 }}
+              dot={{ fill: "#95D600", r: 4, strokeWidth: 0 }} activeDot={{ r: 6 }}
             />
             <Line
               type="linear" dataKey="Tráfego" stroke="#f97316" strokeWidth={2}
               strokeDasharray="6 3" connectNulls={false}
-              dot={{ fill: "#f97316", r: 4, strokeWidth: 0 }}
-              activeDot={{ r: 6 }}
+              dot={{ fill: "#f97316", r: 4, strokeWidth: 0 }} activeDot={{ r: 6 }}
             />
           </LineChart>
         </ResponsiveContainer>
