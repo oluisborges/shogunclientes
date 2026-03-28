@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { Plus, Trash2, Users, Building2, Pencil, Check, X, UserCog } from "lucide-react"
+import { Plus, Trash2, Users, Building2, Pencil, Check, X, UserCog, History, RefreshCw, ChevronDown } from "lucide-react"
 import { ShogunCard } from "@/components/ui/ShogunCard"
 
 interface UserRow {
@@ -42,6 +42,16 @@ const EMPTY_FORM: CreateForm = {
   cnpj: "", meta_account_id: "", meta_access_token: "", niche: "", gestor_id: "",
 }
 
+interface ActivityLog {
+  id: string
+  user_id: string
+  user_name: string
+  action_type: string
+  page_label: string | null
+  path: string
+  created_at: string
+}
+
 const NICHES = [
   { value: "marmitarias", label: "Marmitarias" },
   { value: "delivery",    label: "Delivery" },
@@ -71,6 +81,27 @@ export default function UsuariosPage() {
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<EditForm>({ email: "", password: "", full_name: "", business_name: "", cnpj: "", meta_account_id: "", meta_access_token: "", niche: "", gestor_id: "" })
   const [savingUser, setSavingUser] = useState(false)
+
+  const [showHistory, setShowHistory]     = useState(false)
+  const [activityLogs, setActivityLogs]   = useState<ActivityLog[]>([])
+  const [logsLoading, setLogsLoading]     = useState(false)
+  const [filterUser, setFilterUser]       = useState("")
+  const [filterAction, setFilterAction]   = useState("")
+
+  const loadLogs = useCallback(async () => {
+    setLogsLoading(true)
+    try {
+      const qs = filterUser ? `?userId=${filterUser}` : ""
+      const res = await fetch(`/api/activity${qs}`)
+      if (res.ok) setActivityLogs(await res.json())
+    } finally {
+      setLogsLoading(false)
+    }
+  }, [filterUser])
+
+  useEffect(() => {
+    if (showHistory) loadLogs()
+  }, [showHistory, loadLogs])
 
   const [gestorForm, setGestorForm]       = useState({ name: "", email: "" })
   const [addingGestor, setAddingGestor]   = useState(false)
@@ -244,9 +275,18 @@ export default function UsuariosPage() {
           <Users size={24} className="text-shogun-accent" />
           <h1 className="text-2xl font-[var(--font-display)] font-bold text-shogun-text-primary">Usuários</h1>
         </div>
-        <button onClick={() => { setShowForm(!showForm); setError(null) }} className="flex items-center gap-2 px-4 py-2 bg-shogun-accent text-shogun-bg-base rounded text-sm font-[var(--font-display)] font-semibold hover:bg-shogun-accent/90 transition-colors">
-          <Plus size={16} /> Criar usuário
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowHistory((v) => !v)}
+            className="flex items-center gap-2 px-4 py-2 border border-shogun-border rounded text-sm font-[var(--font-display)] text-shogun-text-secondary hover:text-shogun-text-primary hover:border-shogun-accent transition-colors"
+          >
+            <History size={15} />
+            {showHistory ? "Ocultar histórico" : "Histórico de atividades"}
+          </button>
+          <button onClick={() => { setShowForm(!showForm); setError(null) }} className="flex items-center gap-2 px-4 py-2 bg-shogun-accent text-shogun-bg-base rounded text-sm font-[var(--font-display)] font-semibold hover:bg-shogun-accent/90 transition-colors">
+            <Plus size={16} /> Criar usuário
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -338,6 +378,125 @@ export default function UsuariosPage() {
               </button>
             </div>
           </form>
+        </ShogunCard>
+      )}
+
+      {/* ── Histórico de atividades ── */}
+      {showHistory && (
+        <ShogunCard>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <History size={17} className="text-shogun-accent" />
+              <h2 className="text-sm font-semibold font-[var(--font-display)] text-shogun-text-primary">Histórico de Atividades</h2>
+            </div>
+            <button
+              onClick={() => setShowHistory(false)}
+              className="px-3 py-1.5 text-xs font-[var(--font-display)] border border-shogun-border rounded text-shogun-text-secondary hover:text-shogun-text-primary transition-colors"
+            >
+              Ocultar
+            </button>
+          </div>
+
+          {/* Filters */}
+          <div className="flex items-center gap-3 mb-4 flex-wrap">
+            <div className="relative">
+              <select
+                value={filterUser}
+                onChange={(e) => setFilterUser(e.target.value)}
+                className="appearance-none pl-3 pr-8 py-2 bg-shogun-bg-base border border-shogun-border rounded text-sm font-[var(--font-display)] text-shogun-text-primary focus:outline-none focus:border-shogun-accent cursor-pointer"
+              >
+                <option value="">Todos os usuários</option>
+                {users.filter((u) => u.role !== "admin").map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.full_name ?? u.email}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-shogun-text-muted pointer-events-none" />
+            </div>
+            <div className="relative">
+              <select
+                value={filterAction}
+                onChange={(e) => setFilterAction(e.target.value)}
+                className="appearance-none pl-3 pr-8 py-2 bg-shogun-bg-base border border-shogun-border rounded text-sm font-[var(--font-display)] text-shogun-text-primary focus:outline-none focus:border-shogun-accent cursor-pointer"
+              >
+                <option value="">Todas as ações</option>
+                <option value="navigation">Navegação</option>
+                <option value="click">Clique</option>
+              </select>
+              <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-shogun-text-muted pointer-events-none" />
+            </div>
+            <button
+              onClick={loadLogs}
+              disabled={logsLoading}
+              className="flex items-center gap-1.5 px-3 py-2 border border-shogun-border rounded text-sm font-[var(--font-display)] text-shogun-text-secondary hover:text-shogun-text-primary transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={13} className={logsLoading ? "animate-spin" : ""} />
+              Atualizar
+            </button>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
+            {logsLoading ? (
+              <div className="flex items-center justify-center py-10">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-shogun-accent" />
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-shogun-border">
+                    {["Usuário", "Ação", "Detalhes", "Data/Hora"].map((h) => (
+                      <th
+                        key={h}
+                        className="px-3 py-2 text-left text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {activityLogs
+                    .filter((l) => !filterAction || l.action_type === filterAction)
+                    .map((log) => (
+                      <tr key={log.id} className="border-b border-shogun-border/40 hover:bg-shogun-bg-elevated/40 transition-colors">
+                        <td className="px-3 py-2.5 font-[var(--font-display)] text-shogun-text-primary font-medium">
+                          {log.user_name}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded-full text-xs font-[var(--font-display)] font-semibold ${
+                              log.action_type === "navigation"
+                                ? "bg-blue-500/15 text-blue-400"
+                                : "bg-amber-500/15 text-amber-400"
+                            }`}
+                          >
+                            {log.action_type === "navigation" ? "Navegação" : "Clique"}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5 font-[var(--font-display)]">
+                          {log.page_label && (
+                            <span className="text-shogun-text-primary">{log.page_label} </span>
+                          )}
+                          <span className="text-shogun-text-muted text-xs">{log.path}</span>
+                        </td>
+                        <td className="px-3 py-2.5 text-shogun-text-muted font-[var(--font-display)] whitespace-nowrap text-xs">
+                          {new Date(log.created_at).toLocaleString("pt-BR")}
+                        </td>
+                      </tr>
+                    ))}
+                  {activityLogs.filter((l) => !filterAction || l.action_type === filterAction).length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-3 py-8 text-center text-shogun-text-muted text-sm font-[var(--font-display)]">
+                        Nenhuma atividade registrada
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
         </ShogunCard>
       )}
 
