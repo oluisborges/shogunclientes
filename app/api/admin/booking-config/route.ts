@@ -22,18 +22,26 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient()
 
+  // Calcula o último dia real do mês para evitar datas inválidas (ex: 2026-04-31)
+  let slotsQuery = admin.from("booking_blocked_slots").select("*").order("blocked_date").order("blocked_time")
+  if (month) {
+    const [y, m] = month.split("-").map(Number)
+    const lastDay = new Date(y, m, 0).getDate()
+    const lastDate = `${month}-${String(lastDay).padStart(2, "0")}`
+    slotsQuery = slotsQuery.gte("blocked_date", `${month}-01`).lte("blocked_date", lastDate)
+  }
+
   const [windowRes, slotsRes] = await Promise.all([
     month
       ? admin.from("booking_window_config").select("*").eq("target_month", month).maybeSingle()
       : { data: null, error: null },
-    month
-      ? admin.from("booking_blocked_slots").select("*").gte("blocked_date", `${month}-01`).lte("blocked_date", `${month}-31`).order("blocked_date").order("blocked_time")
-      : admin.from("booking_blocked_slots").select("*").order("blocked_date").order("blocked_time"),
+    slotsQuery,
   ])
 
   return NextResponse.json({
     window: windowRes.data,
     slots: slotsRes.data ?? [],
+    ...(slotsRes.error ? { _slotsError: slotsRes.error.message } : {}),
   })
 }
 
