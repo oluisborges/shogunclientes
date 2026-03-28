@@ -17,7 +17,7 @@ export async function PUT(
 
     const { id: userId } = await params
     const body = await request.json()
-    const { email, password, full_name, business_name, cnpj, meta_account_id, niche, gestor_id } = body
+    const { email, password, full_name, business_name, cnpj, meta_account_id, meta_access_token, niche, gestor_id } = body
 
     // Atualiza auth (email e/ou senha)
     const authUpdate: { email?: string; password?: string } = {}
@@ -37,7 +37,8 @@ export async function PUT(
     const clientUpdate: Record<string, unknown> = {}
     if (business_name !== undefined) clientUpdate.business_name = business_name
     if (cnpj !== undefined) clientUpdate.cnpj = cnpj ? cnpj.replace(/\D/g, "") : null
-    if (meta_account_id !== undefined) clientUpdate.meta_account_id = meta_account_id || null
+    if (meta_account_id  !== undefined) clientUpdate.meta_account_id  = meta_account_id  || null
+    if (meta_access_token !== undefined && meta_access_token !== "") clientUpdate.meta_access_token = meta_access_token
     if (niche !== undefined) clientUpdate.niche = niche || null
     if (gestor_id !== undefined) clientUpdate.gestor_id = gestor_id || null
 

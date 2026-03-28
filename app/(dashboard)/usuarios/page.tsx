@@ -27,19 +27,19 @@ interface Gestor { id: string; name: string; email: string; active: boolean }
 
 interface CreateForm {
   email: string; password: string; full_name: string
-  business_name: string; cnpj: string; meta_account_id: string
+  business_name: string; cnpj: string; meta_account_id: string; meta_access_token: string
   niche: string; gestor_id: string
 }
 
 interface EditForm {
   email: string; password: string; full_name: string
-  business_name: string; cnpj: string; meta_account_id: string
+  business_name: string; cnpj: string; meta_account_id: string; meta_access_token: string
   niche: string; gestor_id: string
 }
 
 const EMPTY_FORM: CreateForm = {
   email: "", password: "", full_name: "", business_name: "",
-  cnpj: "", meta_account_id: "", niche: "", gestor_id: "",
+  cnpj: "", meta_account_id: "", meta_access_token: "", niche: "", gestor_id: "",
 }
 
 const NICHES = [
@@ -69,7 +69,7 @@ export default function UsuariosPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState<EditForm>({ email: "", password: "", full_name: "", business_name: "", cnpj: "", meta_account_id: "", niche: "", gestor_id: "" })
+  const [editForm, setEditForm] = useState<EditForm>({ email: "", password: "", full_name: "", business_name: "", cnpj: "", meta_account_id: "", meta_access_token: "", niche: "", gestor_id: "" })
   const [savingUser, setSavingUser] = useState(false)
 
   const [gestorForm, setGestorForm]       = useState({ name: "", email: "" })
@@ -150,8 +150,9 @@ export default function UsuariosPage() {
       full_name:       user.full_name ?? "",
       business_name:   user.client?.business_name ?? "",
       cnpj:            user.client?.cnpj ? formatCnpj(user.client.cnpj) : "",
-      meta_account_id: user.client?.meta_account_id ?? "",
-      niche:           user.client?.niche ?? "",
+      meta_account_id:  user.client?.meta_account_id ?? "",
+      meta_access_token: "",
+      niche:            user.client?.niche ?? "",
       gestor_id:       user.client?.gestor_id ?? "",
     })
   }
@@ -164,8 +165,9 @@ export default function UsuariosPage() {
         full_name:       editForm.full_name || null,
         business_name:   editForm.business_name || null,
         cnpj:            editForm.cnpj.replace(/\D/g, "") || null,
-        meta_account_id: editForm.meta_account_id || null,
-        niche:           editForm.niche || null,
+        meta_account_id:  editForm.meta_account_id  || null,
+        meta_access_token: editForm.meta_access_token || null,
+        niche:            editForm.niche || null,
         gestor_id:       editForm.gestor_id || null,
       }
       if (editForm.email)    body.email    = editForm.email
@@ -311,6 +313,7 @@ export default function UsuariosPage() {
               <div><label className={labelCls}>Nome da empresa *</label><input type="text" required placeholder="Nome igual ao Google Sheets" value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} className={inputCls} /></div>
               <div><label className={labelCls}>CNPJ</label><input type="text" placeholder="00.000.000/0000-00" value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: formatCnpj(e.target.value) })} className={inputCls} /></div>
               <div><label className={labelCls}>ID da conta de anúncios (Meta)</label><input type="text" placeholder="act_000000000" value={form.meta_account_id} onChange={(e) => setForm({ ...form, meta_account_id: e.target.value })} className={inputCls} /></div>
+              <div><label className={labelCls}>Token de acesso Meta</label><input type="text" placeholder="EAABs..." value={form.meta_access_token} onChange={(e) => setForm({ ...form, meta_access_token: e.target.value })} className={inputCls} /></div>
               <div>
                 <label className={labelCls}>Nicho <span className="text-shogun-text-muted normal-case tracking-normal ml-1">(interno)</span></label>
                 <select value={form.niche} onChange={(e) => setForm({ ...form, niche: e.target.value })} className={selectCls}>
@@ -400,7 +403,8 @@ export default function UsuariosPage() {
                             <div><label className={labelCls}>Nova senha</label><input type="password" placeholder="Deixe vazio para não alterar" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} className={inputCls} /></div>
                             <div><label className={labelCls}>Empresa</label><input type="text" value={editForm.business_name} onChange={(e) => setEditForm({ ...editForm, business_name: e.target.value })} className={inputCls} /></div>
                             <div><label className={labelCls}>CNPJ</label><input type="text" value={editForm.cnpj} onChange={(e) => setEditForm({ ...editForm, cnpj: formatCnpj(e.target.value) })} className={inputCls} /></div>
-                            <div><label className={labelCls}>Conta Meta</label><input type="text" value={editForm.meta_account_id} onChange={(e) => setEditForm({ ...editForm, meta_account_id: e.target.value })} className={inputCls} /></div>
+                            <div><label className={labelCls}>Conta Meta (act_...)</label><input type="text" value={editForm.meta_account_id} onChange={(e) => setEditForm({ ...editForm, meta_account_id: e.target.value })} className={inputCls} /></div>
+                            <div><label className={labelCls}>Token Meta (deixe vazio para manter)</label><input type="text" placeholder="EAABs..." value={editForm.meta_access_token} onChange={(e) => setEditForm({ ...editForm, meta_access_token: e.target.value })} className={inputCls} /></div>
                             <div>
                               <label className={labelCls}>Nicho</label>
                               <select value={editForm.niche} onChange={(e) => setEditForm({ ...editForm, niche: e.target.value })} className={selectCls}>
