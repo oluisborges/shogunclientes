@@ -532,7 +532,7 @@ export default function MetricasPage() {
       {/* ── Header ── */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-[var(--font-display)] font-bold text-shogun-text-primary">Métricas</h1>
+          <h1 className="text-2xl font-[var(--font-display)] font-bold text-shogun-text-primary">Dashboard</h1>
           <div className="flex gap-1 bg-shogun-bg-elevated border border-shogun-border rounded-lg p-1">
             {(["simples", "avancado"] as Tab[]).map((t) => (
               <button

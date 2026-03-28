@@ -100,6 +100,7 @@ export default function MetasPage() {
         <h1 className="text-2xl font-[var(--font-display)] font-bold text-shogun-text-primary">
           Metas
         </h1>
+
         <MonthSelector date={selectedDate} onNavigate={navigateMonth} canGoNext={canGoNext()} />
       </div>
 

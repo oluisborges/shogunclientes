@@ -19,12 +19,12 @@ import {
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = [
-  { label: "Métricas", href: "/metricas", icon: BarChart3 },
+  { label: "Dashboard", href: "/metricas", icon: BarChart3 },
   { label: "Campanhas", href: "/campanhas", icon: Megaphone },
   { label: "Metas", href: "/metas", icon: Target },
-  { label: "Agendamento", href: "/agendamento", icon: CalendarClock },
+  { label: "Reunião Mensal", href: "/agendamento", icon: CalendarClock },
   { label: "Conquistas", href: "/conquistas", icon: Trophy },
-  { label: "Agentes", href: "/agentes", icon: Bot },
+  { label: "Shogun IA", href: "/agentes", icon: Bot },
   { label: "Configurações", href: "/configuracoes", icon: Settings },
 ]
 

@@ -44,7 +44,7 @@ export function MetaChart({ data }: MetaChartProps) {
   return (
     <div
       className="rounded-xl flex flex-col gap-5 overflow-hidden"
-      style={{ background: "#0F1E2A", border: "1px solid #1e3a4a", padding: "28px 32px" }}
+      style={{ background: "#1A3A31", border: "1px solid #2A5040", padding: "28px 32px" }}
     >
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">
@@ -52,7 +52,7 @@ export function MetaChart({ data }: MetaChartProps) {
         <div className="flex-1 min-w-0">
           <p
             className="uppercase tracking-widest mb-4"
-            style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "#4A6A5A" }}
+            style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "#808080" }}
           >
             Performance do Mês
           </p>
@@ -74,7 +74,7 @@ export function MetaChart({ data }: MetaChartProps) {
               style={{
                 fontSize: 16,
                 fontFamily: "var(--font-display)",
-                color: "#4A7A6A",
+                color: "#808080",
                 whiteSpace: "nowrap",
               }}
             >
@@ -124,7 +124,7 @@ export function MetaChart({ data }: MetaChartProps) {
       <div className="space-y-1.5">
         <div
           className="rounded-full overflow-hidden"
-          style={{ height: 6, background: "#1a3040" }}
+          style={{ height: 6, background: "#223A32" }}
         >
           <div
             className="h-full rounded-full transition-all duration-700"
@@ -136,7 +136,7 @@ export function MetaChart({ data }: MetaChartProps) {
         </div>
         <div
           className="flex justify-between"
-          style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "#4A6A5A" }}
+          style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "#808080" }}
         >
           <span>R$ 0</span>
           <span>{formatCurrencyInt(data.totalMeta)}</span>
@@ -174,27 +174,27 @@ export function MetaChart({ data }: MetaChartProps) {
       </div>
 
       {/* ── Chart ── */}
-      <div style={{ background: "#0a1520", borderRadius: 10, padding: "16px 8px 8px" }}>
+      <div style={{ background: "#122920", borderRadius: 10, padding: "16px 8px 8px" }}>
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1a3040" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#223A32" vertical={false} />
             <XAxis
               dataKey="name"
-              tick={{ fill: "#3A6A5A", fontSize: 11, fontFamily: "var(--font-display)" }}
+              tick={{ fill: "#808080", fontSize: 11, fontFamily: "var(--font-display)" }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
               tickFormatter={fmtAxis}
-              tick={{ fill: "#3A6A5A", fontSize: 10, fontFamily: "var(--font-display)" }}
+              tick={{ fill: "#808080", fontSize: 10, fontFamily: "var(--font-display)" }}
               axisLine={false}
               tickLine={false}
               width={44}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#0F1E2A",
-                border: "1px solid #1e3a4a",
+                backgroundColor: "#1A3A31",
+                border: "1px solid #2A5040",
                 borderRadius: 8,
                 fontFamily: "var(--font-display)",
                 fontSize: 12,
