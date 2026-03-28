@@ -13,6 +13,7 @@ import {
   Bot,
   Settings,
   Users,
+  CalendarRange,
   PanelLeftClose,
   PanelLeft,
 } from "lucide-react"
@@ -42,7 +43,7 @@ export function Sidebar() {
   }, [])
 
   const navItems = isAdmin
-    ? [...NAV_ITEMS, { label: "Usuários", href: "/usuarios", icon: Users }]
+    ? [...NAV_ITEMS, { label: "Disponibilidade", href: "/disponibilidade", icon: CalendarRange }, { label: "Usuários", href: "/usuarios", icon: Users }]
     : NAV_ITEMS
 
   return (

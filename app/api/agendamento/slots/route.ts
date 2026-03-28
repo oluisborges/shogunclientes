@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { getAvailableSlots, getCurrentCycle, isBookingWindowOpen } from "@/lib/services/google-calendar"
+import { getAvailableSlots, getCurrentCycle, isBookingWindowOpen, getSecondBusinessDay } from "@/lib/services/google-calendar"
 
 export async function GET(request: Request) {
   try {
@@ -23,16 +23,32 @@ export async function GET(request: Request) {
       })
     }
 
+    const monthStr = `${year}-${String(month).padStart(2, "0")}`
     const admin = createAdminClient()
-    const { data: blocked } = await admin
-      .from("booking_blocked_dates")
-      .select("blocked_date")
-      .gte("blocked_date", `${year}-${String(month).padStart(2, "0")}-01`)
-      .lte("blocked_date", `${year}-${String(month).padStart(2, "0")}-31`)
 
-    const blockedSet = new Set<string>((blocked ?? []).map((r: { blocked_date: string }) => r.blocked_date))
+    const [windowRes, slotsRes] = await Promise.all([
+      admin.from("booking_window_config").select("window_end").eq("target_month", monthStr).maybeSingle(),
+      admin.from("booking_blocked_slots").select("blocked_date, blocked_time")
+        .gte("blocked_date", `${monthStr}-01`)
+        .lte("blocked_date", `${monthStr}-31`),
+    ])
 
-    const slots = await getAvailableSlots(year, month, blockedSet)
+    // Monta sets de bloqueio
+    const blockedFullDays = new Set<string>()
+    const blockedTimeSlots = new Map<string, Set<string>>()
+
+    for (const row of (slotsRes.data ?? [])) {
+      if (!row.blocked_time) {
+        blockedFullDays.add(row.blocked_date)
+      } else {
+        if (!blockedTimeSlots.has(row.blocked_date)) blockedTimeSlots.set(row.blocked_date, new Set())
+        blockedTimeSlots.get(row.blocked_date)!.add(row.blocked_time)
+      }
+    }
+
+    const windowEnd = windowRes.data?.window_end ? new Date(windowRes.data.window_end + "T23:59:59") : undefined
+
+    const slots = await getAvailableSlots(year, month, blockedFullDays, blockedTimeSlots, windowEnd)
     return NextResponse.json({ open: true, slots, cycle: getCurrentCycle() })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro interno"

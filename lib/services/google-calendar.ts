@@ -87,7 +87,9 @@ export interface AvailableDay {
 export async function getAvailableSlots(
   targetYear: number,
   targetMonth: number,
-  blockedDates: Set<string> = new Set()
+  blockedFullDays: Set<string> = new Set(),
+  blockedTimeSlots: Map<string, Set<string>> = new Map(),
+  windowEnd?: Date
 ): Promise<AvailableDay[]> {
   if (!FREEBUSY_CALENDAR_ID) throw new Error("GOOGLE_FREEBUSY_CALENDAR_ID não configurado.")
 
@@ -144,13 +146,16 @@ export async function getAvailableSlots(
       const dd = String(cur.getDate()).padStart(2, "0")
       const mm = String(cur.getMonth() + 1).padStart(2, "0")
 
-      if (blockedDates.has(dateStr)) {
+      if (windowEnd && cur > windowEnd) break
+
+      if (blockedFullDays.has(dateStr)) {
         cur.setDate(cur.getDate() + 1)
         continue
       }
 
+      const dayBlockedTimes = blockedTimeSlots.get(dateStr) ?? new Set<string>()
       const availableSlots = WORKING_SLOTS.filter(
-        (slot) => !busySet.has(`${dateStr}T${slot}`)
+        (slot) => !busySet.has(`${dateStr}T${slot}`) && !dayBlockedTimes.has(slot)
       )
 
       if (availableSlots.length > 0) {
