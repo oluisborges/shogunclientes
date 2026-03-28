@@ -91,7 +91,7 @@ export default function DisponibilidadePage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.replace("/login"); return }
       const { data: p } = await supabase.from("profiles").select("role").eq("id", user.id).single()
-      if (p?.role !== "admin") router.replace("/metricas")
+      if (p?.role !== "admin") router.replace("/dashboard")
     }
     check()
   }, [router])
@@ -226,9 +226,9 @@ export default function DisponibilidadePage() {
 
   function dayStyle(status: ReturnType<typeof dayStatus>) {
     switch (status) {
-      case "weekend":       return { bg: "#0a1215", border: "transparent", color: "#2a3d3a", cursor: "default" }
-      case "before":        return { bg: "#0a1215", border: "#1a2e2a", color: "#3a5550", cursor: "default" }
-      case "after-window":  return { bg: "#0d1a1a", border: "#1a2e2a", color: "#3a5550", cursor: "pointer" }
+      case "weekend":       return { bg: "#111F1A", border: "transparent", color: "#2a3d3a", cursor: "default" }
+      case "before":        return { bg: "#111F1A", border: "#1A3A31", color: "#4A6A5A", cursor: "default" }
+      case "after-window":  return { bg: "#152E25", border: "#1A3A31", color: "#4A6A5A", cursor: "pointer" }
       case "full-blocked":  return { bg: "rgba(255,80,80,0.12)", border: "rgba(255,80,80,0.5)", color: "#ff6060", cursor: "pointer" }
       case "partial-blocked":return { bg: "rgba(255,160,40,0.1)", border: "rgba(255,160,40,0.5)", color: "#ffa028", cursor: "pointer" }
       case "available":     return { bg: "rgba(149,214,0,0.06)", border: "rgba(149,214,0,0.25)", color: "#95D600", cursor: "pointer" }
@@ -263,7 +263,7 @@ export default function DisponibilidadePage() {
       {/* Navegação de mês + janela */}
       <div
         className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl"
-        style={{ background: "#0F1E2A", border: "1px solid #1e3a4a" }}
+        style={{ background: "#1A3A31", border: "1px solid #2A5040" }}
       >
         <div className="flex items-center gap-3">
           <button
@@ -312,7 +312,7 @@ export default function DisponibilidadePage() {
           { color: "rgba(149,214,0,0.4)",   label: "Disponível" },
           { color: "rgba(255,80,80,0.5)",   label: "Bloqueado" },
           { color: "rgba(99,102,241,0.55)", label: "Agendado" },
-          { color: "#1e3a4a",               label: "Fora da janela" },
+          { color: "#2A5040",               label: "Fora da janela" },
         ].map(({ color, label }) => (
           <span key={label} className="flex items-center gap-1.5 text-shogun-text-muted">
             <span className="inline-block w-3 h-3 rounded-sm" style={{ background: color }} />
@@ -323,7 +323,7 @@ export default function DisponibilidadePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4">
         {/* Calendário */}
-        <div className="rounded-xl overflow-hidden" style={{ background: "#0F1E2A", border: "1px solid #1e3a4a" }}>
+        <div className="rounded-xl overflow-hidden" style={{ background: "#1A3A31", border: "1px solid #2A5040" }}>
           {/* Cabeçalho dias da semana */}
           <div className="grid grid-cols-7 border-b border-shogun-border">
             {DAYS_PT.map((d) => (
@@ -389,7 +389,7 @@ export default function DisponibilidadePage() {
         {/* Painel lateral do dia selecionado */}
         <div
           className="rounded-xl p-4 space-y-4"
-          style={{ background: "#0F1E2A", border: "1px solid #1e3a4a", minHeight: "200px" }}
+          style={{ background: "#1A3A31", border: "1px solid #2A5040", minHeight: "200px" }}
         >
           {!selectedDay ? (
             <div className="flex flex-col items-center justify-center h-full py-8 text-center">
@@ -454,7 +454,7 @@ export default function DisponibilidadePage() {
                         ? { background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.55)", color: "#a5b4fc" }
                         : isBlocked
                           ? { background: "rgba(255,80,80,0.15)", border: "1px solid rgba(255,80,80,0.5)", color: "#ff6060" }
-                          : { background: "rgba(149,214,0,0.05)", border: "1px solid #1e3a4a", color: "#6a9a70" }
+                          : { background: "rgba(149,214,0,0.05)", border: "1px solid #2A5040", color: "#6a9a70" }
                       return (
                         <button
                           key={slot}
