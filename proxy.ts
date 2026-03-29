@@ -12,14 +12,6 @@ const ADMIN_PATHS = [
   "/criar-cliente",
 ]
 
-// API paths that require admin role (server-side enforcement in addition to
-// individual route checks — defence in depth)
-const ADMIN_API_PATHS = [
-  "/api/admin/",
-  "/api/setup/",
-  "/api/debug/",
-]
-
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -50,18 +42,7 @@ export async function proxy(request: NextRequest) {
   const isApiRoute        = pathname.startsWith("/api/")
   const isPending         = user?.user_metadata?.status === "pending"
 
-  // ── Admin API paths: require authenticated admin ──────────────────────────
-  if (ADMIN_API_PATHS.some((p) => pathname.startsWith(p))) {
-    if (!user) {
-      return NextResponse.json({ error: "Não autenticado" }, { status: 401 })
-    }
-    // Individual routes also perform admin checks — this is an extra layer
-    // We only block clearly unauthenticated requests here to avoid the extra
-    // DB round-trip on every admin API call (route-level check is authoritative)
-    return supabaseResponse
-  }
-
-  // Regular API routes handle their own auth — never redirect them
+  // API routes handle their own auth — never redirect them
   if (isApiRoute) return supabaseResponse
 
   // Unauthenticated: must go to login
