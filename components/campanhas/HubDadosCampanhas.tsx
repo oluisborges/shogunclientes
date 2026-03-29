@@ -5,7 +5,6 @@ import { ChevronRight, Play, GripVertical } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ParsedCampaignMetrics, ParsedAdSetMetrics, ParsedAdMetrics } from "@/lib/meta/types"
 import { AdPreviewModal } from "./AdPreviewModal"
-import { useClientContext } from "@/lib/hooks/useClientContext"
 import {
   DndContext,
   closestCenter,
@@ -101,7 +100,6 @@ export function HubDadosCampanhas({
   ])
   const [previewAd, setPreviewAd] = useState<ParsedAdMetrics | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const { selectedClientId } = useClientContext()
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -758,7 +756,6 @@ export function HubDadosCampanhas({
         ad={previewAd}
         isOpen={isModalOpen}
         onClose={closeModal}
-        clientId={selectedClientId}
       />
     </div>
   )
