@@ -36,8 +36,10 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       // Fonts
       "font-src 'self' https://fonts.gstatic.com",
-      // Images: allow self + data URIs + Supabase storage
-      "img-src 'self' data: blob: https://*.supabase.co https://www.facebook.com https://graph.facebook.com",
+      // Images: allow self + data URIs + Supabase storage + Facebook/Instagram CDN
+      "img-src 'self' data: blob: https://*.supabase.co https://www.facebook.com https://graph.facebook.com https://*.fbcdn.net https://*.cdninstagram.com",
+      // Iframes: allow Facebook video embeds
+      "frame-src https://www.facebook.com",
       // API connections
       [
         "connect-src 'self'",
