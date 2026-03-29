@@ -38,8 +38,8 @@ const securityHeaders = [
       "font-src 'self' https://fonts.gstatic.com",
       // Images: allow self + data URIs + Supabase storage + Facebook/Instagram CDN
       "img-src 'self' data: blob: https://*.supabase.co https://www.facebook.com https://graph.facebook.com https://*.fbcdn.net https://*.cdninstagram.com",
-      // Iframes: allow Facebook video embeds
-      "frame-src https://www.facebook.com",
+      // Iframes: allow Facebook video embeds (plugin uses multiple subdomains internally)
+      "frame-src https://*.facebook.com https://www.facebook.com",
       // API connections
       [
         "connect-src 'self'",
@@ -51,8 +51,8 @@ const securityHeaders = [
         "https://www.googleapis.com",
         "https://ipapi.co",
       ].join(" "),
-      // Media
-      "media-src 'self'",
+      // Media: allow video/audio from Facebook CDN (used by the video plugin)
+      "media-src 'self' https://*.fbcdn.net https://*.facebook.com",
       // Frames: deny all
       "frame-ancestors 'none'",
       // Forms: only self
