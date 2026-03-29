@@ -51,6 +51,8 @@ const clients = [
   { name: "Brenari gastronomia",          email: "brenarigastronomia@gmail.com",                  cnpj: "51664926000112" },
   { name: "Thiago2",                      email: "malk_knight@hotmail.com",                       cnpj: "52262635802716" },
   { name: "Porta da Horta",               email: "portadahorta@gmail.com",                        cnpj: "28579953000175" },
+  { name: "Afetive",                      email: "firmezaitalo@gmail.com",                         cnpj: "53700602000118" },
+  { name: "Point Fit",                    email: "baiatoness@gmail.com",                           cnpj: "35132842000181" },
 ]
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
