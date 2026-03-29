@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { X } from "lucide-react"
+import { X, Play } from "lucide-react"
 import { ParsedAdMetrics } from "@/lib/meta/types"
 
 // Module-level cache so repeated opens of the same ad are instant
@@ -10,8 +10,7 @@ const previewCache = new Map<string, string | null>()
 export function prefetchAdPreview(adId: string, clientId: string) {
   const key = `${adId}:${clientId}`
   if (previewCache.has(key)) return
-  // Mark as in-flight to avoid duplicate requests
-  previewCache.set(key, null)
+  previewCache.set(key, null) // mark in-flight
   fetch(`/api/meta/ad-preview?ad_id=${adId}&client_id=${clientId}`)
     .then((r) => r.json())
     .then((data) => previewCache.set(key, data.previewUrl ?? null))
@@ -27,11 +26,13 @@ interface AdPreviewModalProps {
 
 export function AdPreviewModal({ ad, isOpen, onClose, clientId }: AdPreviewModalProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [previewLoading, setPreviewLoading] = useState(false)
+  const [videoActive, setVideoActive] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!isOpen || !ad?.id || !clientId) {
       setPreviewUrl(null)
+      setVideoActive(false)
       return
     }
 
@@ -41,7 +42,7 @@ export function AdPreviewModal({ ad, isOpen, onClose, clientId }: AdPreviewModal
       return
     }
 
-    setPreviewLoading(true)
+    // Fetch in background — thumbnail shows immediately
     fetch(`/api/meta/ad-preview?ad_id=${ad.id}&client_id=${clientId}`)
       .then((r) => r.json())
       .then((data) => {
@@ -49,9 +50,13 @@ export function AdPreviewModal({ ad, isOpen, onClose, clientId }: AdPreviewModal
         previewCache.set(key, url)
         setPreviewUrl(url)
       })
-      .catch(() => setPreviewUrl(null))
-      .finally(() => setPreviewLoading(false))
+      .catch(() => {})
   }, [isOpen, ad?.id, clientId])
+
+  // Reset video state when ad changes
+  useEffect(() => {
+    setVideoActive(false)
+  }, [ad?.id])
 
   if (!isOpen || !ad) return null
 
@@ -60,84 +65,99 @@ export function AdPreviewModal({ ad, isOpen, onClose, clientId }: AdPreviewModal
   const formatRoas = (value: number) => `${value.toFixed(2)}x`
   const formatPercent = (value: number) => `${value.toFixed(2)}%`
 
-  // For video ads use thumbnailUrl as preview — imageUrl may be unrelated
   const isVideo = !!(ad.videoId || ad.objectType === "VIDEO")
-  const fallbackImage = isVideo ? ad.thumbnailUrl : (ad.imageUrl || ad.thumbnailUrl)
+  const thumbnail = isVideo ? ad.thumbnailUrl : (ad.imageUrl || ad.thumbnailUrl)
+
+  const handlePlay = () => {
+    if (!previewUrl) {
+      setLoading(true)
+    }
+    setVideoActive(true)
+  }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-4xl mx-4"
+        className="relative w-full max-w-lg mx-4 rounded-2xl overflow-hidden bg-shogun-bg-elevated shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute -top-12 right-0 text-white hover:text-shogun-accent transition-colors"
+          className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
         >
-          <X size={32} />
+          <X size={18} />
         </button>
 
-        <div className="bg-black rounded-lg overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
-
-            {/* Left side — creative preview */}
-            <div className="relative bg-shogun-bg-elevated flex items-center justify-center min-h-[400px] lg:min-h-[600px]">
-              {previewLoading ? (
-                <div className="flex flex-col items-center gap-3 text-shogun-text-secondary">
-                  <div className="w-8 h-8 border-2 border-shogun-accent border-t-transparent rounded-full animate-spin" />
-                  <span className="text-sm">Carregando preview…</span>
+        {/* Creative area */}
+        <div className="relative w-full bg-black" style={{ minHeight: 420 }}>
+          {videoActive ? (
+            previewUrl ? (
+              <iframe
+                src={previewUrl}
+                width="100%"
+                height="540"
+                style={{ border: "none", display: "block" }}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              /* previewUrl still loading — show spinner over thumbnail */
+              <div className="relative w-full" style={{ height: 540 }}>
+                {thumbnail && (
+                  <img src={thumbnail} alt={ad.name} className="w-full h-full object-cover" />
+                )}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                  <div className="w-10 h-10 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 </div>
-              ) : previewUrl ? (
-                <iframe
-                  src={previewUrl}
-                  width="100%"
-                  height="100%"
-                  style={{ border: "none", minHeight: "600px" }}
-                  allow="autoplay; encrypted-media; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-full"
-                />
-              ) : fallbackImage ? (
-                <div className="relative w-full h-full flex items-center justify-center p-8">
-                  <img src={fallbackImage} alt={ad.name} className="w-full h-full object-contain" />
+              </div>
+            )
+          ) : thumbnail ? (
+            /* Thumbnail with play button */
+            <div
+              className="relative w-full cursor-pointer group"
+              style={{ height: 420 }}
+              onClick={handlePlay}
+            >
+              <img src={thumbnail} alt={ad.name} className="w-full h-full object-cover" />
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors" />
+              {/* Play button */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                <div className="w-16 h-16 rounded-full bg-black/60 flex items-center justify-center group-hover:bg-black/80 transition-colors">
+                  <Play size={28} className="text-white ml-1" fill="white" />
                 </div>
-              ) : (
-                <div className="text-shogun-text-secondary text-center p-8">
-                  <p className="text-sm">Sem preview disponível</p>
-                </div>
-              )}
-            </div>
-
-            {/* Right side — metrics */}
-            <div className="bg-black p-8 flex flex-col">
-              <h2 className="text-white text-xl font-[var(--font-display)] font-bold mb-6">{ad.name}</h2>
-
-              {(ad.creativeTitle || ad.creativeBody) && (
-                <div className="mb-6 space-y-2">
-                  {ad.creativeTitle && <p className="text-white text-sm font-semibold">{ad.creativeTitle}</p>}
-                  {ad.creativeBody && <p className="text-shogun-text-secondary text-sm">{ad.creativeBody}</p>}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4 mt-auto">
-                {[
-                  { label: "Compras",    value: ad.conversions },
-                  { label: "Invest.",    value: formatCurrency(ad.spend) },
-                  { label: "ROAS",      value: formatRoas(ad.roas), accent: true },
-                  { label: "C/Compra",  value: formatCurrency(ad.cpa) },
-                  { label: "LPV",       value: ad.landingPageViews.toLocaleString("pt-BR") },
-                  { label: "Taxa/LPV",  value: formatPercent(ad.menuConversionRate) },
-                ].map(({ label, value, accent }) => (
-                  <div key={label} className="bg-shogun-bg-elevated/50 rounded-lg p-4 border border-shogun-border/30">
-                    <p className="text-shogun-text-secondary text-xs uppercase tracking-wider mb-1 font-[var(--font-display)]">{label}</p>
-                    <p className={`text-2xl font-bold font-[var(--font-display)] ${accent ? "text-shogun-accent" : "text-white"}`}>{value}</p>
-                  </div>
-                ))}
+                <span className="text-white text-sm font-medium drop-shadow">Clique para assistir</span>
               </div>
             </div>
+          ) : (
+            <div className="flex items-center justify-center" style={{ height: 420 }}>
+              <p className="text-shogun-text-secondary text-sm">Sem preview disponível</p>
+            </div>
+          )}
+        </div>
+
+        {/* Info + metrics */}
+        <div className="p-5 bg-shogun-bg-elevated">
+          <h2 className="text-white font-bold text-base font-[var(--font-display)] mb-4">{ad.name}</h2>
+
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Compras",   value: ad.conversions },
+              { label: "Invest.",   value: formatCurrency(ad.spend) },
+              { label: "ROAS",      value: formatRoas(ad.roas), accent: true },
+              { label: "C/Compra",  value: formatCurrency(ad.cpa) },
+              { label: "LPV",       value: ad.landingPageViews.toLocaleString("pt-BR") },
+              { label: "Taxa/LPV",  value: formatPercent(ad.menuConversionRate) },
+            ].map(({ label, value, accent }) => (
+              <div key={label} className="bg-shogun-bg-base/60 rounded-lg px-3 py-2 border border-shogun-border/20">
+                <p className="text-shogun-text-secondary text-[10px] uppercase tracking-wider font-[var(--font-display)]">{label}</p>
+                <p className={`text-lg font-bold font-[var(--font-display)] ${accent ? "text-shogun-accent" : "text-white"}`}>{value}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
