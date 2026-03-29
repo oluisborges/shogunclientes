@@ -4,6 +4,20 @@ import { useEffect, useState } from "react"
 import { X } from "lucide-react"
 import { ParsedAdMetrics } from "@/lib/meta/types"
 
+// Module-level cache so repeated opens of the same ad are instant
+const previewCache = new Map<string, string | null>()
+
+export function prefetchAdPreview(adId: string, clientId: string) {
+  const key = `${adId}:${clientId}`
+  if (previewCache.has(key)) return
+  // Mark as in-flight to avoid duplicate requests
+  previewCache.set(key, null)
+  fetch(`/api/meta/ad-preview?ad_id=${adId}&client_id=${clientId}`)
+    .then((r) => r.json())
+    .then((data) => previewCache.set(key, data.previewUrl ?? null))
+    .catch(() => {})
+}
+
 interface AdPreviewModalProps {
   ad: ParsedAdMetrics | null
   isOpen: boolean
@@ -21,10 +35,20 @@ export function AdPreviewModal({ ad, isOpen, onClose, clientId }: AdPreviewModal
       return
     }
 
+    const key = `${ad.id}:${clientId}`
+    if (previewCache.has(key)) {
+      setPreviewUrl(previewCache.get(key) ?? null)
+      return
+    }
+
     setPreviewLoading(true)
     fetch(`/api/meta/ad-preview?ad_id=${ad.id}&client_id=${clientId}`)
       .then((r) => r.json())
-      .then((data) => setPreviewUrl(data.previewUrl ?? null))
+      .then((data) => {
+        const url = data.previewUrl ?? null
+        previewCache.set(key, url)
+        setPreviewUrl(url)
+      })
       .catch(() => setPreviewUrl(null))
       .finally(() => setPreviewLoading(false))
   }, [isOpen, ad?.id, clientId])

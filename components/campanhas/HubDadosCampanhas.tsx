@@ -4,7 +4,7 @@ import { useState } from "react"
 import { ChevronRight, Play, GripVertical } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ParsedCampaignMetrics, ParsedAdSetMetrics, ParsedAdMetrics } from "@/lib/meta/types"
-import { AdPreviewModal } from "./AdPreviewModal"
+import { AdPreviewModal, prefetchAdPreview } from "./AdPreviewModal"
 import { useClientContext } from "@/lib/hooks/useClientContext"
 import {
   DndContext,
@@ -469,9 +469,10 @@ export function HubDadosCampanhas({
               className="w-3 h-3 rounded border border-shogun-border text-shogun-accent focus:ring-1 focus:ring-shogun-accent cursor-pointer"
             />
             {ad.thumbnailUrl && (
-              <div 
+              <div
                 className="relative w-6 h-6 rounded overflow-hidden bg-shogun-bg-base flex-shrink-0 cursor-pointer group"
                 onClick={(e) => handleAdPreview(ad, e)}
+                onMouseEnter={() => selectedClientId && prefetchAdPreview(ad.id, selectedClientId)}
                 title="Clique para visualizar o anúncio"
               >
                 <img src={ad.thumbnailUrl} alt="" className="w-full h-full object-cover" />
