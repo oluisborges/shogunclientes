@@ -24,7 +24,10 @@ export function AdPreviewModal({ ad, isOpen, onClose, clientId }: AdPreviewModal
     setVideoLoading(true)
     fetch(`/api/meta/video-url?video_id=${ad.videoId}&client_id=${clientId}`)
       .then((r) => r.json())
-      .then((data) => setVideoData({ type: data.type ?? null, url: data.url ?? null }))
+      .then((data) => {
+        if (data.debug) console.warn("[video-url debug]", data.debug)
+        setVideoData({ type: data.type ?? null, url: data.url ?? null })
+      })
       .catch(() => setVideoData({ type: null, url: null }))
       .finally(() => setVideoLoading(false))
   }, [isOpen, ad?.videoId, clientId])

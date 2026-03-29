@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server"
 import { metaFetch } from "@/lib/meta/client"
 import { getClientMetaCredentials } from "@/lib/meta/getClientToken"
 
-/** Extract the src attribute from an embed_html string */
 function extractIframeSrc(html: string): string | null {
   const match = html.match(/src="([^"]+)"/)
   return match?.[1] ? match[1].replace(/&amp;/g, "&") : null
@@ -32,44 +31,52 @@ export async function GET(request: NextRequest) {
     picture?: string
   }
 
-  let data: VideoData = {}
-
-  // Strategy 1 — direct video node with all useful fields
+  // Strategy 1 — direct video node
+  let metaError1 = ""
   try {
-    data = await metaFetch<VideoData>({
+    const data = await metaFetch<VideoData>({
       endpoint: `/${videoId}`,
       accessToken: creds.accessToken,
       params: { fields: "source,embed_html,picture" },
     })
-  } catch {
-    // Strategy 2 — query through the ad account context
-    try {
-      const acctData = await metaFetch<{ data?: VideoData[] }>({
-        endpoint: `/act_${creds.accountId}/advideos`,
-        accessToken: creds.accessToken,
-        params: {
-          fields: "source,embed_html,picture",
-          filtering: JSON.stringify([{ field: "id", operator: "EQUAL", value: videoId }]),
-        },
-      })
-      data = acctData.data?.[0] ?? {}
-    } catch {
-      // both failed — return null
+
+    if (data.source) return NextResponse.json({ type: "source", url: data.source })
+
+    if (data.embed_html) {
+      const embedUrl = extractIframeSrc(data.embed_html)
+      if (embedUrl) return NextResponse.json({ type: "embed", url: embedUrl })
     }
+  } catch (e) {
+    metaError1 = e instanceof Error ? e.message : String(e)
   }
 
-  // source → client plays with <video>
-  if (data.source) {
-    return NextResponse.json({ type: "source", url: data.source })
-  }
+  // Strategy 2 — via ad account video library
+  let metaError2 = ""
+  try {
+    const acctData = await metaFetch<{ data?: VideoData[] }>({
+      endpoint: `/act_${creds.accountId}/advideos`,
+      accessToken: creds.accessToken,
+      params: {
+        fields: "source,embed_html",
+        filtering: JSON.stringify([{ field: "id", operator: "EQUAL", value: videoId }]),
+      },
+    })
 
-  // embed_html → extract iframe src → client renders <iframe>
-  if (data.embed_html) {
-    const embedUrl = extractIframeSrc(data.embed_html)
-    if (embedUrl) {
-      return NextResponse.json({ type: "embed", url: embedUrl })
+    const item = acctData.data?.[0]
+    if (item?.source) return NextResponse.json({ type: "source", url: item.source })
+
+    if (item?.embed_html) {
+      const embedUrl = extractIframeSrc(item.embed_html)
+      if (embedUrl) return NextResponse.json({ type: "embed", url: embedUrl })
     }
+  } catch (e) {
+    metaError2 = e instanceof Error ? e.message : String(e)
   }
 
-  return NextResponse.json({ type: null, url: null })
+  // Return null with debug info so the client can log it
+  return NextResponse.json({
+    type: null,
+    url: null,
+    debug: { metaError1, metaError2, videoId, accountId: creds.accountId },
+  })
 }
