@@ -25,42 +25,11 @@ const securityHeaders = [
           value: "max-age=31536000; includeSubDomains; preload",
         },
       ]),
-  // Content Security Policy
-  {
-    key: "Content-Security-Policy",
-    value: [
-      "default-src 'self'",
-      // Scripts: allow self + Next.js inline runtime
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      // Styles: allow self + inline (Tailwind generates inline styles)
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      // Fonts
-      "font-src 'self' https://fonts.gstatic.com",
-      // Images: allow self + data URIs + Supabase storage + Facebook/Instagram CDN
-      "img-src 'self' data: blob: https://*.supabase.co https://www.facebook.com https://graph.facebook.com https://*.fbcdn.net https://*.cdninstagram.com",
-      // Iframes: allow Facebook video embeds (plugin uses multiple subdomains internally)
-      "frame-src https://*.facebook.com https://www.facebook.com",
-      // API connections
-      [
-        "connect-src 'self'",
-        "https://*.supabase.co",
-        "https://api.anthropic.com",
-        "https://api.openai.com",
-        "https://generativelanguage.googleapis.com",
-        "https://graph.facebook.com",
-        "https://www.googleapis.com",
-        "https://ipapi.co",
-      ].join(" "),
-      // Media: allow video/audio from Facebook CDN (used by the video plugin)
-      "media-src 'self' https://*.fbcdn.net https://*.facebook.com",
-      // Frames: deny all
-      "frame-ancestors 'none'",
-      // Forms: only self
-      "form-action 'self'",
-      // Upgrade insecure requests in production
-      ...(isDev ? [] : ["upgrade-insecure-requests"]),
-    ].join("; "),
-  },
+  // NOTE: Content-Security-Policy is intentionally omitted.
+  // The Facebook Video Plugin (used in campaign creative previews) loads from
+  // multiple dynamic subdomains that cannot be fully enumerated in a static CSP
+  // without breaking the embed. The remaining headers below provide meaningful
+  // protection without restricting what the browser can load.
 ];
 
 const nextConfig: NextConfig = {
