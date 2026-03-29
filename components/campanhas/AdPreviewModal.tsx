@@ -12,25 +12,22 @@ interface AdPreviewModalProps {
 }
 
 export function AdPreviewModal({ ad, isOpen, onClose, clientId }: AdPreviewModalProps) {
-  const [videoData, setVideoData] = useState<{ type: "source" | "embed" | null; url: string | null }>({ type: null, url: null })
-  const [videoLoading, setVideoLoading] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
 
   useEffect(() => {
-    if (!isOpen || !ad?.videoId || !clientId) {
-      setVideoData({ type: null, url: null })
+    if (!isOpen || !ad?.id || !clientId) {
+      setPreviewUrl(null)
       return
     }
 
-    setVideoLoading(true)
-    fetch(`/api/meta/video-url?video_id=${ad.videoId}&client_id=${clientId}`)
+    setPreviewLoading(true)
+    fetch(`/api/meta/ad-preview?ad_id=${ad.id}&client_id=${clientId}`)
       .then((r) => r.json())
-      .then((data) => {
-        if (data.debug) console.warn("[video-url debug]", data.debug)
-        setVideoData({ type: data.type ?? null, url: data.url ?? null })
-      })
-      .catch(() => setVideoData({ type: null, url: null }))
-      .finally(() => setVideoLoading(false))
-  }, [isOpen, ad?.videoId, clientId])
+      .then((data) => setPreviewUrl(data.previewUrl ?? null))
+      .catch(() => setPreviewUrl(null))
+      .finally(() => setPreviewLoading(false))
+  }, [isOpen, ad?.id, clientId])
 
   if (!isOpen || !ad) return null
 
@@ -39,9 +36,9 @@ export function AdPreviewModal({ ad, isOpen, onClose, clientId }: AdPreviewModal
   const formatRoas = (value: number) => `${value.toFixed(2)}x`
   const formatPercent = (value: number) => `${value.toFixed(2)}%`
 
-  const isVideo = !!(ad.videoId || ad.objectType === "VIDEO")
   // For video ads use thumbnailUrl as preview — imageUrl may be unrelated
-  const previewImage = isVideo ? ad.thumbnailUrl : (ad.imageUrl || ad.thumbnailUrl)
+  const isVideo = !!(ad.videoId || ad.objectType === "VIDEO")
+  const fallbackImage = isVideo ? ad.thumbnailUrl : (ad.imageUrl || ad.thumbnailUrl)
 
   return (
     <div
@@ -64,44 +61,24 @@ export function AdPreviewModal({ ad, isOpen, onClose, clientId }: AdPreviewModal
 
             {/* Left side — creative preview */}
             <div className="relative bg-shogun-bg-elevated flex items-center justify-center min-h-[400px] lg:min-h-[600px]">
-              {isVideo ? (
-                videoLoading ? (
-                  <div className="flex flex-col items-center gap-3 text-shogun-text-secondary">
-                    <div className="w-8 h-8 border-2 border-shogun-accent border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm">Carregando vídeo…</span>
-                  </div>
-                ) : videoData.type === "source" && videoData.url ? (
-                  // Direct MP4 stream
-                  <video
-                    src={videoData.url}
-                    controls
-                    autoPlay={false}
-                    poster={previewImage ?? undefined}
-                    className="w-full h-full object-contain max-h-[600px]"
-                  />
-                ) : videoData.type === "embed" && videoData.url ? (
-                  // Authenticated embed iframe from Meta
-                  <iframe
-                    src={videoData.url}
-                    width="100%"
-                    height="100%"
-                    style={{ border: "none", minHeight: "600px" }}
-                    allow="autoplay; encrypted-media; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-full"
-                  />
-                ) : previewImage ? (
-                  <img
-                    src={previewImage}
-                    alt={ad.name}
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <p className="text-shogun-text-secondary text-sm text-center p-8">Sem preview disponível</p>
-                )
-              ) : previewImage ? (
+              {previewLoading ? (
+                <div className="flex flex-col items-center gap-3 text-shogun-text-secondary">
+                  <div className="w-8 h-8 border-2 border-shogun-accent border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm">Carregando preview…</span>
+                </div>
+              ) : previewUrl ? (
+                <iframe
+                  src={previewUrl}
+                  width="100%"
+                  height="100%"
+                  style={{ border: "none", minHeight: "600px" }}
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full"
+                />
+              ) : fallbackImage ? (
                 <div className="relative w-full h-full flex items-center justify-center p-8">
-                  <img src={previewImage} alt={ad.name} className="w-full h-full object-contain" />
+                  <img src={fallbackImage} alt={ad.name} className="w-full h-full object-contain" />
                 </div>
               ) : (
                 <div className="text-shogun-text-secondary text-center p-8">
