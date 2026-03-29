@@ -1,44 +1,53 @@
 "use client"
 
-import { X, Play } from "lucide-react"
+import { useEffect, useState } from "react"
+import { X } from "lucide-react"
 import { ParsedAdMetrics } from "@/lib/meta/types"
-import { cn } from "@/lib/utils"
 
 interface AdPreviewModalProps {
   ad: ParsedAdMetrics | null
   isOpen: boolean
   onClose: () => void
+  clientId: string | null
 }
 
-export function AdPreviewModal({ ad, isOpen, onClose }: AdPreviewModalProps) {
+export function AdPreviewModal({ ad, isOpen, onClose, clientId }: AdPreviewModalProps) {
+  const [videoSrc, setVideoSrc] = useState<string | null>(null)
+  const [videoLoading, setVideoLoading] = useState(false)
+
+  useEffect(() => {
+    if (!isOpen || !ad?.videoId || !clientId) {
+      setVideoSrc(null)
+      return
+    }
+
+    setVideoLoading(true)
+    fetch(`/api/meta/video-url?video_id=${ad.videoId}&client_id=${clientId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setVideoSrc(data.source ?? null)
+      })
+      .catch(() => setVideoSrc(null))
+      .finally(() => setVideoLoading(false))
+  }, [isOpen, ad?.videoId, clientId])
+
   if (!isOpen || !ad) return null
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value)
-  }
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
-  const formatRoas = (value: number) => {
-    return `${value.toFixed(2)}x`
-  }
+  const formatRoas = (value: number) => `${value.toFixed(2)}x`
+  const formatPercent = (value: number) => `${value.toFixed(2)}%`
 
-  const formatPercent = (value: number) => {
-    return `${value.toFixed(2)}%`
-  }
-
-  // Verificar se é vídeo ou imagem
-  const isVideo = ad.videoId || ad.objectType === 'VIDEO'
-  const videoUrl = ad.videoId ? `https://www.facebook.com/watch/?v=${ad.videoId}` : null
+  const isVideo = ad.videoId || ad.objectType === "VIDEO"
   const displayImage = ad.imageUrl || ad.thumbnailUrl
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
       onClick={onClose}
     >
-      <div 
+      <div
         className="relative w-full max-w-4xl mx-4"
         onClick={(e) => e.stopPropagation()}
       >
@@ -54,32 +63,40 @@ export function AdPreviewModal({ ad, isOpen, onClose }: AdPreviewModalProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
             {/* Left side - Creative preview */}
             <div className="relative bg-shogun-bg-elevated flex items-center justify-center min-h-[400px] lg:min-h-[600px]">
-              {displayImage ? (
-                isVideo && videoUrl ? (
-                  // Preview de vídeo com iframe do Facebook
-                  <div className="relative w-full h-full flex items-center justify-center p-0">
-                    <iframe
-                      src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(videoUrl)}&show_text=false&width=800`}
-                      width="100%"
-                      height="100%"
-                      style={{ border: 'none', overflow: 'hidden', minHeight: '600px' }}
-                      scrolling="no"
-                      frameBorder="0"
-                      allowFullScreen={true}
-                      allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                      className="w-full h-full"
-                    />
+              {isVideo ? (
+                videoLoading ? (
+                  <div className="flex flex-col items-center gap-3 text-shogun-text-secondary">
+                    <div className="w-8 h-8 border-2 border-shogun-accent border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm">Carregando vídeo…</span>
                   </div>
+                ) : videoSrc ? (
+                  <video
+                    src={videoSrc}
+                    controls
+                    autoPlay={false}
+                    className="w-full h-full object-contain max-h-[600px]"
+                    poster={displayImage ?? undefined}
+                  />
+                ) : displayImage ? (
+                  /* Fallback: thumbnail when video URL couldn't be fetched */
+                  <img
+                    src={displayImage}
+                    alt={ad.name}
+                    className="w-full h-full object-contain"
+                  />
                 ) : (
-                  // Preview de imagem estática
-                  <div className="relative w-full h-full flex items-center justify-center p-8">
-                    <img 
-                      src={displayImage || ''} 
-                      alt={ad.name}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
+                  <p className="text-shogun-text-secondary text-sm text-center p-8">
+                    Sem preview disponível
+                  </p>
                 )
+              ) : displayImage ? (
+                <div className="relative w-full h-full flex items-center justify-center p-8">
+                  <img
+                    src={displayImage}
+                    alt={ad.name}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
               ) : (
                 <div className="text-shogun-text-secondary text-center p-8">
                   <p className="text-sm">Sem preview disponível</p>
@@ -89,12 +106,10 @@ export function AdPreviewModal({ ad, isOpen, onClose }: AdPreviewModalProps) {
 
             {/* Right side - Ad info and metrics */}
             <div className="bg-black p-8 flex flex-col">
-              {/* Ad name */}
               <h2 className="text-white text-xl font-[var(--font-display)] font-bold mb-6">
                 {ad.name}
               </h2>
 
-              {/* Creative text */}
               {(ad.creativeTitle || ad.creativeBody) && (
                 <div className="mb-6 space-y-2">
                   {ad.creativeTitle && (
@@ -106,66 +121,35 @@ export function AdPreviewModal({ ad, isOpen, onClose }: AdPreviewModalProps) {
                 </div>
               )}
 
-              {/* Metrics grid */}
               <div className="grid grid-cols-2 gap-4 mt-auto">
-                {/* COMPRAS */}
                 <div className="bg-shogun-bg-elevated/50 rounded-lg p-4 border border-shogun-border/30">
-                  <p className="text-shogun-text-secondary text-xs uppercase tracking-wider mb-1 font-[var(--font-display)]">
-                    Compras
-                  </p>
-                  <p className="text-white text-2xl font-bold font-[var(--font-display)]">
-                    {ad.conversions}
-                  </p>
+                  <p className="text-shogun-text-secondary text-xs uppercase tracking-wider mb-1 font-[var(--font-display)]">Compras</p>
+                  <p className="text-white text-2xl font-bold font-[var(--font-display)]">{ad.conversions}</p>
                 </div>
 
-                {/* INVEST */}
                 <div className="bg-shogun-bg-elevated/50 rounded-lg p-4 border border-shogun-border/30">
-                  <p className="text-shogun-text-secondary text-xs uppercase tracking-wider mb-1 font-[var(--font-display)]">
-                    Invest.
-                  </p>
-                  <p className="text-white text-2xl font-bold font-[var(--font-display)]">
-                    {formatCurrency(ad.spend)}
-                  </p>
+                  <p className="text-shogun-text-secondary text-xs uppercase tracking-wider mb-1 font-[var(--font-display)]">Invest.</p>
+                  <p className="text-white text-2xl font-bold font-[var(--font-display)]">{formatCurrency(ad.spend)}</p>
                 </div>
 
-                {/* ROAS */}
                 <div className="bg-shogun-bg-elevated/50 rounded-lg p-4 border border-shogun-border/30">
-                  <p className="text-shogun-text-secondary text-xs uppercase tracking-wider mb-1 font-[var(--font-display)]">
-                    ROAS
-                  </p>
-                  <p className="text-shogun-accent text-2xl font-bold font-[var(--font-display)]">
-                    {formatRoas(ad.roas)}
-                  </p>
+                  <p className="text-shogun-text-secondary text-xs uppercase tracking-wider mb-1 font-[var(--font-display)]">ROAS</p>
+                  <p className="text-shogun-accent text-2xl font-bold font-[var(--font-display)]">{formatRoas(ad.roas)}</p>
                 </div>
 
-                {/* C/COMPRA */}
                 <div className="bg-shogun-bg-elevated/50 rounded-lg p-4 border border-shogun-border/30">
-                  <p className="text-shogun-text-secondary text-xs uppercase tracking-wider mb-1 font-[var(--font-display)]">
-                    C/Compra
-                  </p>
-                  <p className="text-white text-2xl font-bold font-[var(--font-display)]">
-                    {formatCurrency(ad.cpa)}
-                  </p>
+                  <p className="text-shogun-text-secondary text-xs uppercase tracking-wider mb-1 font-[var(--font-display)]">C/Compra</p>
+                  <p className="text-white text-2xl font-bold font-[var(--font-display)]">{formatCurrency(ad.cpa)}</p>
                 </div>
 
-                {/* LPV */}
                 <div className="bg-shogun-bg-elevated/50 rounded-lg p-4 border border-shogun-border/30">
-                  <p className="text-shogun-text-secondary text-xs uppercase tracking-wider mb-1 font-[var(--font-display)]">
-                    LPV
-                  </p>
-                  <p className="text-white text-2xl font-bold font-[var(--font-display)]">
-                    {ad.landingPageViews.toLocaleString('pt-BR')}
-                  </p>
+                  <p className="text-shogun-text-secondary text-xs uppercase tracking-wider mb-1 font-[var(--font-display)]">LPV</p>
+                  <p className="text-white text-2xl font-bold font-[var(--font-display)]">{ad.landingPageViews.toLocaleString("pt-BR")}</p>
                 </div>
 
-                {/* TAXA/LPV */}
                 <div className="bg-shogun-bg-elevated/50 rounded-lg p-4 border border-shogun-border/30">
-                  <p className="text-shogun-text-secondary text-xs uppercase tracking-wider mb-1 font-[var(--font-display)]">
-                    Taxa/LPV
-                  </p>
-                  <p className="text-white text-2xl font-bold font-[var(--font-display)]">
-                    {formatPercent(ad.menuConversionRate)}
-                  </p>
+                  <p className="text-shogun-text-secondary text-xs uppercase tracking-wider mb-1 font-[var(--font-display)]">Taxa/LPV</p>
+                  <p className="text-white text-2xl font-bold font-[var(--font-display)]">{formatPercent(ad.menuConversionRate)}</p>
                 </div>
               </div>
             </div>
