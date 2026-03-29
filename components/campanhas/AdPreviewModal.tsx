@@ -56,20 +56,29 @@ export function AdPreviewModal({ ad, isOpen, onClose }: AdPreviewModalProps) {
             <div className="relative bg-shogun-bg-elevated flex items-center justify-center min-h-[400px] lg:min-h-[600px]">
               {displayImage ? (
                 isVideo && videoUrl ? (
-                  // Preview de vídeo com iframe do Facebook
-                  <div className="relative w-full h-full flex items-center justify-center p-0">
-                    <iframe
-                      src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(videoUrl)}&show_text=false&width=800`}
-                      width="100%"
-                      height="100%"
-                      style={{ border: 'none', overflow: 'hidden', minHeight: '600px' }}
-                      scrolling="no"
-                      frameBorder="0"
-                      allowFullScreen={true}
-                      allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                      className="w-full h-full"
+                  // Preview de vídeo: thumbnail + botão que abre no Facebook
+                  <a
+                    href={videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="relative w-full h-full flex items-center justify-center group cursor-pointer"
+                    title="Abrir vídeo no Facebook"
+                  >
+                    <img
+                      src={displayImage}
+                      alt={ad.name}
+                      className="w-full h-full object-contain"
                     />
-                  </div>
+                    {/* Play overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors">
+                      <div className="bg-white/90 group-hover:bg-white rounded-full p-5 shadow-lg transition-colors">
+                        <Play size={36} className="text-black fill-black ml-1" />
+                      </div>
+                    </div>
+                    <span className="absolute bottom-3 left-0 right-0 text-center text-white text-xs opacity-70">
+                      Clique para abrir no Facebook
+                    </span>
+                  </a>
                 ) : (
                   // Preview de imagem estática
                   <div className="relative w-full h-full flex items-center justify-center p-8">
