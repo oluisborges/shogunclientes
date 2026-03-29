@@ -12,20 +12,20 @@ interface AdPreviewModalProps {
 }
 
 export function AdPreviewModal({ ad, isOpen, onClose, clientId }: AdPreviewModalProps) {
-  const [videoSrc, setVideoSrc] = useState<string | null>(null)
+  const [videoData, setVideoData] = useState<{ type: "source" | "embed" | null; url: string | null }>({ type: null, url: null })
   const [videoLoading, setVideoLoading] = useState(false)
 
   useEffect(() => {
     if (!isOpen || !ad?.videoId || !clientId) {
-      setVideoSrc(null)
+      setVideoData({ type: null, url: null })
       return
     }
 
     setVideoLoading(true)
     fetch(`/api/meta/video-url?video_id=${ad.videoId}&client_id=${clientId}`)
       .then((r) => r.json())
-      .then((data) => setVideoSrc(data.source ?? null))
-      .catch(() => setVideoSrc(null))
+      .then((data) => setVideoData({ type: data.type ?? null, url: data.url ?? null }))
+      .catch(() => setVideoData({ type: null, url: null }))
       .finally(() => setVideoLoading(false))
   }, [isOpen, ad?.videoId, clientId])
 
@@ -67,13 +67,25 @@ export function AdPreviewModal({ ad, isOpen, onClose, clientId }: AdPreviewModal
                     <div className="w-8 h-8 border-2 border-shogun-accent border-t-transparent rounded-full animate-spin" />
                     <span className="text-sm">Carregando vídeo…</span>
                   </div>
-                ) : videoSrc ? (
+                ) : videoData.type === "source" && videoData.url ? (
+                  // Direct MP4 stream
                   <video
-                    src={videoSrc}
+                    src={videoData.url}
                     controls
                     autoPlay={false}
                     poster={previewImage ?? undefined}
                     className="w-full h-full object-contain max-h-[600px]"
+                  />
+                ) : videoData.type === "embed" && videoData.url ? (
+                  // Authenticated embed iframe from Meta
+                  <iframe
+                    src={videoData.url}
+                    width="100%"
+                    height="100%"
+                    style={{ border: "none", minHeight: "600px" }}
+                    allow="autoplay; encrypted-media; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full"
                   />
                 ) : previewImage ? (
                   <img
