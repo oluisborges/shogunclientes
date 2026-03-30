@@ -27,20 +27,35 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const data = await metaFetch<{ data: { body: string }[] }>({
+    // Add timeout using Promise.race
+    const fetchPromise = metaFetch<{ data: { body: string }[] }>({
       endpoint: `/${adId}/previews`,
       accessToken: creds.accessToken,
       params: { ad_format: "MOBILE_FEED_STANDARD" },
     })
 
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Timeout ao buscar preview")), 10000)
+    })
+
+    const data = await Promise.race([fetchPromise, timeoutPromise]) as { data: { body: string }[] }
+
     const body = data.data?.[0]?.body
-    if (!body) return NextResponse.json({ previewUrl: null })
+    if (!body) {
+      return NextResponse.json({ previewUrl: null, error: "Nenhum preview encontrado" })
+    }
 
     const previewUrl = extractIframeSrc(body)
     return NextResponse.json({ previewUrl })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error("[ad-preview]", msg)
+    
+    // Handle timeout specifically
+    if (msg.includes('timeout') || msg.includes('Timeout')) {
+      return NextResponse.json({ previewUrl: null, error: "Timeout ao buscar preview" })
+    }
+    
     return NextResponse.json({ previewUrl: null, error: msg })
   }
 }

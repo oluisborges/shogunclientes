@@ -15,36 +15,72 @@ export async function GET() {
 
   const adminClient = createAdminClient()
 
-  // Check role: admins see all clients; clients see only their own
+  // Check role: admins see all clients; others see based on access
   const { data: profile } = await adminClient
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single()
 
-  const isAdmin = profile?.role === "admin"
+  const isAdminOrModerador = profile?.role === "admin" || profile?.role === "moderador"
 
-  let query = adminClient
-    .from("clients")
-    .select("id, business_name, meta_account_id")
-    .eq("active", true)
-    .not("profile_id", "is", null)
-    .order("business_name")
+  if (isAdminOrModerador) {
+    // Admins e moderadores veem todos os clientes ativos
+    const { data: clients, error } = await adminClient
+      .from("clients")
+      .select("id, business_name, meta_account_id")
+      .eq("active", true)
+      .not("profile_id", "is", null)
+      .order("business_name")
 
-  if (!isAdmin) {
-    query = query.eq("profile_id", user.id)
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json(clients || [])
   }
 
-  const { data: clients, error } = await query
+  // Para não-admins: busca clientes via profile_id OU via user_client_access
+  const [ownClientsResult, accessClientsResult] = await Promise.all([
+    // Clientes onde o usuário é o dono (profile_id)
+    adminClient
+      .from("clients")
+      .select("id, business_name, meta_account_id")
+      .eq("profile_id", user.id)
+      .eq("active", true),
+    // Clientes com acesso via user_client_access
+    adminClient
+      .from("user_client_access")
+      .select("client_id, clients(id, business_name, meta_account_id)")
+      .eq("user_id", user.id)
+  ])
 
-  if (error) {
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    )
+  // Combina os resultados removendo duplicatas
+  const clientsMap = new Map<string, { id: string; business_name: string; meta_account_id: string | null }>()
+
+  // Adiciona clientes próprios
+  if (ownClientsResult.data) {
+    for (const client of ownClientsResult.data) {
+      clientsMap.set(client.id, client)
+    }
   }
 
-  return NextResponse.json(clients || [])
+  // Adiciona clientes com acesso
+  if (accessClientsResult.data) {
+    for (const access of accessClientsResult.data) {
+      const clientData = access.clients as unknown as { id: string; business_name: string; meta_account_id: string | null } | null
+      if (clientData && !clientsMap.has(clientData.id)) {
+        clientsMap.set(clientData.id, clientData)
+      }
+    }
+  }
+
+  // Converte para array e ordena por nome
+  const clients = Array.from(clientsMap.values()).sort((a, b) => 
+    a.business_name.localeCompare(b.business_name)
+  )
+
+  return NextResponse.json(clients)
 }
 
 export async function POST(request: Request) {

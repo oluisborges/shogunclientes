@@ -5,16 +5,19 @@ import { createClient } from "@/lib/supabase/server"
 async function requireAdmin() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+  if (!user) return { error: "Não autorizado", status: 401 as const }
+  
   const admin = createAdminClient()
   const { data } = await admin.from("profiles").select("role").eq("id", user.id).single()
-  if (!data || !["admin", "gestor"].includes(data.role)) return null
-  return user
+  if (!data || (data.role !== "admin" && data.role !== "moderador")) return { error: "Acesso restrito a administradores e moderadores", status: 403 as const }
+  return { userId: user.id }
 }
 
 export async function GET() {
-  const user = await requireAdmin()
-  if (!user) return NextResponse.json({ error: "Sem permissão" }, { status: 403 })
+  const check = await requireAdmin()
+  if ("error" in check) {
+    return NextResponse.json({ error: check.error }, { status: check.status })
+  }
 
   const admin = createAdminClient()
   const { data, error } = await admin
@@ -27,8 +30,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const user = await requireAdmin()
-  if (!user) return NextResponse.json({ error: "Sem permissão" }, { status: 403 })
+  const check = await requireAdmin()
+  if ("error" in check) {
+    return NextResponse.json({ error: check.error }, { status: check.status })
+  }
 
   const { name, email } = await request.json()
   if (!name || !email) return NextResponse.json({ error: "name e email são obrigatórios" }, { status: 400 })

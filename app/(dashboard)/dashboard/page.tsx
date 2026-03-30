@@ -160,12 +160,12 @@ export default function MetricasPage() {
   ) : null
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       {/* ── Header ── */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <h1 className="text-2xl font-[var(--font-display)] font-bold text-shogun-text-primary">Dashboard</h1>
-          <div className="flex gap-1 bg-shogun-bg-elevated border border-shogun-border rounded-lg p-1">
+          <div className="flex gap-1 bg-shogun-bg-elevated border border-shogun-border rounded-lg p-1 w-fit">
             {(["simples", "avancado"] as Tab[]).map((t) => (
               <button key={t} onClick={() => setTab(t)} className={`px-4 py-1.5 rounded-md text-sm font-[var(--font-display)] transition-all ${tab === t ? "bg-shogun-accent text-black font-semibold" : "text-white/50 hover:text-shogun-text-primary"}`}>
                 {t === "simples" ? "Simples" : "Avançado"}
@@ -174,19 +174,19 @@ export default function MetricasPage() {
           </div>
         </div>
 
-        <div className="flex items-end gap-3">
-          <div className="flex flex-col gap-1">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+          <div className="flex flex-col gap-1 relative">
             <span className="text-[10px] font-[var(--font-display)] uppercase tracking-wider text-white/40 px-1">Período</span>
             <DatePicker value={dateRange ?? undefined} onChange={handleDateRangeChange} />
           </div>
           <button
             onClick={() => setShowCompare((v) => !v)}
-            className={`flex items-center gap-1.5 h-[38px] px-4 rounded-lg border font-[var(--font-display)] text-sm font-medium transition-all ${showCompare ? "bg-shogun-accent text-black border-shogun-accent" : "bg-shogun-accent/10 border-shogun-accent text-shogun-accent hover:bg-shogun-accent/20"}`}
+            className={`flex items-center justify-center gap-1.5 h-[38px] px-4 rounded-lg border font-[var(--font-display)] text-sm font-medium transition-all ${showCompare ? "bg-shogun-accent text-black border-shogun-accent" : "bg-shogun-accent/10 border-shogun-accent text-shogun-accent hover:bg-shogun-accent/20"}`}
           >
             <GitCompare size={14} /> Comparar
           </button>
           {showCompare && (
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 relative">
               <div className="flex items-center gap-1.5 px-1">
                 <span className="text-[10px] font-[var(--font-display)] uppercase tracking-wider text-white/40">
                   Comparar com{!compareRange && <span className="text-shogun-accent ml-1">• auto</span>}
@@ -197,7 +197,7 @@ export default function MetricasPage() {
                   </button>
                 )}
               </div>
-              <DatePicker value={effectiveCompareRange} onChange={handleCompareRangeChange} />
+              <DatePicker value={effectiveCompareRange} onChange={handleCompareRangeChange} align="right" />
             </div>
           )}
         </div>
@@ -212,7 +212,7 @@ export default function MetricasPage() {
 
       {selectedClientId && loading && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4"><SkeletonGrid count={5} height="h-44" /></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"><SkeletonGrid count={5} height="h-44" /></div>
           <div className="animate-pulse bg-shogun-bg-elevated border border-shogun-border rounded-xl h-80" />
         </div>
       )}
@@ -251,7 +251,7 @@ export default function MetricasPage() {
               </section>
               <section>
                 <SectionTitle>Métricas detalhadas</SectionTitle>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <MetricCard label="Alcance total"                                    value={fmtNum(cur.reach)}               prevValue={fmtNum(prev.reach)}               change={calcDelta(cur.reach, prev.reach)}                             showCompare={showCompare} />
                   <MetricCard label="Impressões totais"                                value={fmtNum(cur.impressions)}         prevValue={fmtNum(prev.impressions)}         change={calcDelta(cur.impressions, prev.impressions)}                 showCompare={showCompare} />
                   <MetricCard label="Total de cliques no link"                         value={fmtNum(cur.linkClicks)}          prevValue={fmtNum(prev.linkClicks)}          change={calcDelta(cur.linkClicks, prev.linkClicks)}                   showCompare={showCompare} />
@@ -288,7 +288,7 @@ export default function MetricasPage() {
                   <div className="w-0.5 h-5 rounded-full bg-shogun-accent" />
                   <h2 className="text-base font-[var(--font-display)] font-semibold text-shogun-text-primary">Funil de performance</h2>
                 </div>
-                <PerformanceFunnel cur={cur as MetricasPeriod} />
+                {cur && prev && <PerformanceFunnel current={cur} previous={prev} />}
               </ShogunCard>
             </div>
           )}

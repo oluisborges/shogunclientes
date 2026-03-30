@@ -18,7 +18,7 @@ export async function DELETE(
 
     const { data: profile } = await adminClient
       .from("profiles").select("role").eq("id", user.id).single()
-    const isAdmin = profile?.role === "admin" || profile?.role === "gestor"
+    const isAdmin = profile?.role === "admin" || profile?.role === "moderador" || profile?.role === "gestor"
 
     // Admin pode cancelar passando clientId como query param
     const { searchParams } = new URL(_request.url)

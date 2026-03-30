@@ -81,8 +81,18 @@ export function getCurrentCycle(): string {
  * - Dia 25+: agendar próximo mês
  */
 export function isBookingWindowOpen(): boolean {
-  const day = new Date().getDate()
-  return day <= 15 || day >= 25
+  const now = new Date()
+  const day = now.getDate()
+  const month = now.getMonth() + 1
+  const year = now.getFullYear()
+  const hour = now.getHours()
+  
+  console.log("[isBookingWindowOpen] Data atual:", { year, month, day, hour, timezone: now.toString() })
+  
+  const isOpen = day <= 15 || day >= 25
+  console.log("[isBookingWindowOpen] Dia:", day, "- Janela aberta?", isOpen)
+  
+  return isOpen
 }
 
 export interface AvailableDay {

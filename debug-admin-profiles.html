@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Admin Profiles</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px 20px; margin: 10px; cursor: pointer; }
+        .success { color: green; }
+        .error { color: red; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .profile-item { background: #f9f9f9; padding: 10px; margin: 5px 0; border-radius: 4px; }
+        .missing { background: #ffe6e6; }
+        .existing { background: #e6ffe6; }
+    </style>
+</head>
+<body>
+    <h1>Debug Admin Profiles</h1>
+    <p>Esta página ajuda a diagnosticar problemas com criação de admins/moderadores.</p>
+    
+    <button onclick="loadDebugInfo()">Carregar Informações de Debug</button>
+    <button onclick="refresh()">Recarregar Página Admin</button>
+    
+    <div id="result"></div>
+
+    <script>
+        async function loadDebugInfo() {
+            try {
+                const response = await fetch('/api/debug/admin-profiles');
+                const data = await response.json();
+                
+                let html = '<div class="section">';
+                html += '<h2>Resumo:</h2>';
+                html += '<pre>' + JSON.stringify(data.summary, null, 2) + '</pre>';
+                html += '</div>';
+                
+                if (data.profiles && data.profiles.length > 0) {
+                    html += '<div class="section">';
+                    html += '<h2>Perfis Admin/Moderador:</h2>';
+                    data.profiles.forEach(profile => {
+                        const cssClass = profile.authUserExists ? 'existing' : 'missing';
+                        html += `<div class="profile-item ${cssClass}">`;
+                        html += `<strong>${profile.full_name}</strong> (${profile.role})<br>`;
+                        html += `Email: ${profile.email}<br>`;
+                        html += `ID: ${profile.id}<br>`;
+                        html += `Auth User Exists: ${profile.authUserExists ? '✅' : '❌'}<br>`;
+                        if (!profile.authUserExists && profile.error) {
+                            html += `Error: ${profile.error}<br>`;
+                        }
+                        html += `Created: ${profile.created_at}<br>`;
+                        html += `Auth Created: ${profile.authUserCreated || 'N/A'}<br>`;
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                }
+                
+                if (data.authUsersWithoutProfiles && data.authUsersWithoutProfiles.length > 0) {
+                    html += '<div class="section">';
+                    html += '<h2>Usuários Auth sem Perfil (PROBLEMA!):</h2>';
+                    data.authUsersWithoutProfiles.forEach(user => {
+                        html += `<div class="profile-item missing">`;
+                        html += `<strong>${user.user_metadata?.full_name || 'Sem nome'}</strong><br>`;
+                        html += `Email: ${user.email}<br>`;
+                        html += `ID: ${user.id}<br>`;
+                        html += `Created: ${user.created_at}<br>`;
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                }
+                
+                document.getElementById('result').innerHTML = html;
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<p class="error">Error: ' + error.message + '</p>';
+            }
+        }
+        
+        async function refresh() {
+            try {
+                // Força a página de admin a recarregar os dados
+                const response = await fetch('/api/admin/admin-users');
+                const data = await response.json();
+                
+                let html = '<h2>Admin Users Response:</h2>';
+                html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                html += '<p class="success">✓ Recarregado! Volte para a página de admin e atualize.</p>';
+                
+                document.getElementById('result').innerHTML = html;
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<p class="error">Error: ' + error.message + '</p>';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -8,7 +8,7 @@ async function requireAdmin() {
   if (!user) return null
   const admin = createAdminClient()
   const { data } = await admin.from("profiles").select("role").eq("id", user.id).single()
-  if (!data || !["admin", "gestor"].includes(data.role)) return null
+  if (!data || !["admin", "moderador", "gestor"].includes(data.role)) return null
   return user
 }
 

@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* Shogun Color Tokens */
+  /* Shogun Color Tokens - Dark Mode (padrão) */
   --color-shogun-bg-base: #111F1A;
   --color-shogun-bg-surface: #1A3A31;
   --color-shogun-bg-elevated: #1F4438;
@@ -26,11 +26,908 @@
   --color-foreground: #E8F0EB;
 }
 
+/* Light Mode Colors - com maior especificidade - cores melhoradas */
+html.light {
+  --color-shogun-bg-base: #FAFAFA !important;
+  --color-shogun-bg-surface: #F5F5F5 !important;
+  --color-shogun-bg-elevated: #FFFFFF !important;
+  --color-shogun-border: #E5E5E5 !important;
+  --color-shogun-accent: #10B981 !important;
+  --color-shogun-accent-muted: #059669 !important;
+  --color-shogun-text-primary: #374151 !important;
+  --color-shogun-text-secondary: #6B7280 !important;
+  --color-shogun-text-muted: #9CA3AF !important;
+  --color-shogun-danger: #EF4444 !important;
+  --color-chart-secondary: #34D399 !important;
+  --color-background: #FAFAFA !important;
+  --color-foreground: #374151 !important;
+}
+
+/* Força cores diretas no modo claro - mais abrangente com cores melhoradas */
+html.light * {
+  border-color: #E5E5E5 !important;
+}
+
+html.light body,
+html.light main,
+html.light header,
+html.light nav,
+html.light section,
+html.light div,
+html.light article,
+html.light aside {
+  background-color: #FAFAFA !important;
+  color: #374151 !important;
+}
+
+html.light .bg-shogun-bg-base,
+html.light .bg-shogun-bg-surface,
+html.light .bg-shogun-bg-elevated {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+}
+
+html.light .bg-shogun-bg-base {
+  background-color: #FAFAFA !important;
+}
+
+html.light .bg-shogun-bg-surface {
+  background-color: #F5F5F5 !important;
+}
+
+html.light .bg-shogun-bg-elevated {
+  background-color: #FFFFFF !important;
+}
+
+html.light .border-shogun-border {
+  border-color: #E5E5E5 !important;
+}
+
+html.light .text-shogun-text-primary,
+html.light h1,
+html.light h2,
+html.light h3,
+html.light h4,
+html.light h5,
+html.light h6,
+html.light p,
+html.light span,
+html.light label {
+  color: #374151 !important;
+}
+
+html.light .text-shogun-text-secondary {
+  color: #6B7280 !important;
+}
+
+html.light .text-shogun-text-muted {
+  color: #9CA3AF !important;
+}
+
+html.light .text-shogun-accent {
+  color: #10B981 !important;
+}
+
+html.light button {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+}
+
+html.light button:hover {
+  background-color: #F5F5F5 !important;
+}
+
+html.light input,
+html.light textarea,
+html.light select {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+}
+
+/* Força cores específicas para inputs no modo claro */
+html.light input[type="text"],
+html.light input[type="email"],
+html.light input[type="password"],
+html.light input[type="tel"],
+html.light input[type="number"],
+html.light textarea,
+html.light select {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+}
+
+/* Regras mais específicas para classes do Shogun */
+html.light .bg-shogun-bg-base input,
+html.light .bg-shogun-bg-elevated input,
+html.light input.bg-shogun-bg-base,
+html.light input.bg-shogun-bg-elevated {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+}
+
+html.light .text-shogun-text-primary input,
+html.light input.text-shogun-text-primary {
+  color: #374151 !important;
+}
+
+html.light .border-shogun-border input,
+html.light input.border-shogun-border {
+  border-color: #E5E5E5 !important;
+}
+
+/* Regras com máxima especificidade para inputs no modo claro */
+html.light .bg-shogun-bg-base input[type="text"],
+html.light .bg-shogun-bg-base input[type="email"],
+html.light .bg-shogun-bg-base input[type="password"],
+html.light .bg-shogun-bg-base input[type="tel"],
+html.light .bg-shogun-bg-base input[type="number"],
+html.light .bg-shogun-bg-elevated input[type="text"],
+html.light .bg-shogun-bg-elevated input[type="email"],
+html.light .bg-shogun-bg-elevated input[type="password"],
+html.light .bg-shogun-bg-elevated input[type="tel"],
+html.light .bg-shogun-bg-elevated input[type="number"] {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+}
+
+/* Força spans dentro de containers com inputs */
+html.light .bg-shogun-bg-base .text-shogun-text-primary,
+html.light .bg-shogun-bg-elevated .text-shogun-text-primary {
+  color: #374151 !important;
+}
+
+/* Regra ultra-específica para garantir que inputs funcionem */
+html.light div input,
+html.light form input,
+html.light .w-full input,
+html.light input.w-full {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+}
+
+/* Regras específicas para dropdowns/selects no modo claro */
+html.light select,
+html.light .w-full select,
+html.light select.w-full,
+html.light div select,
+html.light form select {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+}
+
+html.light .bg-shogun-bg-base select,
+html.light .bg-shogun-bg-elevated select,
+html.light select.bg-shogun-bg-base,
+html.light select.bg-shogun-bg-elevated {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+}
+
+html.light .text-shogun-text-primary select,
+html.light select.text-shogun-text-primary {
+  color: #374151 !important;
+}
+
+html.light .border-shogun-border select,
+html.light select.border-shogun-border {
+  border-color: #E5E5E5 !important;
+}
+
+/* Foco para dropdowns/selects */
+html.light select:focus,
+html.light .w-full select:focus,
+html.light select.w-full:focus,
+html.light div select:focus,
+html.light form select:focus {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #10B981 !important;
+  outline-color: #10B981 !important;
+}
+
+html.light .bg-shogun-bg-base select:focus,
+html.light .bg-shogun-bg-elevated select:focus {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #10B981 !important;
+  outline-color: #10B981 !important;
+}
+
+/* REGRAS MÁXIMA ESPECIFICIDADE - MODO CLARO - FORÇADO */
+html.light * input,
+html.light * select,
+html.light * textarea,
+html.light input *,
+html.light select *,
+html.light textarea *,
+html.light div * input,
+html.light div * select,
+html.light div * textarea,
+html.light form * input,
+html.light form * select,
+html.light form * textarea {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+}
+
+html.light * input:focus,
+html.light * select:focus,
+html.light * textarea:focus,
+html.light input *:focus,
+html.light select *:focus,
+html.light textarea *:focus,
+html.light div * input:focus,
+html.light div * select:focus,
+html.light div * textarea:focus,
+html.light form * input:focus,
+html.light form * select:focus,
+html.light form * textarea:focus {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #10B981 !important;
+  outline-color: #10B981 !important;
+}
+
+html.light * input::placeholder,
+html.light * textarea::placeholder,
+html.light input *::placeholder,
+html.light textarea *::placeholder {
+  color: #9CA3AF !important;
+}
+
+html.light * select option,
+html.light select * option {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+}
+
+/* REGRAS ULTRA FORÇADAS - ATRIBUTE SELECTORS */
+html.light [class*="input"],
+html.light [class*="select"],
+html.light [class*="textarea"],
+html.light input[type],
+html.light select[type],
+html.light textarea[type] {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+}
+
+html.light [class*="input"]:focus,
+html.light [class*="select"]:focus,
+html.light [class*="textarea"]:focus,
+html.light input[type]:focus,
+html.light select[type]:focus,
+html.light textarea[type]:focus {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #10B981 !important;
+  outline-color: #10B981 !important;
+}
+
+/* Força spans com texto de inputs */
+html.light .text-shogun-text-primary *,
+html.light [class*="text-shogun-text-primary"] * {
+  color: #374151 !important;
+}
+
+/* CORREÇÃO ESPECÍFICA PARA DATEPICKERS - FORÇADO TOTAL */
+html.light input[type="date"],
+html.light input[type="date"]:hover,
+html.light input[type="date"]:focus,
+html.light input[type="date"]:active,
+html.light input[type="date"]::before,
+html.light input[type="date"]::after {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Força todos os pseudo-elementos do datepicker */
+html.light input[type="date"]::-webkit-calendar-picker-indicator,
+html.light input[type="date"]::-webkit-inner-spin-button,
+html.light input[type="date"]::-webkit-outer-spin-button,
+html.light input[type="date"]::-webkit-datetime-edit-text,
+html.light input[type="date"]::-webkit-datetime-edit-month-field,
+html.light input[type="date"]::-webkit-datetime-edit-day-field,
+html.light input[type="date"]::-webkit-datetime-edit-year-field,
+html.light input[type="date"]::-webkit-datetime-edit-ampm-field {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Força o calendário popup */
+html.light input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  background-color: #F5F5F5 !important;
+  color: #374151 !important;
+}
+
+/* Força o texto selecionado */
+html.light input[type="date"]::selection {
+  background-color: #10B981 !important;
+  color: #FFFFFF !important;
+}
+
+html.light input[type="date"]::-moz-selection {
+  background-color: #10B981 !important;
+  color: #FFFFFF !important;
+}
+
+/* Regras específicas para Firefox */
+html.light input[type="date"]::-moz-calendar-picker-indicator {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border: 1px solid #E5E5E5 !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+html.light input[type="date"]::-moz-calendar-picker-indicator:hover {
+  background-color: #F5F5F5 !important;
+  color: #374151 !important;
+}
+
+/* Força o valor do input quando está vazio */
+html.light input[type="date"]:empty::before,
+html.light input[type="date"]:not([value])::before {
+  content: attr(placeholder) !important;
+  color: #9CA3AF !important;
+}
+
+/* Força o valor quando tem valor */
+html.light input[type="date"][value]:not(:empty)::before {
+  content: none !important;
+}
+
+/* Regras ultra-específicas para qualquer input com date */
+html.light * input[type="date"],
+html.light input[type="date"] *,
+html.light div * input[type="date"],
+html.light form * input[type="date"],
+html.light .bg-shogun-bg-base input[type="date"],
+html.light .bg-shogun-bg-elevated input[type="date"] {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+}
+
+/* Regras específicas para a classe datepicker-input */
+html.light .datepicker-input,
+html.light .datepicker-input:hover,
+html.light .datepicker-input:focus,
+html.light .datepicker-input:active,
+html.light input.datepicker-input,
+html.light *.datepicker-input {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Força todos os pseudo-elementos da classe datepicker-input */
+html.light .datepicker-input::-webkit-calendar-picker-indicator,
+html.light .datepicker-input::-webkit-inner-spin-button,
+html.light .datepicker-input::-webkit-outer-spin-button,
+html.light .datepicker-input::-webkit-datetime-edit-text,
+html.light .datepicker-input::-webkit-datetime-edit-month-field,
+html.light .datepicker-input::-webkit-datetime-edit-day-field,
+html.light .datepicker-input::-webkit-datetime-edit-year-field,
+html.light .datepicker-input::-moz-calendar-picker-indicator {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Força o texto dentro do datepicker-input */
+html.light .datepicker-input *,
+html.light .datepicker-input span,
+html.light .datepicker-input div,
+html.light input.datepicker-input *,
+html.light input.datepicker-input span,
+html.light input.datepicker-input div {
+  color: #374151 !important;
+  background-color: #FFFFFF !important;
+}
+
+/* CORREÇÃO ESPECÍFICA PARA DROPDOWNS/SELECTS - FORÇADO TOTAL */
+html.light select,
+html.light select:hover,
+html.light select:focus,
+html.light select:active,
+html.light select::before,
+html.light select::after {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Força todos os pseudo-elementos do select */
+html.light select::-webkit-calendar-picker-indicator,
+html.light select::-webkit-inner-spin-button,
+html.light select::-webkit-outer-spin-button,
+html.light select::-webkit-datetime-edit-text,
+html.light select::-webkit-datetime-edit-month-field,
+html.light select::-webkit-datetime-edit-day-field,
+html.light select::-webkit-datetime-edit-year-field,
+html.light select::-webkit-datetime-edit-ampm-field {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Força o dropdown arrow */
+html.light select::-webkit-calendar-picker-indicator,
+html.light select::-webkit-calendar-picker-indicator:hover {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+}
+
+/* Força as opções do dropdown */
+html.light select option,
+html.light select option:hover,
+html.light select option:focus,
+html.light select option:active,
+html.light select option:checked {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+}
+
+/* Força o texto selecionado */
+html.light select::selection {
+  background-color: #10B981 !important;
+  color: #FFFFFF !important;
+}
+
+html.light select::-moz-selection {
+  background-color: #10B981 !important;
+  color: #FFFFFF !important;
+}
+
+/* Regras específicas para Firefox */
+html.light select::-moz-calendar-picker-indicator {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border: 1px solid #E5E5E5 !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+html.light select::-moz-calendar-picker-indicator:hover {
+  background-color: #F5F5F5 !important;
+  color: #374151 !important;
+}
+
+/* Regras ultra-específicas para qualquer select */
+html.light * select,
+html.light select *,
+html.light div * select,
+html.light form * select,
+html.light .bg-shogun-bg-base select,
+html.light .bg-shogun-bg-elevated select {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+}
+
+/* Regras específicas para classe dropdown (se existir) */
+html.light .dropdown,
+html.light .dropdown:hover,
+html.light .dropdown:focus,
+html.light .dropdown:active,
+html.light select.dropdown,
+html.light *.dropdown {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Força o texto dentro dos selects */
+html.light select *,
+html.light select span,
+html.light select div,
+html.light select option,
+html.light select option *,
+html.light select option span,
+html.light select option div {
+  color: #374151 !important;
+  background-color: #FFFFFF !important;
+}
+
+/* Força selects com classes específicas */
+html.light [class*="select"],
+html.light select[class*="form"],
+html.light select[class*="input"],
+html.light .w-full select,
+html.light select.w-full {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+}
+
+/* Força selects em containers específicos */
+html.light .bg-shogun-bg-base select,
+html.light .bg-shogun-bg-elevated select,
+html.light .border-shogun-border select,
+html.light select.bg-shogun-bg-base,
+html.light select.bg-shogun-bg-elevated,
+html.light select.border-shogun-border {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #E5E5E5 !important;
+}
+
+/* CORREÇÃO PARA TEXTOS DE GRÁFICOS NO MODO CLARO */
+html.light .recharts-wrapper,
+html.light .recharts-surface,
+html.light .recharts-text,
+html.light .recharts-label,
+html.light .recharts-tooltip-wrapper,
+html.light .recharts-legend-wrapper {
+  color: #374151 !important;
+}
+
+html.light .recharts-text tspan,
+html.light .recharts-label tspan,
+html.light .recharts-legend-item-text {
+  fill: #374151 !important;
+  color: #374151 !important;
+}
+
+/* Força textos específicos do CircularProgress */
+html.light .absolute span,
+html.light .absolute span span,
+html.light .relative span,
+html.light .relative span span {
+  color: #374151 !important;
+}
+
+html.light .absolute .font-bold,
+html.light .relative .font-bold,
+html.light .absolute .text-lg,
+html.light .relative .text-lg {
+  color: #374151 !important;
+}
+
+html.light .absolute .text-\[9px\],
+html.light .relative .text-\[9px\],
+html.light .absolute .uppercase,
+html.light .relative .uppercase {
+  color: #9CA3AF !important;
+}
+
+/* Força textos dentro de gráficos circulares */
+html.light .recharts-pie,
+html.light .recharts-pie-label,
+html.light .recharts-pie-label-text,
+html.light .recharts-pie-center-text {
+  color: #374151 !important;
+  fill: #374151 !important;
+}
+
+/* Força qualquer texto dentro de containers de gráfico */
+html.light [class*="recharts"] *,
+html.light [class*="chart"] *,
+html.light .chart-container *,
+html.light .chart-wrapper * {
+  color: #374151 !important;
+}
+
+html.light [class*="recharts"] tspan,
+html.light [class*="chart"] tspan,
+html.light .chart-container tspan,
+html.light .chart-wrapper tspan {
+  fill: #374151 !important;
+  color: #374151 !important;
+}
+
+/* FORÇA GLOBAL - NENHUM TEXTO BRANCO NO MODO CLARO */
+html.light * {
+  color: #374151 !important;
+}
+
+/* Exceções específicas que devem ser brancas no modo claro */
+html.light .bg-shogun-accent *,
+html.light [style*="background: rgb(149, 214, 0)"] *,
+html.light [style*="background-color: rgb(149, 214, 0)"] *,
+html.light .text-white,
+html.light [class*="text-white"] {
+  color: #FFFFFF !important;
+}
+
+/* Força específica para textos de gráficos */
+html.light .recharts-text,
+html.light .recharts-label,
+html.light .recharts-legend-item,
+html.light .recharts-tooltip,
+html.light .recharts-wrapper,
+html.light .recharts-surface,
+html.light .recharts-pie,
+html.light .recharts-pie-label,
+html.light .recharts-pie-label-text {
+  color: #374151 !important;
+  fill: #374151 !important;
+}
+
+/* Força todos os tspan no modo claro */
+html.light tspan {
+  fill: #374151 !important;
+  color: #374151 !important;
+}
+
+/* Força todos os spans no modo claro */
+html.light span {
+  color: #374151 !important;
+}
+
+/* Força todos os textos em containers de gráfico */
+html.light [class*="chart"] *,
+html.light [class*="recharts"] *,
+html.light .chart-container *,
+html.light .chart-wrapper * {
+  color: #374151 !important;
+  fill: #374151 !important;
+}
+
+/* Força textos em posições absolutas/relativas */
+html.light .absolute *,
+html.light .relative * {
+  color: #374151 !important;
+}
+
+/* Força textos com classes específicas */
+html.light [class*="text"] {
+  color: #374151 !important;
+}
+
+/* Força parágrafos, divs, headers */
+html.light p,
+html.light div,
+html.light h1,
+html.light h2,
+html.light h3,
+html.light h4,
+html.light h5,
+html.light h6 {
+  color: #374151 !important;
+}
+
+html.light div input:focus,
+html.light form input:focus,
+html.light .w-full input:focus,
+html.light input.w-full:focus {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #10B981 !important;
+  outline-color: #10B981 !important;
+}
+
+html.light input[type="text"]:focus,
+html.light input[type="email"]:focus,
+html.light input[type="password"]:focus,
+html.light input[type="tel"]:focus,
+html.light input[type="number"]:focus,
+html.light textarea:focus,
+html.light select:focus {
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  border-color: #10B981 !important;
+  outline-color: #10B981 !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #9CA3AF !important;
+}
+
+html.light .text-shogun-text-primary {
+  color: #374151 !important;
+}
+
+/* Força texto em spans dentro de inputs no modo claro */
+html.light .text-shogun-text-primary span,
+html.light span.text-shogun-text-primary {
+  color: #374151 !important;
+}
+
+html.light .text-shogun-text-muted {
+  color: #9CA3AF !important;
+}
+
+html.light .text-shogun-text-muted span,
+html.light span.text-shogun-text-muted {
+  color: #9CA3AF !important;
+}
+
+html.light .hover\:bg-shogun-bg-surface:hover {
+  background-color: #F5F5F5 !important;
+}
+
+html.light .text-kpi {
+  color: #10B981 !important;
+}
+
+html.light .bg-shogun-accent {
+  background-color: #10B981 !important;
+  color: #FFFFFF !important;
+}
+
+html.light .text-shogun-danger {
+  color: #EF4444 !important;
+}
+
+html.light .bg-red-50 {
+  background-color: #FEF2F2 !important;
+}
+
+html.light .text-red-700 {
+  color: #B91C1C !important;
+}
+
+html.light .bg-green-50 {
+  background-color: #F0FDF4 !important;
+}
+
+html.light .text-green-700 {
+  color: #15803D !important;
+}
+
+/* UX/UI Improvements para Modo Claro */
+
+/* Sidebar - Fundo mais escuro para contraste */
+html.light .bg-shogun-bg-base.sidebar {
+  background-color: #F8FAFC !important;
+}
+
+/* Links ativos no menu */
+html.light .text-shogun-accent.bg-shogun-accent\/8 {
+  background-color: #D1FAE5 !important;
+  color: #065F46 !important;
+}
+
+/* Hover states melhorados */
+html.light .hover\:bg-shogun-bg-elevated:hover {
+  background-color: #F9FAFB !important;
+}
+
+html.light .hover\:text-shogun-text-primary:hover {
+  color: #111827 !important;
+}
+
+/* Cards e containers */
+html.light .rounded-lg {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Tabelas */
+html.light table {
+  background-color: #FFFFFF !important;
+}
+
+html.light th {
+  background-color: #F9FAFB !important;
+  color: #374151 !important;
+  border-bottom: 1px solid #E5E7EB !important;
+}
+
+html.light td {
+  border-bottom: 1px solid #F3F4F6 !important;
+}
+
+html.light tr:hover {
+  background-color: #F9FAFB !important;
+}
+
+/* Badges e tags */
+html.light .bg-shogun-bg-surface.rounded-full {
+  background-color: #F3F4F6 !important;
+  color: #374151 !important;
+}
+
+/* Dropdowns e modals */
+html.light .absolute.bg-shogun-bg-elevated {
+  background-color: #FFFFFF !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Progress bars */
+html.light .bg-shogun-border {
+  background-color: #E5E7EB !important;
+}
+
+/* Charts e gráficos */
+html.light .text-chart-secondary {
+  color: #6B7280 !important;
+}
+
+/* Inputs com focus */
+html.light input:focus,
+html.light textarea:focus,
+html.light select:focus {
+  border-color: #10B981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+}
+
+/* Botões primários */
+html.light .bg-shogun-accent:hover {
+  background-color: #059669 !important;
+}
+
+/* Estados de loading */
+html.light .animate-spin {
+  border-color: #10B981 !important;
+  border-top-color: transparent !important;
+}
+
+/* Separadores */
+html.light .border-t,
+html.light .border-b {
+  border-color: #E5E7EB !important;
+}
+
+/* Tooltips */
+html.light .bg-shogun-bg-base.text-shogun-text-primary {
+  background-color: #1F2937 !important;
+  color: #F9FAFB !important;
+}
+
+/* Scrollbar */
+html.light ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+html.light ::-webkit-scrollbar-track {
+  background: #F3F4F6;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 3px;
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
+}
+
+/* Estados especiais */
+html.light .opacity-50 {
+  opacity: 0.5 !important;
+}
+
+html.light .text-shogun-text-muted\/50 {
+  color: #D1D5DB !important;
+}
+
 /* Base styles */
 body {
   background-color: var(--color-shogun-bg-base);
   color: var(--color-shogun-text-primary);
   font-family: var(--font-display);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* JetBrains Mono for all numeric data */

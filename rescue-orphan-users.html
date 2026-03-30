@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resgatar Usuários Órfãos</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px 20px; margin: 10px; cursor: pointer; }
+        .success { color: green; }
+        .error { color: red; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .user-item { background: #fff3cd; padding: 10px; margin: 5px 0; border-radius: 4px; border: 1px solid #ffeaa7; }
+        .form-group { margin: 10px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+        .modal-content { background: white; margin: 50px auto; padding: 20px; width: 90%; max-width: 500px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <h1>Resgatar Usuários Órfãos</h1>
+    <p>Esta página ajuda a encontrar usuários que foram criados no Auth mas não têm perfil na tabela profiles.</p>
+    
+    <button onclick="loadOrphanUsers()">Buscar Usuários Órfãos</button>
+    <button onclick="refreshAdminList()">Recarregar Lista Admin</button>
+    
+    <div id="result"></div>
+
+    <!-- Modal para resgatar usuário -->
+    <div id="rescueModal" class="modal">
+        <div class="modal-content">
+            <h2>Resgatar Usuário</h2>
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="rescueEmail" readonly>
+            </div>
+            <div class="form-group">
+                <label>Nome Completo:</label>
+                <input type="text" id="rescueFullName" placeholder="Digite o nome completo">
+            </div>
+            <div class="form-group">
+                <label>Perfil:</label>
+                <select id="rescueRole">
+                    <option value="moderador">Moderador</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div style="margin-top: 20px;">
+                <button onclick="confirmRescue()">Resgatar</button>
+                <button onclick="closeModal()" style="margin-left: 10px;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let orphanUsers = [];
+
+        async function loadOrphanUsers() {
+            try {
+                const response = await fetch('/api/debug/rescue-orphan-users');
+                const data = await response.json();
+                
+                let html = '<div class="section">';
+                html += '<h2>Resumo:</h2>';
+                html += `<p>Total usuários no Auth: ${data.totalAuthUsers}</p>`;
+                html += `<p>Total perfis: ${data.totalProfiles}</p>`;
+                html += `<p>Usuários órfãos: <strong>${data.orphanUsers.length}</strong></p>`;
+                html += '</div>';
+                
+                if (data.orphanUsers && data.orphanUsers.length > 0) {
+                    html += '<div class="section">';
+                    html += '<h2>Usuários Órfãos (precisam ser resgatados):</h2>';
+                    data.orphanUsers.forEach(user => {
+                        html += `<div class="user-item">`;
+                        html += `<strong>Email:</strong> ${user.email}<br>`;
+                        html += `<strong>ID:</strong> ${user.id}<br>`;
+                        html += `<strong>Criado:</strong> ${new Date(user.created_at).toLocaleString('pt-BR')}<br>`;
+                        html += `<strong>Último acesso:</strong> ${user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString('pt-BR') : 'Nunca'}<br>`;
+                        html += `<button onclick="showRescueModal('${user.email}', '${user.id}')">Resgatar</button>`;
+                        html += `</div>`;
+                    });
+                    html += '</div>';
+                } else {
+                    html += '<div class="section">';
+                    html += '<h2>✅ Não há usuários órfãos!</h2>';
+                    html += '<p>Todos os usuários do Auth têm perfil correspondente.</p>';
+                    html += '</div>';
+                }
+                
+                orphanUsers = data.orphanUsers || [];
+                document.getElementById('result').innerHTML = html;
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<p class="error">Error: ' + error.message + '</p>';
+            }
+        }
+
+        function showRescueModal(email, userId) {
+            document.getElementById('rescueEmail').value = email;
+            document.getElementById('rescueFullName').value = '';
+            document.getElementById('rescueRole').value = 'moderador';
+            document.getElementById('rescueModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('rescueModal').style.display = 'none';
+        }
+
+        async function confirmRescue() {
+            const email = document.getElementById('rescueEmail').value;
+            const fullName = document.getElementById('rescueFullName').value;
+            const role = document.getElementById('rescueRole').value;
+
+            if (!fullName.trim()) {
+                alert('Preencha o nome completo');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/debug/rescue-orphan-users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email,
+                        full_name: fullName.trim(),
+                        role
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Usuário resgatado com sucesso!');
+                    closeModal();
+                    loadOrphanUsers(); // Recarregar a lista
+                } else {
+                    alert('Erro: ' + data.error);
+                }
+            } catch (error) {
+                alert('Erro: ' + error.message);
+            }
+        }
+
+        async function refreshAdminList() {
+            try {
+                const response = await fetch('/api/admin/admin-users');
+                const data = await response.json();
+                
+                let html = '<h2>Lista Admin Atual:</h2>';
+                html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                html += '<p class="success">✓ Lista atualizada! Volte para a página de admin e recarregue.</p>';
+                
+                document.getElementById('result').innerHTML = html;
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<p class="error">Error: ' + error.message + '</p>';
+            }
+        }
+
+        // Fechar modal ao clicar fora
+        window.onclick = function(event) {
+            const modal = document.getElementById('rescueModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>

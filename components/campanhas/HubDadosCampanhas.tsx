@@ -5,6 +5,7 @@ import { ChevronRight, Play, GripVertical } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ParsedCampaignMetrics, ParsedAdSetMetrics, ParsedAdMetrics } from "@/lib/meta/types"
 import { AdPreviewModal, prefetchAdPreview } from "./AdPreviewModal"
+import { MobileCard, MobileTotalsCard } from "./MobileCard"
 import { useClientContext } from "@/lib/hooks/useClientContext"
 import {
   DndContext,
@@ -674,13 +675,13 @@ export function HubDadosCampanhas({
         </button>
       </div>
 
-      {/* Table */}
+      {/* Table - Desktop only */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto hidden md:block">
           <table className="w-full">
             <thead className="border-b border-shogun-border">
               <tr className="text-[10px] text-shogun-text-secondary uppercase leading-tight">
@@ -753,6 +754,107 @@ export function HubDadosCampanhas({
         </table>
       </div>
       </DndContext>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-3">
+        {viewLevel === "campaigns" && (
+          <>
+            {sortData(campaigns, (c) => {
+              if (sortColumn === 'name') return c.name
+              if (sortColumn === 'spend') return c.spend
+              if (sortColumn === 'roas') return c.roas
+              return 0
+            }).map(campaign => (
+              <MobileCard
+                key={campaign.id}
+                type="campaign"
+                item={campaign}
+                isSelected={selectedCampaignIds.includes(campaign.id)}
+                onSelect={() => toggleCampaignSelection(campaign.id)}
+              />
+            ))}
+            <MobileTotalsCard
+              label={selectedCampaignIds.length > 0 
+                ? `${selectedCampaignIds.length} campanhas selecionadas`
+                : `${campaigns.length} campanhas`}
+              totals={calculateTotals(
+                selectedCampaignIds.length > 0 
+                  ? campaigns.filter(c => selectedCampaignIds.includes(c.id))
+                  : campaigns
+              )}
+            />
+          </>
+        )}
+
+        {viewLevel === "adsets" && (
+          <>
+            {sortData(filteredAdsets, (a) => {
+              if (sortColumn === 'name') return a.name
+              if (sortColumn === 'spend') return a.spend
+              if (sortColumn === 'roas') return a.roas
+              return 0
+            }).map(adset => {
+              const campaign = campaigns.find(c => c.id === adset.campaignId)
+              return (
+                <MobileCard
+                  key={adset.id}
+                  type="adset"
+                  item={adset}
+                  isSelected={selectedAdSetIds.includes(adset.id)}
+                  onSelect={() => toggleAdSetSelection(adset.id)}
+                  parentName={campaign?.name}
+                  effectiveStatus={getEffectiveStatus(adset, 'adset')}
+                />
+              )
+            })}
+            <MobileTotalsCard
+              label={selectedAdSetIds.length > 0 
+                ? `${selectedAdSetIds.length} conjuntos selecionados`
+                : `${filteredAdsets.length} conjuntos`}
+              totals={calculateTotals(
+                selectedAdSetIds.length > 0 
+                  ? filteredAdsets.filter(a => selectedAdSetIds.includes(a.id))
+                  : filteredAdsets
+              )}
+            />
+          </>
+        )}
+
+        {viewLevel === "ads" && (
+          <>
+            {sortData(filteredAds, (a) => {
+              if (sortColumn === 'name') return a.name
+              if (sortColumn === 'spend') return a.spend
+              if (sortColumn === 'roas') return a.roas
+              return 0
+            }).map(ad => {
+              const adset = adsets.find(a => a.id === ad.adsetId)
+              return (
+                <MobileCard
+                  key={ad.id}
+                  type="ad"
+                  item={ad}
+                  isSelected={selectedAdIds.includes(ad.id)}
+                  onSelect={() => toggleAdSelection(ad.id)}
+                  onPreview={(e) => handleAdPreview(ad, e)}
+                  parentName={adset?.name}
+                  effectiveStatus={getEffectiveStatus(ad, 'ad')}
+                />
+              )
+            })}
+            <MobileTotalsCard
+              label={selectedAdIds.length > 0 
+                ? `${selectedAdIds.length} anúncios selecionados`
+                : `${filteredAds.length} anúncios`}
+              totals={calculateTotals(
+                selectedAdIds.length > 0 
+                  ? filteredAds.filter(a => selectedAdIds.includes(a.id))
+                  : filteredAds
+              )}
+            />
+          </>
+        )}
+      </div>
 
       {/* Modal de preview do anúncio */}
       <AdPreviewModal

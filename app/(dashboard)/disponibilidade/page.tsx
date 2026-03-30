@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { ChevronLeft, ChevronRight, X, CalendarRange } from "lucide-react"
+import { ChevronLeft, ChevronRight, X, CalendarRange, AlertCircle } from "lucide-react"
 
 interface BlockedSlot { id: string; blocked_date: string; blocked_time: string | null; reason: string | null }
 interface WindowConfig { target_month: string; window_end: string }
@@ -60,6 +60,101 @@ export default function DisponibilidadePage() {
   const [windowEndInput, setWindowEndInput] = useState("")
   const [savingWindow, setSavingWindow] = useState(false)
   const [error, setError]         = useState<string | null>(null)
+  const [showCloseConfirmModal, setShowCloseConfirmModal] = useState(false)
+
+  // Força cores dos inputs no modo claro
+  useEffect(() => {
+    const forceInputColors = () => {
+      const dateInputs = document.querySelectorAll('input[type="date"]')
+      const selects = document.querySelectorAll('select')
+      
+      // Força cores SEMPRE no modo claro
+      dateInputs.forEach(input => {
+        const htmlInput = input as HTMLInputElement
+        htmlInput.style.backgroundColor = '#FFFFFF'
+        htmlInput.style.color = '#374151'
+        htmlInput.style.borderColor = '#E5E5E5'
+        htmlInput.style.setProperty('-webkit-appearance', 'none')
+        htmlInput.style.setProperty('moz-appearance', 'none')
+        htmlInput.style.setProperty('appearance', 'none')
+        htmlInput.style.setProperty('-webkit-text-fill-color', '#374151')
+        
+        // Força pseudo-elements
+        const pseudoStyle = document.createElement('style')
+        pseudoStyle.textContent = `
+          input[type="date"]::-webkit-calendar-picker-indicator {
+            background-color: #FFFFFF !important;
+            color: #374151 !important;
+          }
+          input[type="date"]::-webkit-datetime-edit-text {
+            color: #374151 !important;
+          }
+          input[type="date"]::-webkit-datetime-edit-month-field {
+            color: #374151 !important;
+          }
+          input[type="date"]::-webkit-datetime-edit-day-field {
+            color: #374151 !important;
+          }
+          input[type="date"]::-webkit-datetime-edit-year-field {
+            color: #374151 !important;
+          }
+        `
+        document.head.appendChild(pseudoStyle)
+      })
+      
+      selects.forEach(select => {
+        const htmlSelect = select as HTMLSelectElement
+        htmlSelect.style.backgroundColor = '#FFFFFF'
+        htmlSelect.style.color = '#374151'
+        htmlSelect.style.borderColor = '#E5E5E5'
+        htmlSelect.style.setProperty('-webkit-appearance', 'none')
+        htmlSelect.style.setProperty('moz-appearance', 'none')
+        htmlSelect.style.setProperty('appearance', 'none')
+        htmlSelect.style.setProperty('-webkit-text-fill-color', '#374151')
+        
+        // Força opções do select
+        const options = htmlSelect.options
+        for (let i = 0; i < options.length; i++) {
+          options[i].style.backgroundColor = '#FFFFFF'
+          options[i].style.color = '#374151'
+        }
+      })
+    }
+    
+    // Força cores imediatamente
+    forceInputColors()
+    
+    // Força cores mais frequentemente no modo claro
+    const interval = setInterval(forceInputColors, 50)
+    
+    // Força quando o input receber foco ou mudar
+    const handleInputEvents = () => {
+      const dateInputs = document.querySelectorAll('input[type="date"]')
+      const selects = document.querySelectorAll('select')
+      
+      dateInputs.forEach(input => {
+        input.addEventListener('focus', forceInputColors)
+        input.addEventListener('blur', forceInputColors)
+        input.addEventListener('change', forceInputColors)
+        input.addEventListener('mouseenter', forceInputColors)
+        input.addEventListener('mouseleave', forceInputColors)
+      })
+      
+      selects.forEach(select => {
+        select.addEventListener('focus', forceInputColors)
+        select.addEventListener('blur', forceInputColors)
+        select.addEventListener('change', forceInputColors)
+        select.addEventListener('mouseenter', forceInputColors)
+        select.addEventListener('mouseleave', forceInputColors)
+      })
+    }
+    
+    handleInputEvents()
+    
+    return () => {
+      clearInterval(interval)
+    }
+  }, [])
 
   const year  = viewDate.getFullYear()
   const month = viewDate.getMonth() + 1
@@ -90,8 +185,7 @@ export default function DisponibilidadePage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.replace("/login"); return }
-      const { data: p } = await supabase.from("profiles").select("role").eq("id", user.id).single()
-      if (p?.role !== "admin") router.replace("/dashboard")
+      // Removida verificação de admin - permitir acesso a todos usuários autenticados
     }
     check()
   }, [router])
@@ -186,6 +280,10 @@ export default function DisponibilidadePage() {
 
   async function saveWindowEnd() {
     if (!windowEndInput) return
+    setShowCloseConfirmModal(true)
+  }
+
+  async function confirmSaveWindowEnd() {
     setSavingWindow(true)
     setError(null)
     try {
@@ -196,6 +294,7 @@ export default function DisponibilidadePage() {
       })
       if (!res.ok) { const e = await res.json(); setError(e.error ?? "Erro ao salvar janela"); return }
       await loadConfig()
+      setShowCloseConfirmModal(false)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro de rede")
     } finally {
@@ -241,8 +340,60 @@ export default function DisponibilidadePage() {
   const selTimeBooked   = selectedDateStr ? (bookedTimeMap.get(selectedDateStr)  ?? new Map()) : new Map<string, BookedSlot>()
   const selStatus       = selectedDay ? dayStatus(parseInt(selectedDay.split("-")[2])) : null
 
+  // Modal de confirmação para fechar agenda
+  function CloseConfirmModal() {
+    if (!showCloseConfirmModal) return null
+    
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCloseConfirmModal(false)} />
+        <div className="relative w-full max-w-md bg-shogun-bg-elevated border border-shogun-border rounded-xl shadow-2xl p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+              <AlertCircle size={20} className="text-red-500" />
+            </div>
+            <div>
+              <h3 className="font-[var(--font-display)] text-lg font-bold text-shogun-text-primary">
+                Confirmar Fechamento da Agenda
+              </h3>
+              <p className="text-sm text-shogun-text-secondary mt-1">
+                Esta ação impedirá novos agendamentos após a data selecionada.
+              </p>
+            </div>
+          </div>
+          
+          <div className="bg-shogun-bg-base border border-shogun-border rounded-lg p-3 mb-4">
+            <p className="text-sm font-[var(--font-display)] text-shogun-text-secondary">
+              Data de fechamento:
+            </p>
+            <p className="text-base font-semibold font-[var(--font-display)] text-shogun-text-primary">
+              {windowEndInput.split("-").reverse().join("/")}
+            </p>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowCloseConfirmModal(false)}
+              className="flex-1 px-4 py-2 bg-shogun-bg-base border border-shogun-border rounded-lg text-sm font-[var(--font-display)] text-shogun-text-primary hover:bg-shogun-bg-surface transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={confirmSaveWindowEnd}
+              disabled={savingWindow}
+              className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-[var(--font-display)] font-semibold transition-colors disabled:opacity-50"
+            >
+              {savingWindow ? "Fechando..." : "Confirmar Fechamento"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      <CloseConfirmModal />
       {/* Header */}
       <div className="flex items-center gap-3">
         <CalendarRange size={22} className="text-shogun-accent" />
@@ -289,7 +440,27 @@ export default function DisponibilidadePage() {
             type="date"
             value={windowEndInput}
             onChange={(e) => setWindowEndInput(e.target.value)}
-            className="bg-shogun-bg-base border border-shogun-border rounded px-2 py-1 text-sm text-shogun-text-primary font-[var(--font-display)] focus:outline-none focus:border-shogun-accent"
+            className="datepicker-input bg-shogun-bg-base border border-shogun-border rounded px-2 py-1 text-sm text-shogun-text-primary font-[var(--font-display)] focus:outline-none focus:border-shogun-accent"
+            style={{
+              backgroundColor: '#FFFFFF',
+              color: '#374151',
+              borderColor: '#E5E5E5',
+              WebkitAppearance: 'none',
+              MozAppearance: 'none',
+              appearance: 'none'
+            }}
+            onMouseEnter={(e) => {
+              const target = e.target as HTMLInputElement;
+              target.style.backgroundColor = '#FFFFFF';
+              target.style.color = '#374151';
+              target.style.borderColor = '#E5E5E5';
+            }}
+            onFocus={(e) => {
+              const target = e.target as HTMLInputElement;
+              target.style.backgroundColor = '#FFFFFF';
+              target.style.color = '#374151';
+              target.style.borderColor = '#10B981';
+            }}
           />
           <button
             onClick={saveWindowEnd}

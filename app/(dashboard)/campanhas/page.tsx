@@ -24,7 +24,7 @@ export default function CampanhasPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-[var(--font-display)] font-bold text-shogun-text-primary">
           Campanhas
         </h1>
@@ -34,6 +34,7 @@ export default function CampanhasPage() {
             value={campaignPeriod}
             onChange={setCampaignPeriod}
             placeholder="Período das campanhas"
+            align="right"
           />
         </div>
       </div>
