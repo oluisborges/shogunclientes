@@ -9,6 +9,7 @@ interface DatePickerProps {
   value?: DateRange
   onChange?: (range: DateRange) => void
   placeholder?: string
+  align?: "left" | "right"
 }
 
 const MONTHS = [
@@ -51,11 +52,11 @@ const PRESETS = [
   }},
 ]
 
-export function DatePicker({ value, onChange, placeholder = "Selecione o período" }: DatePickerProps) {
+export function DatePicker({ value, onChange, placeholder = "Selecione o período", align = "left" }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedRange, setSelectedRange] = useState<DateRange | null>(value || null)
   const [hoverDate, setHoverDate] = useState<Date | null>(null)
-  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [currentMonth, setCurrentMonth] = useState(value?.start || new Date())
   const [selectingStart, setSelectingStart] = useState(true)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -63,6 +64,8 @@ export function DatePicker({ value, onChange, placeholder = "Selecione o períod
   useEffect(() => {
     if (value) {
       setSelectedRange(value)
+      // Atualizar currentMonth para o mês da data inicial selecionada
+      setCurrentMonth(value.start)
     }
   }, [value])
 
@@ -234,51 +237,106 @@ export function DatePicker({ value, onChange, placeholder = "Selecione o períod
       </button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 bg-shogun-bg-base border border-shogun-border rounded-lg shadow-lg z-50 p-4 w-[600px]">
-          <div className="flex gap-4">
-            <div className="w-40 border-r border-shogun-border pr-4">
-              <div className="space-y-1">
+        <>
+          {/* Desktop - layout otimizado */}
+          <div className={cn(
+            "hidden md:block absolute top-full mt-2 bg-shogun-bg-base border border-shogun-border rounded-lg shadow-lg z-[100] p-4",
+            align === "right" ? "right-0" : "left-0"
+          )}>
+            <div className="flex gap-4 w-[640px]">
+              {/* Presets sidebar */}
+              <div className="w-36 border-r border-shogun-border pr-4 flex-shrink-0">
+                <div className="space-y-1">
+                  {PRESETS.map((preset) => (
+                    <button
+                      key={preset.label}
+                      onClick={() => handlePresetClick(preset)}
+                      className="w-full text-left px-3 py-2 rounded text-sm font-[var(--font-display)] text-shogun-text-secondary hover:bg-shogun-bg-elevated hover:text-shogun-text-primary transition-colors"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Calendars */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-4">
+                  <button
+                    onClick={prevMonth}
+                    className="p-1 hover:bg-shogun-bg-elevated rounded transition-colors"
+                  >
+                    <ChevronLeft size={16} className="text-shogun-text-secondary" />
+                  </button>
+                  <button
+                    onClick={nextMonth}
+                    className="p-1 hover:bg-shogun-bg-elevated rounded transition-colors"
+                  >
+                    <ChevronRight size={16} className="text-shogun-text-secondary" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {renderCalendar(0)}
+                  {renderCalendar(1)}
+                </div>
+
+                {selectedRange && (
+                  <div className="mt-4 pt-4 border-t border-shogun-border text-center text-sm text-shogun-text-secondary font-[var(--font-display)]">
+                    {formatDate(selectedRange.start)} → {formatDate(selectedRange.end)}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile - responsive layout */}
+          <div className={cn(
+            "md:hidden absolute top-full mt-2 bg-shogun-bg-base border border-shogun-border rounded-lg shadow-lg z-[100] p-3 w-[calc(100vw-32px)] max-w-[320px]",
+            align === "left" ? "left-0" : "right-0"
+          )}>
+            <div className="flex flex-col gap-3">
+              {/* Presets - horizontal scroll */}
+              <div className="flex gap-1 overflow-x-auto pb-2 -mx-1 px-1">
                 {PRESETS.map((preset) => (
                   <button
                     key={preset.label}
                     onClick={() => handlePresetClick(preset)}
-                    className="w-full text-left px-3 py-2 rounded text-sm font-[var(--font-display)] text-shogun-text-secondary hover:bg-shogun-bg-elevated hover:text-shogun-text-primary transition-colors"
+                    className="flex-shrink-0 px-3 py-1.5 rounded text-xs font-[var(--font-display)] text-shogun-text-secondary hover:bg-shogun-bg-elevated hover:text-shogun-text-primary transition-colors whitespace-nowrap border border-shogun-border"
                   >
                     {preset.label}
                   </button>
                 ))}
               </div>
-            </div>
 
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-4">
-                <button
-                  onClick={prevMonth}
-                  className="p-1 hover:bg-shogun-bg-elevated rounded transition-colors"
-                >
-                  <ChevronLeft size={16} className="text-shogun-text-secondary" />
-                </button>
-                <button
-                  onClick={nextMonth}
-                  className="p-1 hover:bg-shogun-bg-elevated rounded transition-colors"
-                >
-                  <ChevronRight size={16} className="text-shogun-text-secondary" />
-                </button>
-              </div>
-
-              <div className="flex gap-6">
-                {renderCalendar(0)}
-                {renderCalendar(1)}
-              </div>
-
-              {selectedRange && (
-                <div className="mt-4 pt-4 border-t border-shogun-border text-center text-sm text-shogun-text-secondary font-[var(--font-display)]">
-                  {formatDate(selectedRange.start)} → {formatDate(selectedRange.end)}
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-3">
+                  <button
+                    onClick={prevMonth}
+                    className="p-1 hover:bg-shogun-bg-elevated rounded transition-colors"
+                  >
+                    <ChevronLeft size={16} className="text-shogun-text-secondary" />
+                  </button>
+                  <button
+                    onClick={nextMonth}
+                    className="p-1 hover:bg-shogun-bg-elevated rounded transition-colors"
+                  >
+                    <ChevronRight size={16} className="text-shogun-text-secondary" />
+                  </button>
                 </div>
-              )}
+
+                {/* Single calendar on mobile */}
+                {renderCalendar(0)}
+
+                {selectedRange && (
+                  <div className="mt-3 pt-3 border-t border-shogun-border text-center text-xs text-shogun-text-secondary font-[var(--font-display)]">
+                    {formatDate(selectedRange.start)} → {formatDate(selectedRange.end)}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )

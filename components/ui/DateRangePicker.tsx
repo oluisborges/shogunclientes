@@ -56,9 +56,17 @@ export function DateRangePicker({ value, onChange, className, isOpen: externalIs
   const [isOpen, setIsOpen] = useState(false)
   const [selectedRange, setSelectedRange] = useState<DateRange | null>(value || null)
   const [hoverDate, setHoverDate] = useState<Date | null>(null)
-  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [currentMonth, setCurrentMonth] = useState(value?.start || new Date())
   const [selectingStart, setSelectingStart] = useState(true)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Sincronizar com value das props
+  useEffect(() => {
+    if (value) {
+      setSelectedRange(value)
+      setCurrentMonth(value.start)
+    }
+  }, [value])
 
   
   const formatDate = (date: Date) => {
@@ -194,16 +202,16 @@ export function DateRangePicker({ value, onChange, className, isOpen: externalIs
   return (
     <div className={cn("relative", className)} ref={dropdownRef}>
       {(isOpen || externalIsOpen) && (
-        <div className="absolute top-full right-0 mt-2 bg-shogun-bg-base border border-shogun-border rounded-lg shadow-xl z-50 p-3 max-w-[600px] w-[600px]">
-          <div className="flex gap-3">
-            <div className="w-40 border-r border-shogun-border pr-3">
+        <div className="absolute top-full right-0 mt-2 bg-shogun-bg-base border border-shogun-border rounded-lg shadow-xl z-50 p-4 w-[640px]">
+          <div className="flex gap-4">
+            <div className="w-36 border-r border-shogun-border pr-4 flex-shrink-0">
               <div className="space-y-1">
                 {PRESETS.map((preset) => (
                   <button
                     key={preset.label}
                     onClick={() => handlePresetClick(preset)}
                     className={cn(
-                      "w-full text-left px-2 py-1.5 rounded text-xs font-[var(--font-display)] transition-colors",
+                      "w-full text-left px-3 py-2 rounded text-sm font-[var(--font-display)] transition-colors",
                       "text-shogun-text-secondary hover:bg-shogun-bg-elevated hover:text-shogun-text-primary"
                     )}
                   >
@@ -213,8 +221,8 @@ export function DateRangePicker({ value, onChange, className, isOpen: externalIs
               </div>
             </div>
 
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-4">
                 <button
                   onClick={prevMonth}
                   className="p-1 hover:bg-shogun-bg-elevated rounded transition-colors"
@@ -229,13 +237,13 @@ export function DateRangePicker({ value, onChange, className, isOpen: externalIs
                 </button>
               </div>
 
-              <div className="flex gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 {renderCalendar(0)}
                 {renderCalendar(1)}
               </div>
 
               {selectedRange && (
-                <div className="mt-3 pt-3 border-t border-shogun-border text-center text-xs text-shogun-text-secondary font-[var(--font-display)]">
+                <div className="mt-4 pt-4 border-t border-shogun-border text-center text-sm text-shogun-text-secondary font-[var(--font-display)]">
                   {formatDate(selectedRange.start)} → {formatDate(selectedRange.end)}
                 </div>
               )}

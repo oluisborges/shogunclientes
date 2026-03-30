@@ -5,16 +5,20 @@ import { createAdminClient } from "@/lib/supabase/admin"
 async function requireAdmin() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+  if (!user) return { error: "Não autorizado", status: 401 as const }
+  
   const admin = createAdminClient()
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single()
-  return profile?.role === "admin" ? user : null
+  if (profile?.role !== "admin" && profile?.role !== "moderador") return { error: "Acesso restrito a administradores e moderadores", status: 403 as const }
+  return { userId: user.id }
 }
 
 // GET /api/admin/users/pending — list pending registrations
 export async function GET() {
-  const user = await requireAdmin()
-  if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  const check = await requireAdmin()
+  if ("error" in check) {
+    return NextResponse.json({ error: check.error }, { status: check.status })
+  }
 
   const admin = createAdminClient()
   const { data, error } = await admin

@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 
-async function assertAdmin() {
+async function assertAdminOrModerador() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
   const admin = createAdminClient()
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single()
-  return profile?.role === "admin" ? user : null
+  return profile?.role === "admin" || profile?.role === "moderador" ? user : null
 }
 
 // GET /api/admin/agents — all agents (admin) or active only (client)
@@ -19,13 +19,13 @@ export async function GET() {
 
   const admin = createAdminClient()
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single()
-  const isAdmin = profile?.role === "admin"
+  const isAdminOrModerador = profile?.role === "admin" || profile?.role === "moderador"
 
-  const fields = isAdmin
+  const fields = isAdminOrModerador
     ? "id, name, category, icon_name, system_prompt, active, display_order, api_key"
     : "id, name, category, icon_name, system_prompt, active, display_order"
   let query = admin.from("ai_agents").select(fields).order("display_order")
-  if (!isAdmin) query = query.eq("active", true)
+  if (!isAdminOrModerador) query = query.eq("active", true)
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -34,7 +34,7 @@ export async function GET() {
 
 // POST /api/admin/agents — create agent (admin only)
 export async function POST(req: NextRequest) {
-  const user = await assertAdmin()
+  const user = await assertAdminOrModerador()
   if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const body = await req.json()

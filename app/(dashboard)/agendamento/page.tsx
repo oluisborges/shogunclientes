@@ -60,12 +60,13 @@ export default function AgendamentoPage() {
   const [myBooking, setMyBooking] = useState<MyBookingData | null>(null)
   const [slotsData, setSlotsData] = useState<SlotsData | null>(null)
   const [selectedDay, setSelectedDay] = useState<AvailableDay | null>(null)
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [booking, setBooking] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
 
   const { year, month } = getTargetMonth()
   const logActivity = useActivityLog()
@@ -74,9 +75,8 @@ export default function AgendamentoPage() {
     setLoading(true)
     setError(null)
     try {
-      const myBookingUrl = selectedClientId 
-        ? `/api/agendamento/my-booking?clientId=${selectedClientId}`
-        : `/api/agendamento/my-booking`
+      // Agora usa sempre o perfil do usuário, não o cliente selecionado
+      const myBookingUrl = `/api/agendamento/my-booking`
       
       const [mbRes, slotsRes] = await Promise.all([
         fetch(myBookingUrl),
@@ -93,7 +93,7 @@ export default function AgendamentoPage() {
     } finally {
       setLoading(false)
     }
-  }, [year, month, selectedClientId])
+  }, [year, month]) // Removido selectedClientId da dependência
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -105,7 +105,7 @@ export default function AgendamentoPage() {
       const res = await fetch("/api/agendamento/book", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slot: `${selectedDay.date}T${selectedSlot}`, clientId: selectedClientId }),
+        body: JSON.stringify({ slot: `${selectedDay.date}T${selectedSlot}` }), // Removido clientId
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -127,11 +127,7 @@ export default function AgendamentoPage() {
     setCancelling(true)
     setError(null)
     try {
-      const cancelUrl = selectedClientId 
-        ? `/api/agendamento/${myBooking.booking.id}?clientId=${selectedClientId}`
-        : `/api/agendamento/${myBooking.booking.id}`
-      
-      const res = await fetch(cancelUrl, { method: "DELETE" })
+      const res = await fetch(`/api/agendamento/${myBooking.booking.id}`, { method: "DELETE" }) // Removido clientId
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       logActivity("cancellation", "Reunião Mensal", {

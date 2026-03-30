@@ -13,7 +13,7 @@ export async function PUT(
 
     const admin = createAdminClient()
     const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single()
-    if (profile?.role !== "admin") return NextResponse.json({ error: "Sem permissão" }, { status: 403 })
+    if (profile?.role !== "admin" && profile?.role !== "moderador") return NextResponse.json({ error: "Sem permissão" }, { status: 403 })
 
     const { id: userId } = await params
     const body = await request.json()

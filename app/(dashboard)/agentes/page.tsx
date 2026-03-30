@@ -207,9 +207,27 @@ export default function AgentesPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-56px)] overflow-hidden rounded-2xl border border-shogun-border bg-shogun-bg-base">
-      {/* ── Left sidebar: agent list ── */}
-      <aside className="w-64 shrink-0 border-r border-shogun-border flex flex-col bg-shogun-bg-elevated overflow-y-auto">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-56px)] overflow-hidden rounded-2xl border border-shogun-border bg-shogun-bg-base">
+      {/* ── Mobile agent selector ── */}
+      <div className="md:hidden border-b border-shogun-border bg-shogun-bg-elevated p-3">
+        <select
+          value={activeAgent?.id || ""}
+          onChange={(e) => {
+            const agent = agents.find(a => a.id === e.target.value)
+            if (agent) selectAgent(agent)
+          }}
+          className="w-full bg-shogun-bg-base border border-shogun-border rounded-xl px-4 py-3 text-sm font-[var(--font-display)] text-shogun-text-primary focus:outline-none focus:border-shogun-accent"
+        >
+          {agents.map((agent) => (
+            <option key={agent.id} value={agent.id}>
+              {agent.name} - {agent.category}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* ── Left sidebar: agent list - Desktop only ── */}
+      <aside className="hidden md:flex w-64 shrink-0 border-r border-shogun-border flex-col bg-shogun-bg-elevated overflow-y-auto">
         <div className="px-4 pt-5 pb-3">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-0.5 h-4 rounded-full bg-shogun-accent" />
@@ -284,7 +302,7 @@ export default function AgentesPage() {
         )}
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5 space-y-4">
           {messages.length === 0 && activeAgent && (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
               <div className="w-14 h-14 rounded-2xl bg-shogun-accent/10 border border-shogun-accent/20 flex items-center justify-center">
@@ -325,7 +343,7 @@ export default function AgentesPage() {
         </div>
 
         {/* Input */}
-        <div className="px-6 pb-5 pt-3 border-t border-shogun-border bg-shogun-bg-base shrink-0">
+        <div className="px-4 md:px-6 pb-5 pt-3 border-t border-shogun-border bg-shogun-bg-base shrink-0">
           <div className="flex items-end gap-3 bg-shogun-bg-elevated border border-shogun-border rounded-2xl px-4 py-3 focus-within:border-shogun-accent transition-colors">
             <textarea
               ref={textareaRef}

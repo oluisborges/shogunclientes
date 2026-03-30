@@ -186,9 +186,18 @@ export default function LoginPage() {
       {showSuccess && <SuccessModal onClose={() => setShowSuccess(false)} />}
 
       <div className="w-full max-w-sm mx-auto px-6">
-        <div className="text-center mb-10">
-          <h1 className="font-[var(--font-display)] text-2xl font-bold text-shogun-text-primary tracking-tight">SHOGUN</h1>
-          <p className="text-shogun-text-secondary text-sm mt-1">Relatórios de Performance</p>
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-6">
+            <img 
+              src="/shogunlogo.png" 
+              alt="Shogun Logo" 
+              className="h-32 w-auto"
+            />
+          </div>
+          <h1 className="font-[var(--font-display)] text-2xl font-bold text-shogun-accent tracking-tight mb-1">
+            Grupo Shogun
+          </h1>
+          <p className="text-shogun-text-secondary text-sm">Dash de Performance</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">

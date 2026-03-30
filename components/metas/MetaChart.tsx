@@ -85,7 +85,7 @@ export function MetaChart({ data }: MetaChartProps) {
   return (
     <div
       className="rounded-xl flex flex-col gap-5 overflow-hidden relative"
-      style={{ background: "#1A3A31", border: "1px solid #2A5040", padding: "28px 32px" }}
+      style={{ background: "#1A3A31", border: "1px solid #2A5040", padding: "20px 16px" }}
     >
       {/* ── Keyframes ── */}
       <style>{`
@@ -130,7 +130,7 @@ export function MetaChart({ data }: MetaChartProps) {
       ))}
 
       {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
 
           {/* "PERFORMANCE DO MÊS" + motivational text inline */}
@@ -165,11 +165,11 @@ export function MetaChart({ data }: MetaChartProps) {
           <div className="flex items-baseline gap-4 flex-wrap">
             <span
               className="font-bold leading-none"
-              style={{ fontSize: 52, fontFamily: "var(--font-data)", color: "#E8F0EB", lineHeight: 1 }}
+              style={{ fontSize: 42, fontFamily: "var(--font-data)", color: "#E8F0EB", lineHeight: 1 }}
             >
               {formatCurrencyInt(data.totalFaturamento)}
             </span>
-            <span style={{ fontSize: 16, fontFamily: "var(--font-display)", color: "#808080", whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 14, fontFamily: "var(--font-display)", color: "#808080", whiteSpace: "nowrap" }}>
               de {formatCurrencyInt(data.totalMeta)}
             </span>
           </div>
@@ -177,10 +177,10 @@ export function MetaChart({ data }: MetaChartProps) {
           {data.totalTrafego > 0 && (
             <p
               className="mt-2 font-medium flex items-center gap-2 flex-wrap"
-              style={{ fontSize: 15, fontFamily: "var(--font-display)", color: "#f97316" }}
+              style={{ fontSize: 14, fontFamily: "var(--font-display)", color: "#f97316" }}
             >
               {formatCurrencyInt(data.totalTrafego)} via Meta Ads
-              <span style={{ fontSize: 12, color: "rgba(249,115,22,0.65)", fontWeight: 400 }}>
+              <span style={{ fontSize: 11, color: "rgba(249,115,22,0.65)", fontWeight: 400 }}>
                 ({trafegoPercent}% do faturamento)
               </span>
             </p>
@@ -188,63 +188,65 @@ export function MetaChart({ data }: MetaChartProps) {
         </div>
 
         {/* ── Badge ── */}
-        {atingido ? (
-          <div
-            className="flex-shrink-0 flex flex-col items-center justify-center gap-0.5"
-            style={{
-              width: 96,
-              height: 96,
-              borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(149,214,0,0.35) 0%, rgba(149,214,0,0.08) 100%)",
-              border: "2.5px solid rgba(149,214,0,0.9)",
-              animation: "badge-glow-pulse 1.8s ease-in-out infinite, badge-scale-in 0.5s ease-out both",
-            }}
-          >
-            <Trophy size={18} style={{ color: "#95D600" }} />
-            <span
-              className="font-bold leading-none"
-              style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "#95D600", fontWeight: 800, letterSpacing: "0.04em" }}
+        <div className="flex justify-center md:justify-end">
+          {atingido ? (
+            <div
+              className="flex flex-col items-center justify-center gap-0.5"
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(149,214,0,0.35) 0%, rgba(149,214,0,0.08) 100%)",
+                border: "2.5px solid rgba(149,214,0,0.9)",
+                animation: "badge-glow-pulse 1.8s ease-in-out infinite, badge-scale-in 0.5s ease-out both",
+              }}
             >
-              META
-            </span>
-            <span
-              className="font-bold leading-none"
-              style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "#95D600", fontWeight: 800, letterSpacing: "0.04em" }}
+              <Trophy size={16} style={{ color: "#95D600" }} />
+              <span
+                className="font-bold leading-none"
+                style={{ fontSize: 10, fontFamily: "var(--font-display)", color: "#95D600", fontWeight: 800, letterSpacing: "0.04em" }}
+              >
+                META
+              </span>
+              <span
+                className="font-bold leading-none"
+                style={{ fontSize: 10, fontFamily: "var(--font-display)", color: "#95D600", fontWeight: 800, letterSpacing: "0.04em" }}
+              >
+                BATIDA!
+              </span>
+              <span
+                style={{ fontSize: 14, fontFamily: "var(--font-data)", fontWeight: 700, color: "#95D600", lineHeight: 1 }}
+              >
+                {data.percentAtingido.toFixed(0)}%
+              </span>
+            </div>
+          ) : (
+            <div
+              className="flex flex-col items-center justify-center"
+              style={{
+                width: 70,
+                height: 70,
+                borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(245,158,11,0.3) 0%, rgba(245,158,11,0.06) 100%)",
+                border: "2px solid rgba(245,158,11,0.6)",
+              }}
             >
-              BATIDA!
-            </span>
-            <span
-              style={{ fontSize: 16, fontFamily: "var(--font-data)", fontWeight: 700, color: "#95D600", lineHeight: 1 }}
-            >
-              {data.percentAtingido.toFixed(0)}%
-            </span>
-          </div>
-        ) : (
-          <div
-            className="flex-shrink-0 flex flex-col items-center justify-center"
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(245,158,11,0.3) 0%, rgba(245,158,11,0.06) 100%)",
-              border: "2px solid rgba(245,158,11,0.6)",
-            }}
-          >
-            <Lock size={12} style={{ color: "#f59e0b", marginBottom: 2 }} />
-            <span
-              className="font-bold leading-none"
-              style={{ fontSize: 22, fontFamily: "var(--font-data)", color: "#f59e0b" }}
-            >
-              {data.percentAtingido.toFixed(0)}%
-            </span>
-            <span
-              className="uppercase tracking-wide mt-0.5"
-              style={{ fontSize: 8, fontFamily: "var(--font-display)", color: "#b45309" }}
-            >
-              concluído
-            </span>
-          </div>
-        )}
+              <Lock size={11} style={{ color: "#f59e0b", marginBottom: 2 }} />
+              <span
+                className="font-bold leading-none"
+                style={{ fontSize: 18, fontFamily: "var(--font-data)", color: "#f59e0b" }}
+              >
+                {data.percentAtingido.toFixed(0)}%
+              </span>
+              <span
+                className="uppercase tracking-wide mt-0.5"
+                style={{ fontSize: 7, fontFamily: "var(--font-display)", color: "#b45309" }}
+              >
+                concluído
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Progress bar ── */}

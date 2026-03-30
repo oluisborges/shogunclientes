@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 
-async function requireAdmin() {
+async function requireAuth() {
   const supabase = await createClient()
   const {
     data: { user },
@@ -10,14 +10,16 @@ async function requireAdmin() {
 
   if (!user) return { error: "Não autorizado", status: 401 as const }
 
-  const { data: profile } = await supabase
+  // Check if user is admin
+  const admin = createAdminClient()
+  const { data: profile } = await admin
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single()
 
-  if (profile?.role !== "admin") {
-    return { error: "Acesso restrito a administradores", status: 403 as const }
+  if (profile?.role !== "admin" && profile?.role !== "moderador") {
+    return { error: "Acesso restrito a administradores e moderadores", status: 403 as const }
   }
 
   return { userId: user.id }
@@ -25,16 +27,16 @@ async function requireAdmin() {
 
 // GET /api/admin/users — lista todos os usuários com perfil e cliente
 export async function GET() {
-  const check = await requireAdmin()
+  const check = await requireAuth()
   if ("error" in check) {
     return NextResponse.json({ error: check.error }, { status: check.status })
   }
 
   const admin = createAdminClient()
 
-  // Busca profiles + clients em paralelo
+  // Busca profiles + clients em paralelo (apenas usuários comuns, exclui admin)
   const [profilesResult, clientsResult] = await Promise.all([
-    admin.from("profiles").select("id, role, full_name, created_at").order("created_at"),
+    admin.from("profiles").select("id, role, full_name, created_at, blocked").not("role", "in", '("admin")').order("created_at"),
     admin.from("clients").select("id, profile_id, business_name, cnpj, meta_account_id, active, niche, gestor_id"),
   ])
 
@@ -51,9 +53,17 @@ export async function GET() {
   }
 
   const authMap = new Map(authData.users.map((u) => [u.id, u.email ?? ""]))
-  const clientMap = new Map(
-    (clientsResult.data ?? []).map((c) => [c.profile_id, c])
-  )
+  
+  // Agrupar múltiplos clientes por profile_id
+  const clientsByProfile = new Map<string, any[]>()
+  ;(clientsResult.data ?? []).forEach((c) => {
+    if (c.profile_id) {
+      if (!clientsByProfile.has(c.profile_id)) {
+        clientsByProfile.set(c.profile_id, [])
+      }
+      clientsByProfile.get(c.profile_id)!.push(c)
+    }
+  })
 
   const users = (profilesResult.data ?? []).map((profile) => ({
     id: profile.id,
@@ -61,7 +71,8 @@ export async function GET() {
     full_name: profile.full_name,
     role: profile.role,
     created_at: profile.created_at,
-    client: clientMap.get(profile.id) ?? null,
+    blocked: profile.blocked || false,
+    clients: clientsByProfile.get(profile.id) ?? [],
   }))
 
   return NextResponse.json(users)
@@ -69,7 +80,7 @@ export async function GET() {
 
 // POST /api/admin/users — cria usuário + perfil + cliente
 export async function POST(request: Request) {
-  const check = await requireAdmin()
+  const check = await requireAuth()
   if ("error" in check) {
     return NextResponse.json({ error: check.error }, { status: check.status })
   }
@@ -143,7 +154,7 @@ export async function POST(request: Request) {
 
 // DELETE /api/admin/users?userId=xxx — desativa ou remove usuário
 export async function DELETE(request: Request) {
-  const check = await requireAdmin()
+  const check = await requireAuth()
   if ("error" in check) {
     return NextResponse.json({ error: check.error }, { status: check.status })
   }

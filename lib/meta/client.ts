@@ -51,6 +51,6 @@ export const AD_FIELDS = [
   "name",
   "status",
   "adset_id",
-  "creative{thumbnail_url,title,body}",
+  "creative{thumbnail_url,image_url,image_hash,video_id,object_type,title,body}",
   "insights.date_preset(last_30d){spend,impressions,clicks,ctr,cpc,cpp,actions,action_values}",
 ].join(",")

@@ -187,7 +187,7 @@ export async function GET(request: NextRequest) {
     }
     if (currentTimeRange) ageParams.time_range = currentTimeRange
 
-    const [currentInsights, prevInsights, campaignsData, accountData, genderData, dailyInsights, ageData] =
+    const [currentInsights, prevInsights, campaignsData, accountData, genderData, ageData] =
       await Promise.all([
         metaFetch<MetaInsightsResponse>({
           endpoint: `/${accountId}/insights`,
@@ -216,11 +216,6 @@ export async function GET(request: NextRequest) {
           accessToken,
           params: genderParams,
         }).catch(() => ({ data: [] } as MetaGenderResponse)),
-        metaFetch<MetaDailyResponse>({
-          endpoint: `/${accountId}/insights`,
-          accessToken,
-          params: dailyParams,
-        }).catch(() => ({ data: [] } as MetaDailyResponse)),
         metaFetch<MetaAgeResponse>({
           endpoint: `/${accountId}/insights`,
           accessToken,
@@ -251,14 +246,55 @@ export async function GET(request: NextRequest) {
       }))
       .filter((g) => g.gender !== "unknown" && g.purchases > 0)
 
-    // Daily breakdown — fill all dates in range with zeros where no data
+    // Buscar dados diários em chunks menores para evitar limitação do Meta API
     const dailyMap = new Map<string, { spend: number; purchases: number; purchaseValue: number }>()
-    for (const d of dailyInsights.data || []) {
-      dailyMap.set(d.date_start, {
-        spend: parseFloat(d.spend || "0"),
-        purchases: extractAction(d.actions, "purchase"),
-        purchaseValue: extractAction(d.action_values, "purchase"),
-      })
+    
+    if (dateStart && dateEnd) {
+      const startDate = new Date(dateStart)
+      const endDate = new Date(dateEnd)
+      
+      // Dividir em chunks de 7 dias para evitar limitação do Meta API
+      const chunkSize = 7 // dias
+      let currentChunkStart = new Date(startDate)
+      
+      while (currentChunkStart <= endDate) {
+        const currentChunkEnd = new Date(currentChunkStart)
+        currentChunkEnd.setDate(currentChunkEnd.getDate() + chunkSize - 1)
+        if (currentChunkEnd > endDate) {
+          currentChunkEnd.setTime(endDate.getTime())
+        }
+        
+        const chunkTimeRange = JSON.stringify({ 
+          since: currentChunkStart.toISOString().split('T')[0], 
+          until: currentChunkEnd.toISOString().split('T')[0] 
+        })
+        
+        // Buscar dados deste chunk
+        const chunkDailyParams: Record<string, string> = {
+          fields: "spend,actions,action_values",
+          level: "account",
+          time_increment: "1",
+          time_range: chunkTimeRange,
+        }
+        
+        const chunkDailyInsights = await metaFetch<MetaDailyResponse>({
+          endpoint: `/${accountId}/insights`,
+          accessToken,
+          params: chunkDailyParams,
+        }).catch(() => ({ data: [] } as MetaDailyResponse))
+        
+        // Adicionar dados do chunk ao mapa
+        for (const d of chunkDailyInsights.data || []) {
+          dailyMap.set(d.date_start, {
+            spend: parseFloat(d.spend || "0"),
+            purchases: extractAction(d.actions, "purchase"),
+            purchaseValue: extractAction(d.action_values, "purchase"),
+          })
+        }
+        
+        // Próximo chunk
+        currentChunkStart.setDate(currentChunkStart.getDate() + chunkSize)
+      }
     }
 
     const dailyData: Array<{ date: string; spend: number; purchases: number; purchaseValue: number }> = []

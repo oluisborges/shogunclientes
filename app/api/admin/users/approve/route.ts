@@ -2,18 +2,18 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 
-async function requireAdmin() {
+async function requireAdminOrModerador() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
   const admin = createAdminClient()
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single()
-  return profile?.role === "admin" ? user : null
+  return profile?.role === "admin" || profile?.role === "moderador" ? user : null
 }
 
 // POST /api/admin/users/approve — approve a pending registration
 export async function POST(req: NextRequest) {
-  const adminUser = await requireAdmin()
+  const adminUser = await requireAdminOrModerador()
   if (!adminUser) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const { id, meta_account_id, niche, gestor_id } = await req.json()
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
 
 // DELETE /api/admin/users/approve?id=xxx — reject/delete a pending registration
 export async function DELETE(req: NextRequest) {
-  const adminUser = await requireAdmin()
+  const adminUser = await requireAdminOrModerador()
   if (!adminUser) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const { searchParams } = new URL(req.url)

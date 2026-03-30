@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback, Fragment } from "react"
 import { useRouter } from "next/navigation"
+import { ChevronDown, ChevronRight, Search, Plus, X, Check, Pencil, Trash2, RefreshCw, History, Building2, Calendar, Users, Lock, Unlock, Clock, CheckCircle, XCircle, UserCog } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { inputCls, labelCls, selectCls } from "@/lib/form-styles"
-import { Plus, Trash2, Users, Building2, Pencil, Check, X, UserCog, History, RefreshCw, ChevronDown, Clock, CheckCircle, XCircle } from "lucide-react"
 import { ShogunCard } from "@/components/ui/ShogunCard"
 
 interface UserRow {
@@ -13,6 +13,7 @@ interface UserRow {
   full_name: string | null
   role: string
   created_at: string
+  blocked?: boolean
   client: {
     id: string
     business_name: string
@@ -22,6 +23,21 @@ interface UserRow {
     niche: string | null
     gestor_id: string | null
   } | null
+  clients?: Array<{
+    id: string
+    business_name: string
+    cnpj: string | null
+    meta_account_id: string | null
+    active: boolean
+    niche: string | null
+    gestor_id: string | null
+  }>
+  linked_clients?: Array<{
+    id: string
+    business_name: string
+    meta_account_id: string | null
+    access_level: string
+  }>
 }
 
 interface Gestor { id: string; name: string; email: string; active: boolean }
@@ -70,6 +86,15 @@ interface ActivityLog {
   created_at: string
 }
 
+interface Account {
+  id: string
+  client_id?: string
+  business_name: string
+  meta_account_id: string | null
+  access_level: string
+  is_profile?: boolean
+}
+
 const ACTION_LABELS: Record<string, string> = {
   navigation:    "Navegação",
   period_change: "Período",
@@ -116,6 +141,7 @@ export default function UsuariosPage() {
   const [form, setForm]         = useState<CreateForm>(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]       = useState<string | null>(null)
+  const [success, setSuccess]   = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const [pendingRegs, setPendingRegs]     = useState<PendingReg[]>([])
@@ -133,6 +159,14 @@ export default function UsuariosPage() {
   const [filterUser, setFilterUser]       = useState("")
   const [filterAction, setFilterAction]   = useState("")
 
+  // Estados para gerenciar contas vinculadas
+  const [showLinkedAccounts, setShowLinkedAccounts] = useState<string | null>(null)
+  const [linkedAccounts, setLinkedAccounts] = useState<Record<string, Account[]>>({})
+  const [addingAccount, setAddingAccount] = useState<{userId: string, businessName: string, metaAccountId: string}>({userId: "", businessName: "", metaAccountId: ""})
+  const [showAddAccountModal, setShowAddAccountModal] = useState(false)
+  const [loadingLinkedAccounts, setLoadingLinkedAccounts] = useState(false)
+  const [availableClients, setAvailableClients] = useState<Array<{id: string, business_name: string, meta_account_id: string | null}>>([])
+
   const loadLogs = useCallback(async () => {
     setLogsLoading(true)
     try {
@@ -144,6 +178,168 @@ export default function UsuariosPage() {
     }
   }, [filterUser])
 
+  // Carregar clientes disponíveis para vincular
+  const loadAvailableClients = async () => {
+    try {
+      const res = await fetch("/api/admin/clients")
+      if (res.ok) {
+        const data = await res.json()
+        setAvailableClients(data)
+      }
+    } catch (err) {
+      console.error("Erro ao carregar clientes:", err)
+    }
+  }
+
+  useEffect(() => {
+    loadAvailableClients()
+  }, [])
+
+  // Carregar contas vinculadas de um usuário
+  const loadLinkedAccounts = async (userId: string) => {
+    setLoadingLinkedAccounts(true)
+    try {
+      console.log("Carregando contas para usuário:", userId)
+      
+      // Buscar usuário completo para pegar contas do perfil
+      const usersRes = await fetch("/api/admin/users")
+      if (usersRes.ok) {
+        const usersData = await usersRes.json()
+        const user = usersData.find((u: any) => u.id === userId)
+        console.log("Usuário encontrado:", user)
+        
+        const accounts: Array<{
+          id: string,
+          client_id: string,
+          business_name: string,
+          meta_account_id: string | null,
+          access_level: string,
+          is_profile: boolean
+        }> = []
+        
+        // Adicionar todas as contas do perfil que tiverem act_ + nome
+        if (user && user.clients && Array.isArray(user.clients)) {
+          user.clients.forEach((client: any) => {
+            if (client.business_name && client.meta_account_id) {
+              accounts.push({
+                id: `profile-${client.id}`,
+                client_id: client.id,
+                business_name: client.business_name,
+                meta_account_id: client.meta_account_id,
+                access_level: "profile",
+                is_profile: true
+              })
+            }
+          })
+        }
+        
+        console.log("Contas final:", accounts)
+        setLinkedAccounts(prev => ({ ...prev, [userId]: accounts }))
+      }
+    } catch (err) {
+      console.error("Erro ao carregar contas vinculadas:", err)
+    } finally {
+      setLoadingLinkedAccounts(false)
+    }
+  }
+
+  // Adicionar conta vinculada
+  const handleAddLinkedAccount = async () => {
+    if (!addingAccount.userId) {
+      setError("ID do usuário é obrigatório")
+      return
+    }
+
+    if (!addingAccount.businessName || !addingAccount.metaAccountId) {
+      setError("Nome da empresa e ID da conta Meta são obrigatórios")
+      return
+    }
+
+    try {
+      // Criar nova conta diretamente com profile_id
+      const createRes = await fetch("/api/admin/clients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          business_name: addingAccount.businessName,
+          meta_account_id: addingAccount.metaAccountId,
+          profile_id: addingAccount.userId // Vincula diretamente ao perfil
+        })
+      })
+      
+      if (!createRes.ok) {
+        const data = await createRes.json()
+        setError(data.error || "Erro ao criar conta")
+        return
+      }
+
+      const newClient = await createRes.json()
+      console.log("Conta criada:", newClient)
+
+      setSuccess("Conta criada com sucesso!")
+      setShowAddAccountModal(false)
+      setAddingAccount({ userId: "", businessName: "", metaAccountId: "" })
+      loadLinkedAccounts(addingAccount.userId)
+      loadAvailableClients() // Recarregar lista de clientes
+      setTimeout(() => setSuccess(null), 3000)
+    } catch (err) {
+      setError("Erro ao processar conta")
+    }
+  }
+
+  // Apagar conta de anúncio
+  const handleDeleteAccount = async (clientId: string, userId: string) => {
+    console.log("Tentando apagar conta:", { clientId, userId })
+    
+    if (!confirm("Tem certeza que deseja apagar esta conta de anúncio? Esta ação não pode ser desfeita.")) {
+      return
+    }
+
+    try {
+      console.log("Fazendo requisição para:", `/api/admin/clients/${clientId}`)
+      const res = await fetch(`/api/admin/clients/${clientId}`, { method: "DELETE" })
+      console.log("Response status:", res.status)
+      
+      if (res.ok) {
+        const data = await res.json()
+        console.log("Response data:", data)
+        setSuccess("Conta apagada com sucesso!")
+        loadLinkedAccounts(userId)
+        loadAll() // Recarregar tudo
+        setTimeout(() => setSuccess(null), 3000)
+      } else {
+        const data = await res.json()
+        console.error("Erro na resposta:", data)
+        setError(data.error || "Erro ao apagar conta")
+      }
+    } catch (err) {
+      console.error("Erro ao apagar conta:", err)
+      setError("Erro ao apagar conta")
+    }
+  }
+
+  // Bloquear/desbloquear perfil
+  const handleToggleBlockProfile = async (userId: string, isBlocked: boolean) => {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/block`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blocked: !isBlocked })
+      })
+      
+      if (res.ok) {
+        setSuccess(isBlocked ? "Perfil desbloqueado com sucesso!" : "Perfil bloqueado com sucesso!")
+        loadAll() // Recarregar tudo
+        setTimeout(() => setSuccess(null), 3000)
+      } else {
+        const data = await res.json()
+        setError(data.error || "Erro ao bloquear/desbloquear perfil")
+      }
+    } catch (err) {
+      setError("Erro ao bloquear/desbloquear perfil")
+    }
+  }
+
   useEffect(() => {
     if (showHistory) loadLogs()
   }, [showHistory, loadLogs])
@@ -154,14 +350,13 @@ export default function UsuariosPage() {
   const [savingGestor, setSavingGestor]   = useState(false)
 
   useEffect(() => {
-    async function checkAdmin() {
+    async function checkAuth() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.replace("/login"); return }
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
-      if (profile?.role !== "admin") router.replace("/dashboard")
+      // Removida verificação de admin - permitir acesso a todos usuários autenticados
     }
-    checkAdmin()
+    checkAuth()
   }, [router])
 
   const loadAll = useCallback(async () => {
@@ -173,7 +368,54 @@ export default function UsuariosPage() {
         fetch("/api/admin/users/pending"),
       ])
       if (!usersRes.ok) throw new Error((await usersRes.json()).error)
-      setUsers(await usersRes.json())
+      const usersData = await usersRes.json()
+      setUsers(usersData)
+      
+      // Carregar contas vinculadas para cada usuário (próprias + acessos)
+      const linkedAccountsPromises = usersData.map(async (user: any) => {
+        try {
+          // Buscar contas vinculadas via user_client_access
+          const accessRes = await fetch(`/api/admin/client-access?user_id=${user.id}`)
+          let accessAccounts = []
+          if (accessRes.ok) {
+            accessAccounts = await accessRes.json()
+          }
+          
+          // Adicionar contas do perfil se existirem E tiverem act_ + nome
+          const allAccounts = [...accessAccounts]
+          if (user && user.clients && Array.isArray(user.clients)) {
+            user.clients.forEach((client: any) => {
+              if (client.business_name && client.meta_account_id) {
+                allAccounts.push({
+                  id: `profile-${client.id}`,
+                  client_id: client.id,
+                  business_name: client.business_name,
+                  meta_account_id: client.meta_account_id,
+                  access_level: "profile",
+                  is_profile: true
+                })
+              }
+            })
+          }
+          
+          // Filtrar apenas contas que têm act_ E nome
+          const validAccounts = allAccounts.filter(account => 
+            account.business_name && account.meta_account_id
+          )
+          
+          return { userId: user.id, accounts: validAccounts }
+        } catch {
+          return { userId: user.id, accounts: [] }
+        }
+      })
+      
+      const linkedAccountsResults = await Promise.all(linkedAccountsPromises)
+      const linkedAccountsMap: Record<string, Account[]> = {}
+      linkedAccountsResults.forEach(({ userId, accounts }) => {
+        linkedAccountsMap[userId] = accounts
+      })
+      setLinkedAccounts(linkedAccountsMap)
+      
       if (gestoresRes.ok) setGestores(await gestoresRes.json())
       if (pendingRes.ok) setPendingRegs(await pendingRes.json())
     } catch (err) {
@@ -347,7 +589,7 @@ export default function UsuariosPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Users size={24} className="text-shogun-accent" />
-          <h1 className="text-2xl font-[var(--font-display)] font-bold text-shogun-text-primary">Usuários</h1>
+          <h1 className="text-2xl font-[var(--font-display)] font-bold text-shogun-text-primary">Usuários Clientes</h1>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -358,13 +600,17 @@ export default function UsuariosPage() {
             {showHistory ? "Ocultar histórico" : "Histórico de atividades"}
           </button>
           <button onClick={() => { setShowForm(!showForm); setError(null) }} className="flex items-center gap-2 px-4 py-2 bg-shogun-accent text-shogun-bg-base rounded text-sm font-[var(--font-display)] font-semibold hover:bg-shogun-accent/90 transition-colors">
-            <Plus size={16} /> Criar usuário
+            <Plus size={16} /> Criar cliente
           </button>
         </div>
       </div>
 
       {error && (
         <div className="px-4 py-3 bg-shogun-danger/10 border border-shogun-danger/30 rounded text-sm text-shogun-danger font-[var(--font-display)]">{error}</div>
+      )}
+
+      {success && (
+        <div className="px-4 py-3 bg-green-500/10 border border-green-500/30 rounded text-sm text-green-500 font-[var(--font-display)]">{success}</div>
       )}
 
       {/* ── Solicitações pendentes ── */}
@@ -520,12 +766,70 @@ export default function UsuariosPage() {
           <h2 className="text-base font-[var(--font-display)] font-semibold text-shogun-text-primary mb-5">Novo usuário</h2>
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label className={labelCls}>E-mail (login) *</label><input type="email" required placeholder="cliente@email.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} /></div>
-              <div><label className={labelCls}>Senha *</label><input type="password" required minLength={6} placeholder="Mínimo 6 caracteres" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inputCls} /></div>
-              <div><label className={labelCls}>Nome completo</label><input type="text" placeholder="João Silva" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className={inputCls} /></div>
-              <div><label className={labelCls}>Nome da empresa *</label><input type="text" required placeholder="Nome igual ao Google Sheets" value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} className={inputCls} /></div>
-              <div><label className={labelCls}>CNPJ</label><input type="text" placeholder="00.000.000/0000-00" value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: formatCnpj(e.target.value) })} className={inputCls} /></div>
-              <div><label className={labelCls}>ID da conta de anúncios (Meta)</label><input type="text" placeholder="act_000000000" value={form.meta_account_id} onChange={(e) => setForm({ ...form, meta_account_id: e.target.value })} className={inputCls} /></div>
+              <div>
+                <label className={labelCls}>E-mail (login) *</label>
+                <input 
+                  type="email" 
+                  required 
+                  placeholder="cliente@email.com" 
+                  value={form.email} 
+                  onChange={(e) => setForm({ ...form, email: e.target.value })} 
+                  className={inputCls} 
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Senha *</label>
+                <input 
+                  type="password" 
+                  required 
+                  minLength={6} 
+                  placeholder="Mínimo 6 caracteres" 
+                  value={form.password} 
+                  onChange={(e) => setForm({ ...form, password: e.target.value })} 
+                  className={inputCls} 
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Nome completo</label>
+                <input 
+                  type="text" 
+                  placeholder="João Silva" 
+                  value={form.full_name} 
+                  onChange={(e) => setForm({ ...form, full_name: e.target.value })} 
+                  className={inputCls} 
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Nome da empresa *</label>
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="Nome igual ao Google Sheets" 
+                  value={form.business_name} 
+                  onChange={(e) => setForm({ ...form, business_name: e.target.value })} 
+                  className={inputCls} 
+                />
+              </div>
+              <div>
+                <label className={labelCls}>CNPJ</label>
+                <input 
+                  type="text" 
+                  placeholder="00.000.000/0000-00" 
+                  value={form.cnpj} 
+                  onChange={(e) => setForm({ ...form, cnpj: formatCnpj(e.target.value) })} 
+                  className={inputCls} 
+                />
+              </div>
+              <div>
+                <label className={labelCls}>ID da conta de anúncios (Meta)</label>
+                <input 
+                  type="text" 
+                  placeholder="act_000000000" 
+                  value={form.meta_account_id} 
+                  onChange={(e) => setForm({ ...form, meta_account_id: e.target.value })} 
+                  className={inputCls} 
+                />
+              </div>
               <div>
                 <label className={labelCls}>Nicho <span className="text-shogun-text-muted normal-case tracking-normal ml-1">(interno)</span></label>
                 <select value={form.niche} onChange={(e) => setForm({ ...form, niche: e.target.value })} className={selectCls}>
@@ -670,13 +974,13 @@ export default function UsuariosPage() {
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-shogun-accent" />
           </div>
         ) : users.length === 0 ? (
-          <div className="text-center py-12 text-shogun-text-secondary text-sm font-[var(--font-display)]">Nenhum usuário cadastrado</div>
+          <div className="text-center py-12 text-shogun-text-secondary text-sm font-[var(--font-display)]">Nenhum cliente cadastrado</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-shogun-bg-base border-b border-shogun-border">
-                  {["Nome", "E-mail", "Empresa", "Nicho", "Gestor", "Perfil", ""].map((h, i) => (
+                  {["Nome", "E-mail", "Empresa", "Contas Vinculadas", "Nicho", "Gestor", "Perfil", ""].map((h, i) => (
                     <th key={i} className="px-4 py-3 text-left text-xs font-[var(--font-display)] text-shogun-text-secondary uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -690,16 +994,55 @@ export default function UsuariosPage() {
                       <td className="px-4 py-3 text-sm text-shogun-text-primary font-[var(--font-display)]">
                         {user.client ? <span className="flex items-center gap-1.5"><Building2 size={13} className="text-shogun-text-muted shrink-0" />{user.client.business_name}</span> : <span className="text-shogun-text-muted">—</span>}
                       </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => {
+                            if (showLinkedAccounts === user.id) {
+                              setShowLinkedAccounts(null)
+                            } else {
+                              setShowLinkedAccounts(user.id)
+                              loadLinkedAccounts(user.id)
+                            }
+                          }}
+                          className="flex items-center gap-2 text-shogun-accent hover:text-shogun-accent/80 text-sm font-[var(--font-display)]"
+                        >
+                          <Building2 size={14} />
+                          <span>{linkedAccounts[user.id]?.length || 0} conta(s)</span>
+                          <ChevronDown 
+                            size={14} 
+                            className={`transition-transform ${showLinkedAccounts === user.id ? 'rotate-180' : ''}`} 
+                          />
+                        </button>
+                      </td>
                       <td className="px-4 py-3 text-sm font-[var(--font-display)]">
                         {user.client?.niche ? <span className="px-2 py-0.5 rounded text-xs font-medium bg-shogun-border text-shogun-text-secondary">{nicheLabel(user.client.niche)}</span> : <span className="text-shogun-text-muted">—</span>}
                       </td>
                       <td className="px-4 py-3 text-sm text-shogun-text-secondary font-[var(--font-display)]">
                         {user.client?.gestor_id ? gestorName(user.client.gestor_id) : <span className="text-shogun-text-muted">—</span>}
                       </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-[var(--font-display)] font-medium ${user.role === "admin" ? "bg-shogun-accent/20 text-shogun-accent" : user.role === "gestor" ? "bg-purple-500/20 text-purple-400" : "bg-shogun-border text-shogun-text-secondary"}`}>
-                          {user.role}
-                        </span>
+                      <td className="px-4 py-3 text-shogun-text-primary">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs px-2 py-1 rounded-full font-[var(--font-display)] ${
+                            user.role === "admin" ? "bg-shogun-accent/20 text-shogun-accent" : 
+                            user.blocked ? "bg-red-500/20 text-red-500" : 
+                            "bg-shogun-success/20 text-shogun-success"
+                          }`}>
+                            {user.role === "admin" ? "Admin" : user.blocked ? "Bloqueado" : "Cliente"}
+                          </span>
+                          {user.role !== "admin" && (
+                            <button
+                              onClick={() => handleToggleBlockProfile(user.id, user.blocked || false)}
+                              className={`p-1 rounded transition-colors ${
+                                user.blocked 
+                                  ? "text-green-600 hover:text-green-700 hover:bg-green-50" 
+                                  : "text-red-600 hover:text-red-700 hover:bg-red-50"
+                              }`}
+                              title={user.blocked ? "Desbloquear perfil" : "Bloquear perfil"}
+                            >
+                              {user.blocked ? <Unlock size={14} /> : <Lock size={14} />}
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
@@ -718,7 +1061,7 @@ export default function UsuariosPage() {
                     </tr>
                     {editingUserId === user.id && (
                       <tr key={`edit-${user.id}`} className="bg-shogun-bg-base border-b border-shogun-accent/20">
-                        <td colSpan={7} className="px-4 py-4">
+                        <td colSpan={8} className="px-4 py-4">
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             <div><label className={labelCls}>Nome</label><input type="text" value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} className={inputCls} /></div>
                             <div><label className={labelCls}>E-mail</label><input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} className={inputCls} /></div>
@@ -752,6 +1095,76 @@ export default function UsuariosPage() {
                         </td>
                       </tr>
                     )}
+                    {showLinkedAccounts === user.id && (
+                      <tr key={`linked-${user.id}`} className="bg-shogun-bg-base/50">
+                        <td colSpan={8} className="px-4 py-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-sm font-semibold font-[var(--font-display)] text-shogun-text-primary">
+                                Contas Vinculadas
+                              </h4>
+                              <button
+                                onClick={() => {
+                                  setShowAddAccountModal(true)
+                                  setAddingAccount({ userId: user.id, businessName: "", metaAccountId: "" })
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold font-[var(--font-display)] rounded bg-shogun-accent/15 text-shogun-accent hover:bg-shogun-accent/25 transition-colors"
+                              >
+                                <Plus size={12} /> Adicionar Conta
+                              </button>
+                            </div>
+                            
+                            {loadingLinkedAccounts ? (
+                              <div className="flex items-center justify-center py-4">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-shogun-accent" />
+                              </div>
+                            ) : linkedAccounts[user.id]?.length === 0 ? (
+                              <div className="text-center py-4 text-shogun-text-muted text-sm">
+                                <Building2 size={24} className="mx-auto mb-2 opacity-50" />
+                                <p>Nenhuma conta vinculada</p>
+                                <p className="text-xs mt-1">Clique em "Adicionar Conta" para vincular</p>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                {linkedAccounts[user.id]?.map((account) => (
+                                  <div key={account.id} className="flex items-center justify-between p-3 bg-shogun-bg-elevated border border-shogun-border rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                      <Building2 size={16} className="text-shogun-text-muted" />
+                                      <div>
+                                        <p className="text-sm font-[var(--font-display)] text-shogun-text-primary">
+                                          {account.business_name}
+                                        </p>
+                                        {account.meta_account_id && (
+                                          <p className="text-xs text-shogun-text-muted font-mono">
+                                            ID: {account.meta_account_id}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={() => {
+                                          if (!account.client_id || account.client_id === 'undefined') {
+                                            setError("ID da conta não encontrado ou inválido")
+                                            return
+                                          }
+                                          
+                                          handleDeleteAccount(account.client_id, user.id)
+                                        }}
+                                        className="text-shogun-danger hover:text-shogun-danger/80 transition-colors"
+                                        title="Apagar conta de anúncio"
+                                      >
+                                        <Trash2 size={14} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                   </Fragment>
                 ))}
               </tbody>
@@ -759,6 +1172,62 @@ export default function UsuariosPage() {
           </div>
         )}
       </ShogunCard>
+
+      {/* Modal para adicionar conta vinculada */}
+      {showAddAccountModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
+          <div className="w-full max-w-md mx-4 bg-shogun-bg-elevated border border-shogun-border rounded-lg p-6">
+            <h3 className="text-lg font-[var(--font-display)] font-bold text-shogun-text-primary mb-4">
+              Vincular Conta de Anúncio
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-[var(--font-display)] text-shogun-text-secondary mb-1">
+                  Nome da Empresa *
+                </label>
+                <input
+                  type="text"
+                  value={addingAccount.businessName}
+                  onChange={(e) => setAddingAccount({ ...addingAccount, businessName: e.target.value })}
+                  className="w-full bg-shogun-bg-base border border-shogun-border rounded px-4 py-3 text-shogun-text-primary text-sm placeholder:text-shogun-text-muted focus:outline-none focus:border-shogun-accent transition-colors"
+                  placeholder="Nome da empresa"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-[var(--font-display)] text-shogun-text-secondary mb-1">
+                  ID da Conta Meta (act_...) *
+                </label>
+                <input
+                  type="text"
+                  value={addingAccount.metaAccountId}
+                  onChange={(e) => setAddingAccount({ ...addingAccount, metaAccountId: e.target.value })}
+                  className="w-full bg-shogun-bg-base border border-shogun-border rounded px-4 py-3 text-shogun-text-primary text-sm placeholder:text-shogun-text-muted focus:outline-none focus:border-shogun-accent transition-colors"
+                  placeholder="act_000000000"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleAddLinkedAccount}
+                className="flex-1 bg-shogun-accent hover:bg-shogun-accent/90 text-shogun-bg-base font-[var(--font-display)] font-semibold px-4 py-2.5 rounded transition-colors"
+              >
+                Vincular Conta
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddAccountModal(false)
+                  setAddingAccount({ userId: "", businessName: "", metaAccountId: "" })
+                }}
+                className="flex-1 bg-shogun-bg-base hover:bg-shogun-bg-base/80 text-shogun-text-primary font-[var(--font-display)] font-semibold px-4 py-2.5 rounded transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

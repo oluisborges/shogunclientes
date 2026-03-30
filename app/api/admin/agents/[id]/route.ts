@@ -2,17 +2,17 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 
-async function assertAdmin() {
+async function assertAdminOrModerador() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
   const admin = createAdminClient()
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single()
-  return profile?.role === "admin" ? user : null
+  return profile?.role === "admin" || profile?.role === "moderador" ? user : null
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const user = await assertAdmin()
+  const user = await assertAdminOrModerador()
   if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const { id } = await params
@@ -31,7 +31,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const user = await assertAdmin()
+  const user = await assertAdminOrModerador()
   if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const { id } = await params

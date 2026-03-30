@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
     const { data: profile } = await adminClient
       .from("profiles").select("role").eq("id", user.id).single()
-    const isAdmin = profile?.role === "admin" || profile?.role === "gestor"
+    const isAdmin = profile?.role === "admin" || profile?.role === "moderador" || profile?.role === "gestor"
 
     // Carrega cliente com gestor e perfil do usuário
     let clientQuery = adminClient
