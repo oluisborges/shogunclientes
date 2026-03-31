@@ -76,12 +76,12 @@ export function DailyChart({ dailyData }: { dailyData: MetricasDaily[] }) {
           <XAxis 
             dataKey="date" 
             tickFormatter={formatDate} 
-            tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }} 
+            tick={{ fill: "var(--color-shogun-text-secondary)", fontSize: 11, fontFamily: "var(--font-display)" }} 
             axisLine={false} 
             tickLine={false} 
           />
-          <YAxis yAxisId="left" orientation="left" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} tickFormatter={fmtNum} width={32} allowDecimals={false} />
-          <YAxis yAxisId="right" orientation="right" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `R$${fmtNum(v)}`} width={52} />
+          <YAxis yAxisId="left" orientation="left" tick={{ fill: "var(--color-shogun-text-secondary)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} tickFormatter={fmtNum} width={32} allowDecimals={false} />
+          <YAxis yAxisId="right" orientation="right" tick={{ fill: "var(--color-shogun-text-secondary)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `R$${fmtNum(v)}`} width={52} />
           <Tooltip content={<CustomTooltip />} />
           <Line 
             yAxisId="left" 
@@ -165,9 +165,9 @@ export function AgeBarChart({ ageStats }: { ageStats: MetricasAge[] }) {
       <ResponsiveContainer width="100%" height={260}>
         <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barCategoryGap="35%">
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-shogun-border)" vertical={false} />
-          <XAxis dataKey="age" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} tickFormatter={fmtNum} width={36} allowDecimals={false} />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+          <XAxis dataKey="age" tick={{ fill: "var(--color-shogun-text-secondary)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: "var(--color-shogun-text-secondary)", fontSize: 11, fontFamily: "var(--font-display)" }} axisLine={false} tickLine={false} tickFormatter={fmtNum} width={36} allowDecimals={false} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: "var(--color-shogun-border)" }} />
           <Bar dataKey="purchases" name="Compras" fill="#95D600" radius={[4, 4, 0, 0]} />
           <Bar dataKey="lpViews" name="Visualização de Cardápio" fill="#3b82f6" radius={[4, 4, 0, 0]} />
         </BarChart>
