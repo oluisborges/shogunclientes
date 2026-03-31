@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Painel de performance marketing — Grupo Shogun",
   icons: {
     icon: [
-      { url: "/favicon.svg", sizes: "any", type: "image/svg+xml" },
+      { url: "/favicon.png", sizes: "32x32", type: "image/png" },
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
       { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" }

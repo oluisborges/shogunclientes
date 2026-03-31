@@ -649,6 +649,49 @@ html.light * {
   color: #374151 !important;
 }
 
+/* EXCEÇÃO: Elementos SVG de gráficos mantêm suas cores */
+html.light svg path,
+html.light svg circle,
+html.light svg rect,
+html.light svg line,
+html.light svg polyline,
+html.light svg polygon,
+html.light .recharts-surface path,
+html.light .recharts-line path,
+html.light .recharts-area path,
+html.light .recharts-bar rect,
+html.light .recharts-pie-sector path,
+html.light .recharts-radar-polygon path,
+html.light .recharts-scatter path,
+html.light .recharts-reference-line line,
+html.light .recharts-cartesian-grid line,
+html.light .recharts-layer path,
+html.light .recharts-line-dots circle {
+  color: inherit !important;
+  fill: inherit !important;
+  stroke: inherit !important;
+}
+
+/* EXCEÇÃO: Labels e textos de gráficos precisam de cor escura */
+html.light .recharts-text,
+html.light .recharts-label,
+html.light .recharts-legend-item-text,
+html.light .recharts-tooltip-label,
+html.light .recharts-tooltip-item-name,
+html.light .recharts-tooltip-item-value,
+html.light .recharts-cartesian-axis-tick-value,
+html.light .recharts-pie-label-text {
+  fill: #374151 !important;
+  color: #374151 !important;
+}
+
+/* EXCEÇÃO: Textos dos eixos */
+html.light .recharts-cartesian-axis text,
+html.light .recharts-x-axis text,
+html.light .recharts-y-axis text {
+  fill: #374151 !important;
+}
+
 /* Exceções específicas que devem ser brancas no modo claro */
 html.light .bg-shogun-accent *,
 html.light [style*="background: rgb(149, 214, 0)"] *,
