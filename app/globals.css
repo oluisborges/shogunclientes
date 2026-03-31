@@ -649,6 +649,100 @@ html.light * {
   color: #374151 !important;
 }
 
+/* EXCEÇÃO: Elementos SVG de gráficos mantêm suas cores */
+html.light svg path,
+html.light svg circle,
+html.light svg rect,
+html.light svg line,
+html.light svg polyline,
+html.light svg polygon {
+  color: inherit !important;
+  fill: inherit !important;
+  stroke: inherit !important;
+}
+
+/* Linhas do gráfico - manter cores específicas */
+html.light .recharts-line path,
+html.light .recharts-line .recharts-line-curve {
+  stroke-width: 2 !important;
+}
+
+/* Pontos/dots do gráfico */
+html.light .recharts-line .recharts-line-dots circle {
+  fill: inherit !important;
+  stroke: inherit !important;
+}
+
+/* Cores específicas das linhas no modo claro */
+html.light [stroke="#95D600"],
+html.light [stroke="#3b82f6"],
+html.light [stroke="#f59e0b"] {
+  stroke: inherit !important;
+}
+
+/* CORREÇÃO ESPECÍFICA: Áreas em gráficos no modo claro */
+html.light .recharts-area {
+  fill-opacity: 0.15 !important;
+}
+
+html.light .recharts-bar {
+  fill: inherit !important;
+}
+
+html.light .recharts-pie,
+html.light .recharts-scatter {
+  fill: inherit !important;
+}
+
+/* Remove fill de paths de linhas */
+html.light .recharts-line path {
+  fill: none !important;
+  stroke-width: 2 !important;
+}
+
+/* Força background dos tooltips no modo claro */
+html.light .recharts-tooltip-wrapper,
+html.light .recharts-default-tooltip {
+  background-color: #FFFFFF !important;
+  border-color: #E5E5E5 !important;
+  color: #374151 !important;
+}
+
+/* CORREÇÃO: Cursor/hover em gráficos */
+html.light .recharts-tooltip-cursor {
+  fill: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Força cores dos eixos no modo claro */
+html.light .recharts-cartesian-axis-tick-value {
+  fill: #6B7280 !important;
+}
+
+html.light .recharts-cartesian-grid-horizontal line,
+html.light .recharts-cartesian-grid-vertical line {
+  stroke: #E5E7EB !important;
+}
+
+/* EXCEÇÃO: Labels e textos de gráficos precisam de cor escura */
+html.light .recharts-text,
+html.light .recharts-label,
+html.light .recharts-legend-item-text,
+html.light .recharts-tooltip-label,
+html.light .recharts-tooltip-item-name,
+html.light .recharts-tooltip-item-value,
+html.light .recharts-cartesian-axis-tick-value,
+html.light .recharts-pie-label-text {
+  fill: #374151 !important;
+  color: #374151 !important;
+}
+
+/* EXCEÇÃO: Textos dos eixos */
+html.light .recharts-cartesian-axis text,
+html.light .recharts-x-axis text,
+html.light .recharts-y-axis text {
+  fill: #374151 !important;
+}
+
 /* Exceções específicas que devem ser brancas no modo claro */
 html.light .bg-shogun-accent *,
 html.light [style*="background: rgb(149, 214, 0)"] *,
